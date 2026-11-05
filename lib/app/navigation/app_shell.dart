@@ -17,6 +17,18 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int _selectedIndex = 0;
   final _visited = <int>{0};
+  bool _settingsOpen = false;
+
+  Future<void> _openSettings() async {
+    setState(() => _settingsOpen = true);
+    try {
+      await Navigator.of(
+        context,
+      ).push(MaterialPageRoute<void>(builder: (_) => const SettingsScreen()));
+    } finally {
+      if (mounted) setState(() => _settingsOpen = false);
+    }
+  }
 
   void _select(int index) {
     if (_selectedIndex != index) FocusScope.of(context).unfocus();
@@ -37,13 +49,14 @@ class _AppShellState extends State<AppShell> {
         body: IndexedStack(
           index: _selectedIndex,
           children: [
-            HomeScreen(
-              hasActivePuzzle: _visited.contains(1),
-              onClassic: () => _select(1),
-              onLearn: () => _select(2),
-              onProgress: () => _select(3),
-              onSettings: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
+            TickerMode(
+              enabled: _selectedIndex == 0 && !_settingsOpen,
+              child: HomeScreen(
+                hasActivePuzzle: _visited.contains(1),
+                onClassic: () => _select(1),
+                onLearn: () => _select(2),
+                onProgress: () => _select(3),
+                onSettings: _openSettings,
               ),
             ),
             _visited.contains(1)

@@ -1,9 +1,18 @@
 import 'package:flutter/material.dart';
 
-import '../../app/theme/app_colors.dart';
 import '../../widgets/premium_telugu_text.dart';
+import 'home_artwork.dart';
 
-enum FeatureCardArtwork { crossword, learn, daily, progress }
+enum FeatureCardArtwork {
+  crossword(HomeArtwork.classic),
+  learn(HomeArtwork.learn),
+  daily(HomeArtwork.daily),
+  progress(HomeArtwork.progress);
+
+  const FeatureCardArtwork(this.asset);
+
+  final String asset;
+}
 
 class FeatureCard extends StatefulWidget {
   const FeatureCard({
@@ -115,8 +124,8 @@ class _FeatureCardState extends State<FeatureCard> {
                           Row(
                             children: [
                               Container(
-                                width: 48,
-                                height: 48,
+                                width: 56,
+                                height: 56,
                                 decoration: BoxDecoration(
                                   color: widget.foreground.withValues(
                                     alpha: 0.14,
@@ -129,12 +138,11 @@ class _FeatureCardState extends State<FeatureCard> {
                                         size: 29,
                                         color: widget.foreground,
                                       )
-                                    : CustomPaint(
-                                        painter: _FeatureIconPainter(
-                                          artwork: widget.artwork!,
-                                          color: widget.foreground,
-                                        ),
-                                        child: const SizedBox.expand(),
+                                    : Image.asset(
+                                        widget.artwork!.asset,
+                                        fit: BoxFit.contain,
+                                        excludeFromSemantics: true,
+                                        cacheWidth: 168,
                                       ),
                               ),
                               if (statusInline) ...[
@@ -174,110 +182,4 @@ class _FeatureCardState extends State<FeatureCard> {
       ),
     );
   }
-}
-
-class _FeatureIconPainter extends CustomPainter {
-  const _FeatureIconPainter({required this.artwork, required this.color});
-
-  final FeatureCardArtwork artwork;
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    canvas.save();
-    canvas.scale(size.width / 48, size.height / 48);
-    final line = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.4
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round
-      ..isAntiAlias = true;
-    final fill = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill
-      ..isAntiAlias = true;
-    final accent = Paint()
-      ..color = AppColors.gold
-      ..style = PaintingStyle.fill
-      ..isAntiAlias = true;
-
-    switch (artwork) {
-      case FeatureCardArtwork.crossword:
-        for (var row = 0; row < 2; row++) {
-          for (var column = 0; column < 2; column++) {
-            final rect = Rect.fromLTWH(6 + column * 18, 6 + row * 18, 15, 15);
-            canvas.drawRRect(
-              RRect.fromRectAndRadius(rect, const Radius.circular(4)),
-              row == 0 && column == 1 ? accent : fill,
-            );
-          }
-        }
-        canvas.drawCircle(const Offset(38, 38), 4, accent);
-      case FeatureCardArtwork.learn:
-        final book = Path()
-          ..moveTo(5, 14)
-          ..quadraticBezierTo(16, 10, 24, 17)
-          ..quadraticBezierTo(32, 10, 43, 14)
-          ..lineTo(43, 37)
-          ..quadraticBezierTo(32, 34, 24, 40)
-          ..quadraticBezierTo(16, 34, 5, 37)
-          ..close();
-        canvas.drawPath(book, line);
-        canvas.drawLine(const Offset(24, 18), const Offset(24, 38), line);
-        canvas.drawLine(const Offset(10, 20), const Offset(18, 22), line);
-        canvas.drawLine(const Offset(30, 22), const Offset(38, 20), line);
-        canvas.drawCircle(const Offset(24, 9), 4, accent);
-      case FeatureCardArtwork.daily:
-        canvas.drawRRect(
-          RRect.fromRectAndRadius(
-            const Rect.fromLTWH(7, 10, 34, 31),
-            const Radius.circular(7),
-          ),
-          line,
-        );
-        canvas.drawLine(const Offset(7, 19), const Offset(41, 19), line);
-        canvas.drawLine(const Offset(16, 7), const Offset(16, 14), line);
-        canvas.drawLine(const Offset(32, 7), const Offset(32, 14), line);
-        for (final point in const [
-          Offset(16, 26),
-          Offset(25, 26),
-          Offset(34, 26),
-          Offset(16, 34),
-          Offset(25, 34),
-        ]) {
-          canvas.drawCircle(point, 1.8, accent);
-        }
-      case FeatureCardArtwork.progress:
-        canvas.drawLine(const Offset(8, 39), const Offset(41, 39), line);
-        for (final bar in const [
-          Rect.fromLTWH(11, 27, 6, 12),
-          Rect.fromLTWH(22, 20, 6, 19),
-          Rect.fromLTWH(33, 11, 6, 28),
-        ]) {
-          canvas.drawRRect(
-            RRect.fromRectAndRadius(bar, const Radius.circular(3)),
-            fill,
-          );
-        }
-        final trend = Path()
-          ..moveTo(11, 23)
-          ..lineTo(24, 16)
-          ..lineTo(35, 8);
-        canvas.drawPath(
-          trend,
-          Paint()
-            ..color = AppColors.gold
-            ..strokeWidth = 2.2
-            ..style = PaintingStyle.stroke
-            ..strokeCap = StrokeCap.round,
-        );
-        canvas.drawCircle(const Offset(35, 8), 3, accent);
-    }
-    canvas.restore();
-  }
-
-  @override
-  bool shouldRepaint(_FeatureIconPainter oldDelegate) =>
-      oldDelegate.artwork != artwork || oldDelegate.color != color;
 }

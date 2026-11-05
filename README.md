@@ -21,9 +21,9 @@ does not yet persist settings or scores, track streaks, or provide online conten
 ## UI V2: Phase A
 
 Phase A uses the approved written blue/purple/orange/teal/pink direction; no
-separate reference image was supplied. The blue header includes a local vector
-letter-grid illustration with a traditional toranam motif. No network images or
-fonts are required.
+separate reference image was supplied. The Home artwork milestone now replaces
+the code-drawn header/feature art with bundled original PNG illustrations.
+No network images or fonts are required.
 
 The four home actions are Classic Padakeli, Play & Learn, Daily Puzzle, and My
 Progress. Bottom navigation offers Home, Classic, Learn, and Progress. Android
@@ -51,6 +51,28 @@ Phase A code:
 
 Splash/onboarding, persistent progress/settings, achievements, sound, new kids
 games, and the remaining reusable components are not part of Phase A.
+
+## Original Home artwork milestone
+
+Home includes an illustrated orchard/lotus scene, two consistent original parrot
+poses, and matching Classic, Play & Learn, Daily, and Progress illustrations.
+Equal-height feature rows at normal sizes, content-driven large-text layouts,
+Continue Playing, keyboard/semantic activation, local typography, and existing
+gameplay are preserved. Daily and Progress remain Coming Soon.
+
+The parrot's restrained movement is a bob of static raster artwork, not
+expressive character animation. Repeating motion is explicitly gated by the
+selected Home tab, Settings visibility, app lifecycle, and reduced motion.
+See [the artwork manifest](assets/artwork/README.md) for generation briefs,
+source/provenance, transparency requirements, and unresolved license-term review.
+The named external reference screenshots were not supplied to this checkout.
+
+GitHub Actions uses Flutter 3.44.2 and runs formatting, analysis, tests (including
+asset decoding/alpha and hidden-screen motion regressions), and an
+offline-resource web build on PRs.
+Its `web-preview` artifact can be served locally for actual runtime review;
+it is a runnable app build, not a generated UI mockup. Native-device review is
+still required before release.
 
 ## Open in VS Code
 
