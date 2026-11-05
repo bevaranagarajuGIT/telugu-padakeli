@@ -71,7 +71,7 @@ class _HomeSceneryState extends State<HomeScenery>
   void _updateMotion() {
     final allowed =
         _foreground &&
-        TickerMode.of(context) &&
+        TickerMode.valuesOf(context).enabled &&
         !MediaQuery.disableAnimationsOf(context);
     if (allowed == _motionAllowed) return;
     _motionAllowed = allowed;
