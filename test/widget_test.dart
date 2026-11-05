@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:telugu_padakeli/app/navigation/app_shell.dart';
 import 'package:telugu_padakeli/app/theme/app_colors.dart';
 import 'package:telugu_padakeli/core/app_settings_controller.dart';
 import 'package:telugu_padakeli/main.dart';
 import 'package:telugu_padakeli/screens/home_screen.dart';
+import 'package:telugu_padakeli/shared/widgets/app_buttons.dart';
 import 'package:telugu_padakeli/shared/widgets/bottom_navigation.dart';
+import 'package:telugu_padakeli/shared/widgets/feature_card.dart';
 import 'package:telugu_padakeli/services/kids_question_service.dart';
 
 void main() {
@@ -163,6 +167,117 @@ void main() {
       find.byKey(const ValueKey('dashboard-entrance')),
     );
     expect(entrance.duration, Duration.zero);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('feature cards have matching heights within each normal row', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeScreen(
+          onClassic: () {},
+          onLearn: () {},
+          onProgress: () {},
+          onSettings: () {},
+        ),
+      ),
+    );
+
+    final heights = [
+      for (var index = 0; index < 4; index++)
+        tester.getSize(find.byType(FeatureCard).at(index)).height,
+    ];
+    expect(heights[0], heights[1]);
+    expect(heights[2], heights[3]);
+  });
+
+  testWidgets('coming-soon status is included in feature-card semantics', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(disableAnimations: true),
+          child: child!,
+        ),
+        home: HomeScreen(
+          onClassic: () {},
+          onLearn: () {},
+          onProgress: () {},
+          onSettings: () {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final semantics = tester.ensureSemantics();
+    await tester.pump();
+
+    expect(
+      find.bySemanticsLabel('నేటి పదకేళి, Daily Puzzle, Coming Soon'),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel('నా పురోగతి, My Progress, Coming Soon'),
+      findsOneWidget,
+    );
+    semantics.dispose();
+  });
+
+  testWidgets('dimensional button exposes button semantics and keyboard keys', (
+    tester,
+  ) async {
+    var activations = 0;
+    final semantics = tester.ensureSemantics();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: PrimaryButton(
+              label: 'Start Classic',
+              onPressed: () => activations++,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final button = tester.getSemantics(find.bySemanticsLabel('Start Classic'));
+    final buttonData = button.getSemanticsData();
+    expect(buttonData.flagsCollection.isButton, isTrue);
+    expect(buttonData.hasAction(SemanticsAction.tap), isTrue);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    expect(activations, 1);
+    await tester.sendKeyEvent(LogicalKeyboardKey.space);
+    expect(activations, 2);
+    semantics.dispose();
+  });
+
+  testWidgets('feature cards grow and remain scrollable at large text sizes', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: const TextScaler.linear(2)),
+          child: child!,
+        ),
+        home: HomeScreen(
+          onClassic: () {},
+          onLearn: () {},
+          onProgress: () {},
+          onSettings: () {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SingleChildScrollView), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

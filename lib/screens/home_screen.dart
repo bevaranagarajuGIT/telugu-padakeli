@@ -42,10 +42,15 @@ class HomeScreen extends StatelessWidget {
           tween: Tween(begin: 0, end: 1),
           duration: MediaQuery.disableAnimationsOf(context)
               ? Duration.zero
-              : const Duration(milliseconds: 350),
+              : const Duration(milliseconds: 420),
           curve: Curves.easeOutCubic,
-          builder: (context, value, child) =>
-              Opacity(opacity: 0.9 + 0.1 * value, child: child),
+          builder: (context, value, child) => Opacity(
+            opacity: value,
+            child: Transform.translate(
+              offset: Offset(0, 14 * (1 - value)),
+              child: child,
+            ),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -58,6 +63,16 @@ class HomeScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        Semantics(
+                          header: true,
+                          child: PremiumTeluguText(
+                            'Choose your game',
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
                         LayoutBuilder(
                           builder: (context, constraints) {
                             const gap = 14.0;
@@ -65,93 +80,198 @@ class HomeScreen extends StatelessWidget {
                                 MediaQuery.textScalerOf(context).scale(
                                   theme.textTheme.bodyLarge?.fontSize ?? 16,
                                 ) >
-                                22;
+                                18;
                             final columns =
                                 enlarged || constraints.maxWidth < 340
                                 ? 1
                                 : constraints.maxWidth >= 900
                                 ? 4
                                 : 2;
-                            final width =
-                                (constraints.maxWidth - gap * (columns - 1)) /
-                                columns;
-                            return Wrap(
-                              spacing: gap,
-                              runSpacing: gap,
-                              children: [
-                                SizedBox(
-                                  width: width,
-                                  child: FeatureCard(
-                                    title: 'పదకేళి ఆడండి',
-                                    subtitle: 'Classic Padakeli',
-                                    icon: Icons.grid_on_rounded,
-                                    background: AppColors.purple,
-                                    foreground: Colors.white,
-                                    onTap: onClassic,
+                            final cards = [
+                              FeatureCard(
+                                title: 'పదకేళి ఆడండి',
+                                subtitle: 'Classic Padakeli',
+                                icon: Icons.grid_on_rounded,
+                                artwork: FeatureCardArtwork.crossword,
+                                background: AppColors.purple,
+                                foreground: Colors.white,
+                                onTap: onClassic,
+                              ),
+                              FeatureCard(
+                                title: 'చిన్నారుల ఆటలు',
+                                subtitle: 'Play & Learn',
+                                icon: Icons.child_care_rounded,
+                                artwork: FeatureCardArtwork.learn,
+                                background: AppColors.orange,
+                                foreground: AppColors.ink,
+                                onTap: onLearn,
+                              ),
+                              FeatureCard(
+                                title: 'నేటి పదకేళి',
+                                subtitle: 'Daily Puzzle',
+                                icon: Icons.today_rounded,
+                                artwork: FeatureCardArtwork.daily,
+                                background: AppColors.teal,
+                                foreground: AppColors.ink,
+                                status: 'Coming Soon',
+                                onTap: () => _dailyComingSoon(context),
+                              ),
+                              FeatureCard(
+                                title: 'నా పురోగతి',
+                                subtitle: 'My Progress',
+                                icon: Icons.insights_rounded,
+                                artwork: FeatureCardArtwork.progress,
+                                background: AppColors.pink,
+                                foreground: AppColors.ink,
+                                status: 'Coming Soon',
+                                onTap: onProgress,
+                              ),
+                            ];
+                            if (columns == 1) {
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  for (
+                                    var index = 0;
+                                    index < cards.length;
+                                    index++
+                                  )
+                                    Padding(
+                                      padding: EdgeInsets.only(
+                                        bottom: index == cards.length - 1
+                                            ? 0
+                                            : gap,
+                                      ),
+                                      child: cards[index],
+                                    ),
+                                ],
+                              );
+                            }
+
+                            final rows = <Widget>[];
+                            for (
+                              var start = 0;
+                              start < cards.length;
+                              start += columns
+                            ) {
+                              final rowCards = cards
+                                  .skip(start)
+                                  .take(columns)
+                                  .toList();
+                              rows.add(
+                                Padding(
+                                  padding: EdgeInsets.only(
+                                    bottom: start + columns >= cards.length
+                                        ? 0
+                                        : gap,
+                                  ),
+                                  child: SizedBox(
+                                    height: 214,
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        for (
+                                          var index = 0;
+                                          index < rowCards.length;
+                                          index++
+                                        )
+                                          Expanded(
+                                            child: Padding(
+                                              padding: EdgeInsets.only(
+                                                right:
+                                                    index == rowCards.length - 1
+                                                    ? 0
+                                                    : gap,
+                                              ),
+                                              child: rowCards[index],
+                                            ),
+                                          ),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                                SizedBox(
-                                  width: width,
-                                  child: FeatureCard(
-                                    title: 'చిన్నారుల ఆటలు',
-                                    subtitle: 'Play & Learn',
-                                    icon: Icons.child_care_rounded,
-                                    background: AppColors.orange,
-                                    foreground: AppColors.ink,
-                                    onTap: onLearn,
-                                  ),
-                                ),
-                                SizedBox(
-                                  width: width,
-                                  child: FeatureCard(
-                                    title: 'నేటి పదకేళి',
-                                    subtitle: 'Daily Puzzle',
-                                    icon: Icons.today_rounded,
-                                    background: AppColors.teal,
-                                    foreground: AppColors.ink,
-                                    onTap: () => _dailyComingSoon(context),
-                                  ),
-                                ),
-                                SizedBox(
-                                  width: width,
-                                  child: FeatureCard(
-                                    title: 'నా పురోగతి',
-                                    subtitle: 'My Progress',
-                                    icon: Icons.insights_rounded,
-                                    background: AppColors.pink,
-                                    foreground: AppColors.ink,
-                                    onTap: onProgress,
-                                  ),
-                                ),
-                              ],
+                              );
+                            }
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: rows,
                             );
                           },
                         ),
-                        const SizedBox(height: 28),
-                        Semantics(
-                          header: true,
-                          child: PremiumTeluguText(
-                            'Continue Playing',
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.w700,
+                        const SizedBox(height: 24),
+                        DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: scheme.brightness == Brightness.dark
+                                ? scheme.surfaceContainerHigh
+                                : scheme.surface,
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(color: scheme.outlineVariant),
+                            boxShadow: [
+                              BoxShadow(
+                                color: scheme.shadow.withValues(alpha: 0.07),
+                                offset: const Offset(0, 5),
+                                blurRadius: 12,
+                              ),
+                            ],
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(18),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      width: 42,
+                                      height: 42,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.gold.withValues(
+                                          alpha: 0.28,
+                                        ),
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                      child: const Icon(
+                                        Icons.play_circle_fill_rounded,
+                                        color: AppColors.actionBlue,
+                                        size: 28,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Semantics(
+                                        header: true,
+                                        child: PremiumTeluguText(
+                                          'Continue Playing',
+                                          style: theme.textTheme.titleLarge
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                PremiumTeluguText(
+                                  hasActivePuzzle
+                                      ? 'మీ పదకేళిని కొనసాగించండి.'
+                                      : 'ఆటను ప్రారంభించి ఇక్కడ నుంచి కొనసాగించండి.',
+                                  style: theme.textTheme.bodyLarge,
+                                ),
+                                const SizedBox(height: 14),
+                                PrimaryButton(
+                                  label: hasActivePuzzle
+                                      ? 'Resume Classic'
+                                      : 'Start Classic',
+                                  icon: hasActivePuzzle
+                                      ? Icons.play_arrow_rounded
+                                      : Icons.add_rounded,
+                                  onPressed: onClassic,
+                                ),
+                              ],
                             ),
                           ),
-                        ),
-                        PremiumTeluguText(
-                          hasActivePuzzle
-                              ? 'మీ పదకేళిని కొనసాగించండి.'
-                              : 'ఆటను ప్రారంభించి ఇక్కడ నుంచి కొనసాగించండి.',
-                          style: theme.textTheme.bodyLarge,
-                        ),
-                        const SizedBox(height: 12),
-                        PrimaryButton(
-                          label: hasActivePuzzle
-                              ? 'Resume Classic'
-                              : 'Start Classic',
-                          icon: hasActivePuzzle
-                              ? Icons.play_arrow_rounded
-                              : Icons.add_rounded,
-                          onPressed: onClassic,
                         ),
                         const SizedBox(height: 28),
                         DecoratedBox(
@@ -160,6 +280,11 @@ class HomeScreen extends StatelessWidget {
                                 ? scheme.surfaceContainerHigh
                                 : AppColors.lightBlue,
                             borderRadius: BorderRadius.circular(24),
+                            border: Border.all(
+                              color: scheme.brightness == Brightness.dark
+                                  ? scheme.outlineVariant
+                                  : AppColors.blue.withValues(alpha: 0.12),
+                            ),
                           ),
                           child: Padding(
                             padding: const EdgeInsets.all(20),
