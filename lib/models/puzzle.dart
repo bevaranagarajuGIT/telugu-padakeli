@@ -39,6 +39,79 @@ class Puzzle {
     );
   }
 
+  /// Reject unusable content before it can reach the crossword UI.
+  void validate() {
+    if (gridSize <= 0 ||
+        rows.length != gridSize ||
+        rows.any((row) => row.length != gridSize)) {
+      throw const FormatException('Puzzle dimensions do not match gridSize.');
+    }
+    final covered = <int>{};
+    final starts = <int, int>{};
+    final numbers = <int, int>{};
+    final teluguStart = RegExp(r'^[అ-హౘ-ౡ]');
+    for (var row = 0; row < gridSize; row++) {
+      for (var column = 0; column < gridSize; column++) {
+        final cell = rows[row][column];
+        if (cell != '#' && !teluguStart.hasMatch(cell)) {
+          throw const FormatException('Cells must start with a Telugu letter.');
+        }
+      }
+    }
+    for (final direction in PuzzleDirection.values) {
+      final clues = direction == PuzzleDirection.across
+          ? acrossClues
+          : downClues;
+      final seenStarts = <int>{};
+      for (final clue in clues) {
+        final cells = cellsForClue(clue, direction);
+        if (cells.isEmpty || clue.number <= 0 || clue.clue.trim().isEmpty) {
+          throw const FormatException(
+            'Clue has an invalid start or description.',
+          );
+        }
+        final start = cells.first;
+        final previousRow =
+            clue.row - (direction == PuzzleDirection.down ? 1 : 0);
+        final previousColumn =
+            clue.column - (direction == PuzzleDirection.across ? 1 : 0);
+        if (!seenStarts.add(start) ||
+            (previousRow >= 0 &&
+                previousColumn >= 0 &&
+                !isBlocked(previousRow, previousColumn))) {
+          throw const FormatException('Clue must start a unique word.');
+        }
+        if ((starts.containsKey(start) && starts[start] != clue.number) ||
+            (numbers.containsKey(clue.number) &&
+                numbers[clue.number] != start)) {
+          throw const FormatException('Clue numbering is inconsistent.');
+        }
+        starts[start] = clue.number;
+        numbers[clue.number] = start;
+        final answer = cells
+            .map((index) => answerAt(index ~/ gridSize, index % gridSize))
+            .join();
+        if (answer != clue.answer) {
+          throw const FormatException(
+            'Clue answer does not match its grid cells.',
+          );
+        }
+        covered.addAll(cells);
+      }
+    }
+    for (var row = 0; row < gridSize; row++) {
+      for (var column = 0; column < gridSize; column++) {
+        if (!isBlocked(row, column) &&
+            !covered.contains(row * gridSize + column)) {
+          throw const FormatException('Every playable cell needs a clue.');
+        }
+      }
+    }
+    if (covered.isEmpty) {
+      throw const FormatException('Puzzle has no playable cells.');
+    }
+  }
+
   bool isBlocked(int row, int column) => rows[row][column] == '#';
 
   String answerAt(int row, int column) => rows[row][column];

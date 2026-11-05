@@ -2,19 +2,25 @@ import 'package:flutter/material.dart';
 
 import '../models/puzzle.dart';
 import '../services/local_puzzle_repository.dart';
+import '../services/puzzle_repository.dart';
 import '../widgets/app_page.dart';
 import '../widgets/crossword_grid.dart';
 import '../widgets/section_title.dart';
 
 class PadakeliScreen extends StatefulWidget {
-  const PadakeliScreen({super.key});
+  const PadakeliScreen({
+    this.repository = const LocalPuzzleRepository(),
+    super.key,
+  });
+
+  final PuzzleRepository repository;
 
   @override
   State<PadakeliScreen> createState() => _PadakeliScreenState();
 }
 
 class _PadakeliScreenState extends State<PadakeliScreen> {
-  final _repository = const LocalPuzzleRepository();
+  String? _loadError;
   List<Puzzle>? _puzzles;
   Puzzle? _puzzle;
   late List<List<TextEditingController>> _controllers;
@@ -45,11 +51,23 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
   }
 
   Future<void> _loadPuzzles() async {
-    final puzzles = await _repository.getPuzzles();
-    if (!mounted) {
-      return;
+    setState(() => _loadError = null);
+    try {
+      final puzzles = await widget.repository.getPuzzles();
+      if (puzzles.isEmpty) {
+        throw const FormatException('No puzzles are available.');
+      }
+      for (final puzzle in puzzles) {
+        puzzle.validate();
+      }
+      if (!mounted) return;
+      setState(() => _puzzles = puzzles);
+    } catch (_) {
+      if (!mounted) return;
+      setState(
+        () => _loadError = 'పదకేళిని లోడ్ చేయలేకపోయాము. మళ్ళీ ప్రయత్నించండి.',
+      );
     }
-    setState(() => _puzzles = puzzles);
   }
 
   void _loadPuzzle(String level) {
@@ -57,7 +75,8 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
     if (puzzles == null) {
       return;
     }
-    final puzzle = puzzles.firstWhere((puzzle) => puzzle.level == level);
+    final puzzle = puzzles.where((puzzle) => puzzle.level == level).firstOrNull;
+    if (puzzle == null) return;
     if (_puzzle != null) {
       _disposeControllers();
     }
@@ -146,7 +165,10 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
       return;
     }
     if (_selectedCells.contains(index)) {
-      setState(() => _selectedCellIndex = index);
+      setState(() {
+        _selectedCellIndex = index;
+        _message = null;
+      });
       return;
     }
 
@@ -169,7 +191,11 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
         }
       }
     }
-    setState(() => _selectedCellIndex = index);
+    setState(() {
+      _selectedCellIndex = index;
+      _selectedClue = null;
+      _message = null;
+    });
   }
 
   void _enterAkshara(String akshara) {
@@ -331,6 +357,24 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
   @override
   Widget build(BuildContext context) {
     final puzzle = _puzzle;
+    if (_loadError != null) {
+      return AppPage(
+        title: 'Classic Padakeli',
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(_loadError!, key: const ValueKey('puzzle-load-error')),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              key: const ValueKey('retry-puzzles'),
+              onPressed: _loadPuzzles,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('మళ్ళీ ప్రయత్నించండి (Retry)'),
+            ),
+          ],
+        ),
+      );
+    }
     if (_puzzles == null) {
       return AppPage(
         title: 'Classic Padakeli',
@@ -340,7 +384,10 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
     if (_selectedLevel == null) {
       return AppPage(
         title: 'Classic Padakeli',
-        child: _DifficultySelection(onSelect: _loadPuzzle),
+        child: _DifficultySelection(
+          onSelect: _loadPuzzle,
+          availableLevels: _puzzles!.map((puzzle) => puzzle.level).toSet(),
+        ),
       );
     }
     return AppPage(
@@ -409,7 +456,7 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
                     ),
                     OutlinedButton.icon(
                       key: const ValueKey('open-hints'),
-                      onPressed: _showHints,
+                      onPressed: _selectedClue == null ? null : _showHints,
                       icon: const Icon(Icons.lightbulb_outline_rounded),
                       label: const Text('Hints'),
                     ),
@@ -449,7 +496,12 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
 }
 
 class _DifficultySelection extends StatelessWidget {
-  const _DifficultySelection({required this.onSelect});
+  const _DifficultySelection({
+    required this.onSelect,
+    required this.availableLevels,
+  });
+
+  final Set<String> availableLevels;
 
   final ValueChanged<String> onSelect;
 
@@ -457,8 +509,13 @@ class _DifficultySelection extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final difficulties = [
-      ('Beginner', 'ప్రారంభ స్థాయి', 'beginner', true),
-      ('Easy', 'సులభ స్థాయి', 'easy', true),
+      (
+        'Beginner',
+        'ప్రారంభ స్థాయి',
+        'beginner',
+        availableLevels.contains('beginner'),
+      ),
+      ('Easy', 'సులభ స్థాయి', 'easy', availableLevels.contains('easy')),
       ('Medium', 'మధ్యస్థ స్థాయి', null, false),
       ('Hard', 'కఠిన స్థాయి', null, false),
       ('Expert', 'నిపుణ స్థాయి', null, false),

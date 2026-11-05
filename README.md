@@ -7,7 +7,7 @@ and older adults. Android and iOS platform projects are included.
 
 - Responsive home screen with the Telugu title, Classic Padakeli, Kids Learning
   Games, Daily Puzzle, and My Progress cards.
-- Classic 5x5 sample crossword with clues, answer checking, and reset.
+- Classic connected Telugu sample crosswords with clues, answer checking, and reset.
 - Kids missing-letter game with retries and one point per correctly answered
   question.
 - Font-size and dark-mode settings through the home screen's settings button.
@@ -27,9 +27,9 @@ fonts are required.
 
 The four home actions are Classic Padakeli, Play & Learn, Daily Puzzle, and My
 Progress. Bottom navigation offers Home, Classic, Learn, and Progress. Android
-Back returns from a destination to Home. The existing sample games remain
-unchanged in this phase; the multiple-choice kids dashboard, corrected crossword
-content/akshara engine, and difficulty selection belong to Phases B-D.
+Back returns from a destination to Home. Classic includes Beginner and Easy puzzles, clue selection, an akshara palette,
+and hints. Kids mode includes five levels with three multiple-choice questions
+each. Puzzle data is validated on loading, with a Retry action if loading fails.
 
 Continue Playing retains the current classic puzzle while switching tabs within
 the same app session. It does not claim saved progress after closing the app.
@@ -161,3 +161,10 @@ development signing and is not store-ready.
 Validate on real Android and iOS hardware, including large-text accessibility and
 screen readers. Replace and validate the sample puzzle content before release.
 No iOS build or App Store readiness is implied by generating the iOS folder.
+
+## Current game content
+
+Classic has two connected 3x3 samples. Each cell contains a complete Telugu
+akshara and belongs to a clue. Medium, Hard, and Expert Classic puzzles remain
+coming soon. Kids mode has 15 questions across five levels, a final score, and
+a restart action. Settings, scores, and puzzle progress remain in memory only.

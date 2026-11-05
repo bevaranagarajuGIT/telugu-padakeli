@@ -43,11 +43,14 @@ void main() {
     await tester.tap(find.text('Play & Learn'));
     await tester.pumpAndSettle();
 
+    expect(find.byKey(const ValueKey('kids-level-status-0')), findsOneWidget);
+    expect(find.byKey(const ValueKey('kids-question-panel')), findsOneWidget);
+    expect(find.text('ప్రశ్న 1 / 3'), findsOneWidget);
     expect(find.byType(TextField), findsNothing);
-    await tester.tap(find.byKey(const ValueKey('kids-answer-ల')));
+    await tester.tap(find.byKey(const ValueKey('kids-answer-లం')));
     await tester.tap(find.text('Check'));
     await tester.pump();
-    expect(find.text('స్కోరు: 1'), findsOneWidget);
+    expect(find.text('★ 1'), findsOneWidget);
     expect(find.text('సరైంది! మీ స్కోరు పెరిగింది.'), findsOneWidget);
     expect(find.byKey(const ValueKey('kids-feedback-success')), findsOneWidget);
     expect(
@@ -62,16 +65,16 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 1200));
     await tester.pumpAndSettle();
-    expect(find.text('అ_ము'), findsOneWidget);
+    expect(find.text('అ_'), findsOneWidget);
 
-    await tester.tap(find.byKey(const ValueKey('kids-answer-న')));
+    await tester.tap(find.byKey(const ValueKey('kids-answer-న్న')));
     await tester.tap(find.text('Check'));
     await tester.pumpAndSettle();
     expect(find.text('తప్పు సమాధానం. మళ్ళీ ప్రయత్నించండి.'), findsOneWidget);
     expect(find.byKey(const ValueKey('kids-feedback-error')), findsOneWidget);
-    expect(find.text('స్కోరు: 1'), findsOneWidget);
+    expect(find.text('★ 1'), findsOneWidget);
 
-    await tester.tap(find.byKey(const ValueKey('kids-answer-మ')));
+    await tester.tap(find.byKey(const ValueKey('kids-answer-మ్మ')));
     await tester.tap(find.text('Check'));
     await tester.pump(const Duration(milliseconds: 1200));
     await tester.pumpAndSettle();
@@ -83,7 +86,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('స్థాయి 2 · Easy'), findsOneWidget);
     expect(find.text('సులభ స్థాయి'), findsOneWidget);
-    expect(find.text('ఆ_ు'), findsOneWidget);
+    expect(find.text('ఆ_'), findsOneWidget);
   });
 
   testWidgets('wrong answers allow retries and next question earns a point', (
@@ -97,29 +100,29 @@ void main() {
 
     await tester.tap(find.text('Check'));
     await tester.pumpAndSettle();
-    expect(find.text('స్కోరు: 0'), findsOneWidget);
+    expect(find.text('★ 0'), findsOneWidget);
     expect(find.text('ఒక అక్షరం ఎంచుకోండి.'), findsOneWidget);
 
-    await tester.tap(find.byKey(const ValueKey('kids-answer-ప')));
+    await tester.tap(find.byKey(const ValueKey('kids-answer-పం')));
     await tester.tap(find.text('Check'));
     await tester.pumpAndSettle();
-    expect(find.text('స్కోరు: 0'), findsOneWidget);
+    expect(find.text('★ 0'), findsOneWidget);
     expect(find.byKey(const ValueKey('kids-feedback-error')), findsOneWidget);
 
-    await tester.tap(find.byKey(const ValueKey('kids-answer-ల')));
+    await tester.tap(find.byKey(const ValueKey('kids-answer-లం')));
     await tester.tap(find.text('Check'));
     await tester.pump(const Duration(milliseconds: 1200));
     await tester.pumpAndSettle();
-    expect(find.text('స్కోరు: 1'), findsOneWidget);
-    expect(find.text('అ_ము'), findsOneWidget);
+    expect(find.text('★ 1'), findsOneWidget);
+    expect(find.text('అ_'), findsOneWidget);
     expect(find.text('సరైంది! మీ స్కోరు పెరిగింది.'), findsNothing);
 
-    await tester.tap(find.byKey(const ValueKey('kids-answer-మ')));
+    await tester.tap(find.byKey(const ValueKey('kids-answer-మ్మ')));
     await tester.tap(find.text('Check'));
     await tester.pump(const Duration(milliseconds: 1200));
     await tester.pumpAndSettle();
     expect(find.text('పా_శాల'), findsOneWidget);
-    expect(find.text('స్కోరు: 2'), findsOneWidget);
+    expect(find.text('★ 2'), findsOneWidget);
   });
 
   testWidgets('progress card opens an honest coming-soon screen', (
@@ -189,14 +192,14 @@ void main() {
     expect(find.text('స్థాయిని ఎంచుకోండి'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('difficulty-Beginner')));
     await tester.pumpAndSettle();
-    for (final number in ['1', '2', '3', '4', '5']) {
+    for (final number in ['1', '2']) {
       expect(find.text(number, skipOffstage: false), findsOneWidget);
     }
     expect(find.text('అడ్డం (Across →)'), findsOneWidget);
     expect(find.text('నిలువు (Down ↓)'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('crossword-cell-0')));
-    await tester.ensureVisible(find.byKey(const ValueKey('akshara-క')));
-    await tester.tap(find.byKey(const ValueKey('akshara-క')));
+    await tester.ensureVisible(find.byKey(const ValueKey('akshara-ఆ')));
+    await tester.tap(find.byKey(const ValueKey('akshara-ఆ')));
 
     await tester.tap(find.byKey(const ValueKey('nav-home')));
     await tester.pumpAndSettle();
@@ -208,7 +211,7 @@ void main() {
       tester
           .widget<Text>(find.byKey(const ValueKey('crossword-cell-value-0')))
           .data,
-      'క',
+      'ఆ',
     );
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();

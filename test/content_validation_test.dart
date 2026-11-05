@@ -1,0 +1,182 @@
+import 'dart:convert';
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:telugu_padakeli/data/puzzle_data_source.dart';
+import 'package:telugu_padakeli/screens/kids_game_screen.dart';
+import 'package:telugu_padakeli/screens/padakeli_screen.dart';
+import 'package:telugu_padakeli/services/kids_question_service.dart';
+import 'package:telugu_padakeli/services/local_puzzle_repository.dart';
+
+class _StringSource implements PuzzleDataSource {
+  _StringSource(this.value);
+  final String value;
+  @override
+  Future<String> loadPuzzlesJson() async => value;
+}
+
+class _RetrySource implements PuzzleDataSource {
+  int attempts = 0;
+  @override
+  Future<String> loadPuzzlesJson() async {
+    if (attempts++ == 0) throw StateError('Asset unavailable');
+    return rootBundle.loadString('assets/data/sample_puzzles.json');
+  }
+}
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  test(
+    'all bundled puzzles validate and every answer matches its cells',
+    () async {
+      final puzzles = await const LocalPuzzleRepository().getPuzzles();
+      expect(puzzles.map((p) => p.level), ['beginner', 'easy']);
+      for (final puzzle in puzzles) {
+        expect(puzzle.validate, returnsNormally);
+      }
+    },
+  );
+
+  for (final invalid in ['[]', '{', '[{}]']) {
+    test('invalid or empty puzzle JSON is rejected: $invalid', () async {
+      final repository = LocalPuzzleRepository(
+        dataSource: _StringSource(invalid),
+      );
+      await expectLater(repository.getPuzzles(), throwsA(isA<Exception>()));
+    });
+  }
+
+  for (final corruption in [
+    'dimensions',
+    'unclued',
+    'mark',
+    'answer',
+    'number',
+  ]) {
+    test('rejects puzzle with invalid $corruption', () async {
+      final raw = await rootBundle.loadString(
+        'assets/data/sample_puzzles.json',
+      );
+      final data = jsonDecode(raw) as List<dynamic>;
+      final puzzle = data.first as Map<String, dynamic>;
+      final rows = puzzle['rows'] as List<dynamic>;
+      final clues = puzzle['clues'] as Map<String, dynamic>;
+      final across = clues['across'] as List<dynamic>;
+      switch (corruption) {
+        case 'dimensions':
+          puzzle['gridSize'] = 4;
+        case 'unclued':
+          (rows[2] as List<dynamic>)[2] = 'క';
+        case 'mark':
+          (rows[1] as List<dynamic>)[0] = 'ి';
+        case 'answer':
+          (across.first as Map<String, dynamic>)['answer'] = 'తప్పు';
+        case 'number':
+          (across.last as Map<String, dynamic>)['number'] = 1;
+      }
+      final repository = LocalPuzzleRepository(
+        dataSource: _StringSource(jsonEncode(data)),
+      );
+      await expectLater(repository.getPuzzles(), throwsFormatException);
+    });
+  }
+
+  test('kids prompts reconstruct the intended Telugu words', () {
+    final questions = const KidsQuestionService()
+        .getLevels()
+        .expand((l) => l.questions)
+        .toList();
+    const words = [
+      'కమలం',
+      'అమ్మ',
+      'పాఠశాల',
+      'ఆకు',
+      'పూలు',
+      'గోరు',
+      'మామిడి',
+      'పశువు',
+      'చెట్టు',
+      'పర్యావరణం',
+      'స్వాతంత్ర్యం',
+      'నైపుణ్యం',
+      'సామాజికం',
+      'విద్యార్థి',
+      'సామర్థ్యం',
+    ];
+    expect(questions.length, words.length);
+    for (var i = 0; i < questions.length; i++) {
+      final question = questions[i];
+      expect('_'.allMatches(question.prompt).length, 1);
+      expect(question.prompt.replaceFirst('_', question.answer), words[i]);
+      expect(question.options.toSet().length, question.options.length);
+      expect(question.options.where((o) => o == question.answer).length, 1);
+    }
+  });
+
+  testWidgets('failed puzzle load shows Retry and recovers', (tester) async {
+    final source = _RetrySource();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: PadakeliScreen(
+          repository: LocalPuzzleRepository(dataSource: source),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('puzzle-load-error')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('retry-puzzles')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('difficulty-Beginner')), findsOneWidget);
+    expect(find.byKey(const ValueKey('puzzle-load-error')), findsNothing);
+    expect(source.attempts, 2);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'invalid puzzle content shows recovery instead of an endless spinner',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PadakeliScreen(
+            repository: LocalPuzzleRepository(dataSource: _StringSource('[]')),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('retry-puzzles')), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('all five kids levels finish with a final score and restart', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const MaterialApp(home: KidsGameScreen()));
+    final levels = const KidsQuestionService().getLevels();
+    for (final level in levels) {
+      for (final question in level.questions) {
+        final answer = find.byKey(ValueKey('kids-answer-${question.answer}'));
+        await tester.ensureVisible(answer);
+        await tester.tap(answer);
+        final check = find.text('Check');
+        await tester.ensureVisible(check);
+        await tester.tap(check);
+        await tester.pump(const Duration(milliseconds: 1200));
+        await tester.pumpAndSettle();
+      }
+    }
+    expect(find.text('మొత్తం స్కోరు: 15 / 15'), findsOneWidget);
+    expect(
+      find.text('అభినందనలు! అన్ని 5 స్థాయిలను పూర్తి చేశారు.'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('త్వరలో'), findsNothing);
+    await tester.tap(find.text('మళ్లీ ఆడండి'));
+    await tester.pumpAndSettle();
+    expect(find.text('★ 0'), findsOneWidget);
+    expect(find.text('కమ_'), findsOneWidget);
+  });
+}

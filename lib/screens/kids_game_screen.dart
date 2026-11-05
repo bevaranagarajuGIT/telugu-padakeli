@@ -30,6 +30,15 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
 
   KidsQuestionLevel get _currentLevel => _levels[_levelIndex];
   KidsQuestion get _currentQuestion => _currentLevel.questions[_index];
+  Color get _levelColor => const [
+    AppColors.teal,
+    AppColors.blue,
+    AppColors.purple,
+    AppColors.orange,
+    AppColors.pink,
+  ][_levelIndex];
+  Color get _levelForeground =>
+      _levelIndex == 1 || _levelIndex == 2 ? Colors.white : AppColors.ink;
 
   @override
   void dispose() {
@@ -152,13 +161,13 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'తదుపరి స్థాయి: మధ్యస్థం',
+              'మొత్తం స్కోరు: $_score / ${_levels.fold<int>(0, (total, level) => total + level.questions.length)}',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 8),
-            const Text(
-              'మధ్యస్థ స్థాయి త్వరలో వస్తుంది.',
+            Text(
+              'అభినందనలు! అన్ని ${_levels.length} స్థాయిలను పూర్తి చేశారు.',
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -177,55 +186,141 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Container(
+            key: ValueKey('kids-level-status-$_levelIndex'),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: _levelColor,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.stars_rounded,
+                      color: _levelForeground,
+                      size: 28,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'స్థాయి ${_levelIndex + 1} · ${_currentLevel.name}',
+                            key: const ValueKey('kids-level'),
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: _levelForeground,
+                                ),
+                          ),
+                          Text(
+                            _currentLevel.title,
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(color: _levelForeground),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _levelForeground.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '★ $_score',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: _levelForeground,
+                            ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Text(
+                      'ప్రశ్న ${_index + 1} / ${_currentLevel.questions.length}',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: _levelForeground,
+                      ),
+                    ),
+                    const Spacer(),
+                    for (
+                      var index = 0;
+                      index < _currentLevel.questions.length;
+                      index++
+                    )
+                      Container(
+                        key: ValueKey('kids-question-progress-$index'),
+                        width: 10,
+                        height: 10,
+                        margin: const EdgeInsets.only(left: 6),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: _levelForeground.withValues(
+                            alpha: index <= _index ? 1 : 0.3,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
           Card(
-            color: scheme.tertiaryContainer,
+            key: const ValueKey('kids-question-panel'),
+            color: scheme.brightness == Brightness.dark
+                ? scheme.surfaceContainerHigh
+                : AppColors.lightBlue,
             child: Padding(
-              padding: const EdgeInsets.all(18),
+              padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
                   Text(
-                    'స్కోరు: $_score',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: scheme.onTertiaryContainer,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'స్థాయి ${_levelIndex + 1} · ${_currentLevel.name}',
-                    key: const ValueKey('kids-level'),
+                    'ప్రశ్న',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
-                      color: scheme.onTertiaryContainer,
+                      color: scheme.onSurface,
                     ),
                   ),
-                  Text(
-                    _currentLevel.title,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: scheme.onTertiaryContainer,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'ప్రశ్న ${_index + 1} / ${_currentLevel.questions.length}',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: scheme.onTertiaryContainer,
-                    ),
-                  ),
-                  const SizedBox(height: 22),
+                  const SizedBox(height: 12),
                   Text(
                     _currentQuestion.prompt,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.displayMedium?.copyWith(
                       fontWeight: FontWeight.w700,
-                      color: scheme.onTertiaryContainer,
+                      color: scheme.onSurface,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _currentQuestion.hint,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: scheme.onTertiaryContainer),
+                  const SizedBox(height: 12),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.lightbulb_outline_rounded,
+                        color: scheme.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _currentQuestion.hint,
+                          style: Theme.of(context).textTheme.bodyLarge
+                              ?.copyWith(color: scheme.onSurfaceVariant),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

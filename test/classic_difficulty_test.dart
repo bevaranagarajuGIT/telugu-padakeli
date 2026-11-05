@@ -28,7 +28,7 @@ void main() {
       '1. చెప్పే కథ',
     );
 
-    for (final entry in {0: 'క', 1: 'థ', 3: 'ల', 6: 'ం'}.entries) {
+    for (final entry in {0: 'క', 1: 'థ', 3: 'లం'}.entries) {
       final cell = find.byKey(ValueKey('crossword-cell-${entry.key}'));
       await tester.ensureVisible(cell);
       await tester.tap(cell);
@@ -50,7 +50,7 @@ void main() {
     await tester.pump();
     expect(find.byKey(const ValueKey('selected-cell')), findsOneWidget);
 
-    final ka = find.byKey(const ValueKey('akshara-క'));
+    final ka = find.byKey(const ValueKey('akshara-ఆ'));
     await tester.ensureVisible(ka);
     await tester.tap(ka);
     await tester.pump();
@@ -58,9 +58,9 @@ void main() {
       tester
           .widget<Text>(find.byKey(const ValueKey('crossword-cell-value-0')))
           .data,
-      'క',
+      'ఆ',
     );
-    final ma = find.byKey(const ValueKey('akshara-మ'));
+    final ma = find.byKey(const ValueKey('akshara-ట'));
     await tester.ensureVisible(ma);
     await tester.tap(ma);
     await tester.pump();
@@ -68,26 +68,26 @@ void main() {
       tester
           .widget<Text>(find.byKey(const ValueKey('crossword-cell-value-0')))
           .data,
-      'క',
+      'ఆ',
     );
     expect(
       tester
           .widget<Text>(find.byKey(const ValueKey('crossword-cell-value-1')))
           .data,
-      'మ',
+      'ట',
     );
 
     await tester.ensureVisible(find.byKey(const ValueKey('open-hints')));
     await tester.tap(find.byKey(const ValueKey('open-hints')));
     await tester.pumpAndSettle();
-    expect(find.text('నీటిలో పూసే పువ్వు'), findsOneWidget);
+    expect(find.text('పిల్లలు కలిసి ఆడేది'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('hint-reveal-first')));
     await tester.pumpAndSettle();
     expect(
       tester
           .widget<Text>(find.byKey(const ValueKey('crossword-cell-value-0')))
           .data,
-      'క',
+      'ఆ',
     );
 
     await tester.ensureVisible(find.byKey(const ValueKey('open-hints')));
@@ -97,9 +97,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(
       tester
-          .widget<Text>(find.byKey(const ValueKey('crossword-cell-value-3')))
+          .widget<Text>(find.byKey(const ValueKey('crossword-cell-value-1')))
           .data,
-      'ం',
+      'ట',
     );
 
     await tester.ensureVisible(find.text('నిలువు (Down)'));
@@ -107,7 +107,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(
       tester.widget<Text>(find.byKey(const ValueKey('selected-clue'))).data,
-      '1. కథలో మొదటి అక్షరాలు',
+      '1. మన పైన నీలంగా కనిపించేది',
     );
     expect(
       tester
@@ -116,16 +116,16 @@ void main() {
       isTrue,
     );
 
-    final downClueTwo = find.byKey(const ValueKey('clue-down-2'));
+    final downClueTwo = find.byKey(const ValueKey('clue-across-2'));
     await tester.ensureVisible(downClueTwo);
     await tester.tap(downClueTwo);
     await tester.pump();
     expect(
       tester.widget<Text>(find.byKey(const ValueKey('selected-clue'))).data,
-      '2. చిన్న పదం',
+      '2. ఊదితే శబ్దం చేసే సముద్రపు గుల్ల',
     );
     expect(
-      find.byKey(const ValueKey('crossword-cell-container-12')),
+      find.byKey(const ValueKey('crossword-cell-container-7')),
       findsOneWidget,
     );
   });
