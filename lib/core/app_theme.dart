@@ -31,12 +31,14 @@ class AppTheme {
   }
 
   static ThemeData _theme(ColorScheme colorScheme, double fontScale) {
-    final base = ThemeData(
+    final material = ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
       fontFamily: PremiumTeluguText.fontFamily,
       fontFamilyFallback: const ['Roboto'],
     );
+    // ThemeData's paint styles have no sizes until locale geometry is merged.
+    final base = ThemeData.localize(material, material.typography.englishLike);
 
     return base.copyWith(
       scaffoldBackgroundColor: colorScheme.brightness == Brightness.dark
@@ -47,6 +49,7 @@ class AppTheme {
         colorScheme.onSurface,
         fontScale,
       ),
+      primaryTextTheme: base.primaryTextTheme.apply(fontSizeFactor: fontScale),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           minimumSize: const Size.fromHeight(60),
@@ -115,10 +118,6 @@ class AppTheme {
     if (style == null || fontSize == null) {
       return style;
     }
-    return style.copyWith(
-      fontSize: fontSize * scale,
-      height: PremiumTeluguText.lineHeight,
-      leadingDistribution: TextLeadingDistribution.even,
-    );
+    return style.copyWith(fontSize: fontSize * scale);
   }
 }

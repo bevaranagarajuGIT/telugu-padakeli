@@ -39,6 +39,11 @@ My Progress remains the existing honest placeholder until Phase E.
 Typography offers normal (1x), large (1.2x), and extra-large (1.4x) app sizes,
 on top of the system's accessibility scaling. Navigation labels adapt to icon
 destinations with accessible labels/tooltips at extreme text sizes.
+Material text geometry is resolved before applying the app preset, including
+navigation and primary text roles. The system `TextScaler` remains independent,
+including nonlinear scaling. Settings-to-Home regressions check actual rendered
+font sizes, text growth, large-preset single-column cards, and return to normal
+rows in light and dark mode.
 
 Phase A code:
 
