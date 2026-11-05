@@ -79,89 +79,95 @@ void main() {
             expect(enlarged.color, original.color, reason: role);
           }
         }
-        final navigation = scaled.navigationBarTheme.labelTextStyle!.resolve({});
+        final navigation = scaled.navigationBarTheme.labelTextStyle!.resolve(
+          {},
+        );
         expect(
           navigation!.fontSize,
-          closeTo(normal.textTheme.labelMedium!.fontSize! * preset.scale, 0.001),
+          closeTo(
+            normal.textTheme.labelMedium!.fontSize! * preset.scale,
+            0.001,
+          ),
         );
         expect(navigation.fontFamily, 'Roboto');
       });
     }
 
-    testWidgets('Settings presets change rendered Home and layout, dark=$dark', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(390, 844);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-      await tester.pumpWidget(const TeluguPadakeliApp());
-      await tester.pumpAndSettle();
-      if (dark) {
-        await tester.tap(find.byTooltip('Settings'));
+    testWidgets(
+      'Settings presets change rendered Home and layout, dark=$dark',
+      (tester) async {
+        tester.view.physicalSize = const Size(390, 844);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        await tester.pumpWidget(const TeluguPadakeliApp());
         await tester.pumpAndSettle();
-        await tester.tap(find.byType(SwitchListTile));
-        await tester.pumpAndSettle();
-        await tester.pageBack();
-        await tester.pumpAndSettle();
-      }
-      final title = find.text('తెలుగు పదకేళి');
-      final normalHeight = tester.getSize(title).height;
-
-      for (final preset in [
-        TeluguFontSize.normal,
-        TeluguFontSize.large,
-        TeluguFontSize.extraLarge,
-        TeluguFontSize.normal,
-      ]) {
-        await tester.ensureVisible(find.byTooltip('Settings'));
-        await tester.tap(find.byTooltip('Settings'));
-        await tester.pumpAndSettle();
-        await tester.ensureVisible(find.text(preset.label));
-        await tester.tap(find.text(preset.label));
-        await tester.pumpAndSettle();
-        expect(
-          tester
-              .widget<RadioGroup<TeluguFontSize>>(
-                find.byType(RadioGroup<TeluguFontSize>),
-              )
-              .groupValue,
-          preset,
-        );
-        await tester.pageBack();
-        await tester.pumpAndSettle();
-
-        final text = tester.widget<Text>(title);
-        expect(text.style!.fontSize, closeTo(32 * preset.scale, 0.001));
-        expect(
-          tester.widget<Text>(find.text('పదకేళి ఆడండి')).style!.fontSize,
-          closeTo(22 * preset.scale, 0.001),
-        );
-        expect(
-          Theme.of(tester.element(find.byType(HomeScreen))).brightness,
-          dark ? Brightness.dark : Brightness.light,
-        );
-        final classic = tester.getRect(find.byType(FeatureCard).at(0));
-        final learn = tester.getRect(find.byType(FeatureCard).at(1));
-        if (preset == TeluguFontSize.normal) {
-          expect(tester.getSize(title).height, closeTo(normalHeight, 0.001));
-          expect(classic.top, closeTo(learn.top, 0.001));
-          expect(classic.height, learn.height);
-        } else {
-          expect(tester.getSize(title).height, greaterThan(normalHeight));
-          expect(learn.top, greaterThanOrEqualTo(classic.bottom));
-          expect(classic.width, 350);
+        if (dark) {
+          await tester.tap(find.byTooltip('Settings'));
+          await tester.pumpAndSettle();
+          await tester.tap(find.byType(SwitchListTile));
+          await tester.pumpAndSettle();
+          await tester.pageBack();
+          await tester.pumpAndSettle();
         }
-        expect(
-          find.byType(HomeScenery),
-          preset == TeluguFontSize.extraLarge ? findsNothing : findsOneWidget,
-        );
-        await tester.ensureVisible(find.text('Continue Playing'));
-        await tester.pumpAndSettle();
-        expect(tester.takeException(), isNull);
-      }
-      await tester.pumpWidget(const SizedBox.shrink());
-    });
+        final title = find.text('తెలుగు పదకేళి');
+        final normalHeight = tester.getSize(title).height;
+
+        for (final preset in [
+          TeluguFontSize.normal,
+          TeluguFontSize.large,
+          TeluguFontSize.extraLarge,
+          TeluguFontSize.normal,
+        ]) {
+          await tester.ensureVisible(find.byTooltip('Settings'));
+          await tester.tap(find.byTooltip('Settings'));
+          await tester.pumpAndSettle();
+          await tester.ensureVisible(find.text(preset.label));
+          await tester.tap(find.text(preset.label));
+          await tester.pumpAndSettle();
+          expect(
+            tester
+                .widget<RadioGroup<TeluguFontSize>>(
+                  find.byType(RadioGroup<TeluguFontSize>),
+                )
+                .groupValue,
+            preset,
+          );
+          await tester.pageBack();
+          await tester.pumpAndSettle();
+
+          final text = tester.widget<Text>(title);
+          expect(text.style!.fontSize, closeTo(32 * preset.scale, 0.001));
+          expect(
+            tester.widget<Text>(find.text('పదకేళి ఆడండి')).style!.fontSize,
+            closeTo(22 * preset.scale, 0.001),
+          );
+          expect(
+            Theme.of(tester.element(find.byType(HomeScreen))).brightness,
+            dark ? Brightness.dark : Brightness.light,
+          );
+          final classic = tester.getRect(find.byType(FeatureCard).at(0));
+          final learn = tester.getRect(find.byType(FeatureCard).at(1));
+          if (preset == TeluguFontSize.normal) {
+            expect(tester.getSize(title).height, closeTo(normalHeight, 0.001));
+            expect(classic.top, closeTo(learn.top, 0.001));
+            expect(classic.height, learn.height);
+          } else {
+            expect(tester.getSize(title).height, greaterThan(normalHeight));
+            expect(learn.top, greaterThanOrEqualTo(classic.bottom));
+            expect(classic.width, 350);
+          }
+          expect(
+            find.byType(HomeScenery),
+            preset == TeluguFontSize.extraLarge ? findsNothing : findsOneWidget,
+          );
+          await tester.ensureVisible(find.text('Continue Playing'));
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull);
+        }
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
   }
 
   testWidgets('app presets preserve the independent nonlinear system scaler', (
@@ -187,7 +193,10 @@ void main() {
     final title = tester.widget<Text>(find.text('తెలుగు పదకేళి'));
     expect(title.style!.fontSize, closeTo(44.8, 0.001));
     expect(title.textScaler, same(scaler));
-    expect(title.textScaler!.scale(title.style!.fontSize!), closeTo(58.24, 0.001));
+    expect(
+      title.textScaler!.scale(title.style!.fontSize!),
+      closeTo(58.24, 0.001),
+    );
     final subtitle = tester.widget<Text>(find.text('Classic Padakeli'));
     expect(subtitle.style!.fontSize, closeTo(19.6, 0.001));
     expect(subtitle.textScaler, same(scaler));
