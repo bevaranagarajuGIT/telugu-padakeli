@@ -118,10 +118,6 @@ class AppTheme {
     if (style == null || fontSize == null) {
       return style;
     }
-    return style.copyWith(
-      fontSize: fontSize * scale,
-      height: PremiumTeluguText.lineHeight,
-      leadingDistribution: TextLeadingDistribution.even,
-    );
+    return style.copyWith(fontSize: fontSize * scale);
   }
 }

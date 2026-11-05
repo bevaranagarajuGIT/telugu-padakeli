@@ -59,6 +59,7 @@ void main() {
       test('all resolved font roles scale for ${preset.name}, dark=$dark', () {
         final normal = theme(1);
         final scaled = theme(preset.scale);
+        final geometry = _roles(normal.typography.englishLike);
         expect(normal.textTheme.headlineLarge!.fontSize, 32);
         expect(normal.textTheme.bodyLarge!.fontSize, 16);
         for (final (before, after) in [
@@ -69,6 +70,13 @@ void main() {
             final original = before[role]!;
             final enlarged = after[role]!;
             expect(original.fontSize, isNotNull, reason: role);
+            expect(original.height, geometry[role]!.height, reason: role);
+            expect(enlarged.height, original.height, reason: role);
+            expect(
+              enlarged.leadingDistribution,
+              geometry[role]!.leadingDistribution,
+              reason: role,
+            );
             expect(
               enlarged.fontSize,
               closeTo(original.fontSize! * preset.scale, 0.001),
