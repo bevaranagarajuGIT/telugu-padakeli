@@ -45,14 +45,15 @@ class _HomeSceneryState extends State<HomeScenery>
     WidgetsBinding.instance.addObserver(this);
     final lifecycle = WidgetsBinding.instance.lifecycleState;
     _foreground = lifecycle == null || lifecycle == AppLifecycleState.resumed;
-    _motion = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2200),
-    )..addStatusListener((status) {
-      if (status == AnimationStatus.completed && _motionAllowed) {
-        _scheduleIdleMotion();
-      }
-    });
+    _motion =
+        AnimationController(
+          vsync: this,
+          duration: const Duration(milliseconds: 2200),
+        )..addStatusListener((status) {
+          if (status == AnimationStatus.completed && _motionAllowed) {
+            _scheduleIdleMotion();
+          }
+        });
   }
 
   @override

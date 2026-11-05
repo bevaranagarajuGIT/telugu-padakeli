@@ -34,11 +34,16 @@ void main() {
         final bytes = await rootBundle.load(asset);
         totalBytes += bytes.lengthInBytes;
         expect(bytes.lengthInBytes, lessThan(1500000), reason: asset);
-        expect(
-          bytes.buffer.asUint8List(bytes.offsetInBytes, 8),
-          [137, 80, 78, 71, 13, 10, 26, 10],
-          reason: asset,
-        );
+        expect(bytes.buffer.asUint8List(bytes.offsetInBytes, 8), [
+          137,
+          80,
+          78,
+          71,
+          13,
+          10,
+          26,
+          10,
+        ], reason: asset);
         final codec = await ui.instantiateImageCodec(
           bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes),
         );
@@ -70,10 +75,7 @@ void main() {
 
   double mascotY(WidgetTester tester, {bool hidden = false}) => tester
       .widget<Transform>(
-        find.byKey(
-          const ValueKey('home-mascot-motion'),
-          skipOffstage: !hidden,
-        ),
+        find.byKey(const ValueKey('home-mascot-motion'), skipOffstage: !hidden),
       )
       .transform
       .storage[13];
@@ -174,7 +176,9 @@ void main() {
     });
   }
 
-  testWidgets('settings route suspends Home motion until popped', (tester) async {
+  testWidgets('settings route suspends Home motion until popped', (
+    tester,
+  ) async {
     await tester.pumpWidget(const TeluguPadakeliApp());
     await tester.pumpAndSettle();
     await startBob(tester);

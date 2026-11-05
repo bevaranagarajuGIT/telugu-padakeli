@@ -54,10 +54,7 @@ class HomeScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              AppHeader(
-                onSettings: onSettings,
-                celebrating: hasActivePuzzle,
-              ),
+              AppHeader(onSettings: onSettings, celebrating: hasActivePuzzle),
               Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 1040),

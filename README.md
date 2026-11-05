@@ -67,8 +67,9 @@ See [the artwork manifest](assets/artwork/README.md) for generation briefs,
 source/provenance, transparency requirements, and unresolved license-term review.
 The named external reference screenshots were not supplied to this checkout.
 
-GitHub Actions runs formatting, analysis, tests (including asset decoding/alpha
-and hidden-screen motion regressions), and an offline-resource web build on PRs.
+GitHub Actions uses Flutter 3.44.2 and runs formatting, analysis, tests (including
+asset decoding/alpha and hidden-screen motion regressions), and an
+offline-resource web build on PRs.
 Its `web-preview` artifact can be served locally for actual runtime review;
 it is a runnable app build, not a generated UI mockup. Native-device review is
 still required before release.

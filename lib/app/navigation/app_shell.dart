@@ -22,9 +22,9 @@ class _AppShellState extends State<AppShell> {
   Future<void> _openSettings() async {
     setState(() => _settingsOpen = true);
     try {
-      await Navigator.of(context).push(
-        MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
-      );
+      await Navigator.of(
+        context,
+      ).push(MaterialPageRoute<void>(builder: (_) => const SettingsScreen()));
     } finally {
       if (mounted) setState(() => _settingsOpen = false);
     }
