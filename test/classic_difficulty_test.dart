@@ -25,7 +25,7 @@ void main() {
     await tester.pump();
     expect(
       tester.widget<Text>(find.byKey(const ValueKey('selected-clue'))).data,
-      '1. చెప్పే కథ',
+      '1. జరిగిన లేదా ఊహించిన సంఘటనల వర్ణన',
     );
 
     for (final entry in {0: 'క', 1: 'థ', 3: 'లం'}.entries) {
@@ -36,8 +36,8 @@ void main() {
       await tester.ensureVisible(akshara);
       await tester.tap(akshara);
     }
-    await tester.ensureVisible(find.text('Check Answer'));
-    await tester.tap(find.text('Check Answer'));
+    await tester.ensureVisible(find.byKey(const ValueKey('classic-check')));
+    await tester.tap(find.byKey(const ValueKey('classic-check')));
     await tester.pumpAndSettle();
     expect(find.text('అద్భుతం! సమాధానం సరైనది.'), findsOneWidget);
     await tester.tap(find.byTooltip('Change difficulty'));
@@ -80,7 +80,15 @@ void main() {
     await tester.ensureVisible(find.byKey(const ValueKey('open-hints')));
     await tester.tap(find.byKey(const ValueKey('open-hints')));
     await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('hint-basic')));
+    await tester.pumpAndSettle();
     expect(find.text('పిల్లలు కలిసి ఆడేది'), findsOneWidget);
+    await tester.ensureVisible(find.text('నిలువు (Down)'));
+    await tester.tap(find.text('నిలువు (Down)'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const ValueKey('open-hints')));
+    await tester.tap(find.byKey(const ValueKey('open-hints')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('hint-reveal-first')));
     await tester.pumpAndSettle();
     expect(
@@ -93,13 +101,13 @@ void main() {
     await tester.ensureVisible(find.byKey(const ValueKey('open-hints')));
     await tester.tap(find.byKey(const ValueKey('open-hints')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('hint-reveal-answer')));
+    await tester.tap(find.byKey(const ValueKey('hint-reveal-cell')));
     await tester.pumpAndSettle();
     expect(
       tester
-          .widget<Text>(find.byKey(const ValueKey('crossword-cell-value-1')))
+          .widget<Text>(find.byKey(const ValueKey('crossword-cell-value-6')))
           .data,
-      'ట',
+      'శం',
     );
 
     await tester.ensureVisible(find.text('నిలువు (Down)'));

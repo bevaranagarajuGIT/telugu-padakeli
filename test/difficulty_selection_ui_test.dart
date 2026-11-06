@@ -154,7 +154,7 @@ void main() {
     await tester.ensureVisible(find.text('Easy'));
     await tester.tap(find.text('Easy'));
     await tester.pumpAndSettle();
-    expect(find.text('Check Answer'), findsOneWidget);
+    expect(find.byKey(const ValueKey('classic-check')), findsOneWidget);
     await tester.tap(find.byTooltip('Change difficulty'));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('difficulty-Beginner')), findsOneWidget);

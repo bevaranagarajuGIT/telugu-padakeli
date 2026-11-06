@@ -32,10 +32,10 @@ class DifficultySelection extends StatelessWidget {
         Color(0xFFB7F59E),
         Color(0xFF64D776),
       ),
-      ('Easy', 'సులభ స్థాయి', 'easy', Color(0xFFACE6FF), Color(0xFF68C6FF)),
-      ('Medium', 'మధ్యస్థ స్థాయి', null, Color(0xFFDCC5FF), Color(0xFFB08AF4)),
-      ('Hard', 'కఠిన స్థాయి', null, Color(0xFFFFE6A3), Color(0xFFFFB85D)),
-      ('Expert', 'నిపుణ స్థాయి', null, Color(0xFFF4CBFF), Color(0xFFE992F1)),
+      ('Easy', 'సులభం', 'easy', Color(0xFFACE6FF), Color(0xFF68C6FF)),
+      ('Medium', 'మధ్యస్థం', 'medium', Color(0xFFDCC5FF), Color(0xFFB08AF4)),
+      ('Hard', 'కష్టం', 'hard', Color(0xFFFFE6A3), Color(0xFFFFB85D)),
+      ('Expert', 'నిపుణులు', 'expert', Color(0xFFF4CBFF), Color(0xFFE992F1)),
     ];
 
     return Scaffold(
@@ -110,8 +110,7 @@ class DifficultySelection extends StatelessWidget {
                           title: title,
                           top: top,
                           bottom: bottom,
-                          onPressed:
-                              level != null && availableLevels.contains(level)
+                          onPressed: availableLevels.contains(level)
                               ? () => onSelect(level)
                               : null,
                         ),

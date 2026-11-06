@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../app/theme/app_colors.dart';
 import '../models/puzzle.dart';
+import '../models/telugu_akshara.dart';
 import 'premium_telugu_text.dart';
 
 class CrosswordGrid extends StatelessWidget {
@@ -14,6 +15,7 @@ class CrosswordGrid extends StatelessWidget {
     required this.selectedCells,
     required this.onCellSelected,
     this.enabled = true,
+    this.incorrectCells = const {},
     super.key,
   });
 
@@ -23,6 +25,7 @@ class CrosswordGrid extends StatelessWidget {
   final List<int> selectedCells;
   final ValueChanged<int> onCellSelected;
   final bool enabled;
+  final Set<int> incorrectCells;
 
   @override
   Widget build(BuildContext context) {
@@ -106,6 +109,7 @@ class CrosswordGrid extends StatelessWidget {
 
                 final clueNumber = clueNumbers[index];
                 final isSelected = selectedCellIndex == index;
+                final incorrect = incorrectCells.contains(index);
                 final isInSelectedWord = selectedCells.contains(index);
                 return Container(
                   key: isSelected
@@ -122,10 +126,12 @@ class CrosswordGrid extends StatelessWidget {
                     border: Border.all(
                       color: isSelected
                           ? AppColors.orange
+                          : incorrect
+                          ? scheme.error
                           : dark
                           ? scheme.outlineVariant
                           : AppColors.deepBlue,
-                      width: isSelected ? 2 : 1,
+                      width: isSelected || incorrect ? 2 : 1,
                     ),
                   ),
                   child: Semantics(
@@ -133,9 +139,9 @@ class CrosswordGrid extends StatelessWidget {
                     enabled: enabled,
                     selected: isSelected,
                     label:
-                        'Row ${row + 1}, column ${column + 1}${clueNumber == null ? '' : ', clue $clueNumber'}',
+                        'వరుస ${row + 1}, నిలువు ${column + 1}${clueNumber == null ? '' : ', సూచన $clueNumber'}${incorrect ? ', తప్పు అక్షరం' : ''}',
                     value: controllers[row][column].text.isEmpty
-                        ? 'Empty'
+                        ? 'ఖాళీ'
                         : controllers[row][column].text,
                     onTap: enabled ? () => onCellSelected(index) : null,
                     child: ExcludeSemantics(
@@ -178,6 +184,21 @@ class CrosswordGrid extends StatelessWidget {
                                         ? AppColors.ink
                                         : scheme.onSurface,
                                   ),
+                                ),
+                              ),
+                            ),
+                          if (incorrect)
+                            Positioned(
+                              right: 2,
+                              bottom: 2,
+                              child: IgnorePointer(
+                                child: Icon(
+                                  Icons.error_rounded,
+                                  key: ValueKey('crossword-error-$index'),
+                                  size: 14,
+                                  color: isSelected
+                                      ? AppColors.ink
+                                      : scheme.error,
                                 ),
                               ),
                             ),
@@ -254,6 +275,7 @@ class AksharaPalette extends StatelessWidget {
     final aksharas = puzzle.rows
         .expand((row) => row)
         .where((cell) => cell != '#')
+        .map(TeluguAkshara.normalize)
         .toSet();
     return Card(
       child: Padding(

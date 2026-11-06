@@ -2,6 +2,7 @@
   {
     "id": 1,
     "level": "beginner",
+    "reviewStatus": "pending-human-review",
     "gridSize": 3,
     "rows": [
       [
@@ -54,6 +55,7 @@
   {
     "id": 2,
     "level": "easy",
+    "reviewStatus": "pending-human-review",
     "gridSize": 3,
     "rows": [
       [
@@ -76,8 +78,8 @@
       "across": [
         {
           "number": 1,
-          "clue": "చెప్పే కథ",
-          "hint": "రెండు అక్షరాలతో ఉండే మాట",
+          "clue": "జరిగిన లేదా ఊహించిన సంఘటనల వర్ణన",
+          "hint": "ఒకప్పుడు... అంటూ మొదలయ్యేది",
           "answer": "కథ",
           "row": 0,
           "column": 0
@@ -98,6 +100,7 @@
   {
     "id": 3,
     "level": "beginner",
+    "reviewStatus": "pending-human-review",
     "gridSize": 3,
     "rows": [
       [
@@ -142,6 +145,7 @@
   {
     "id": 4,
     "level": "beginner",
+    "reviewStatus": "pending-human-review",
     "gridSize": 3,
     "rows": [
       [
@@ -186,6 +190,7 @@
   {
     "id": 5,
     "level": "easy",
+    "reviewStatus": "pending-human-review",
     "gridSize": 3,
     "rows": [
       [
@@ -230,6 +235,7 @@
   {
     "id": 6,
     "level": "easy",
+    "reviewStatus": "pending-human-review",
     "gridSize": 3,
     "rows": [
       [

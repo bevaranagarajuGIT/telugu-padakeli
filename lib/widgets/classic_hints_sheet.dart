@@ -8,13 +8,15 @@ class ClassicHintsSheet extends StatelessWidget {
   const ClassicHintsSheet({
     required this.clue,
     required this.onRevealFirst,
-    required this.onRevealAnswer,
+    required this.onRevealCell,
+    required this.onShowSimple,
     super.key,
   });
 
   final PuzzleClue clue;
-  final VoidCallback onRevealFirst;
-  final VoidCallback onRevealAnswer;
+  final VoidCallback? onRevealFirst;
+  final VoidCallback? onRevealCell;
+  final VoidCallback? onShowSimple;
 
   @override
   Widget build(BuildContext context) {
@@ -59,30 +61,37 @@ class ClassicHintsSheet extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
+            PremiumTeluguText(
+              '${clue.number}. ${clue.clue}',
+              style: theme.textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 12),
             for (final (key, title, subtitle, icon, tint, action) in [
               (
                 'hint-basic',
                 'సులభమైన సూచన',
-                clue.hint ?? clue.clue,
+                onShowSimple == null
+                    ? 'ఈ పదానికి అదనపు సూచన అందుబాటులో లేదు'
+                    : 'రచయిత ఇచ్చిన మరో సూచన చూడండి',
                 Icons.menu_book_rounded,
                 const Color(0xFFFFE1CE),
-                null,
+                onShowSimple,
               ),
               (
                 'hint-reveal-first',
                 'మొదటి అక్షరం చూపించు',
-                'ఎంచుకున్న పదానికి మొదటి అక్షరం',
+                'ఎంచుకున్న పదంలో మొదటి నింపని లేదా తప్పు అక్షరం',
                 Icons.looks_one_rounded,
                 const Color(0xFFEBD8FF),
                 onRevealFirst,
               ),
               (
-                'hint-reveal-answer',
-                'ఎంచుకున్న సమాధానం చూపించు',
-                'ఎంచుకున్న పదాన్ని పూర్తిగా నింపండి',
+                'hint-reveal-cell',
+                'ఒక అక్షరం చూపించు',
+                'ఎంచుకున్న గడి లేదా పదంలోని ఒక గడి',
                 Icons.visibility_rounded,
                 const Color(0xFFD8EFFF),
-                onRevealAnswer,
+                onRevealCell,
               ),
             ])
               Padding(
@@ -94,6 +103,7 @@ class ClassicHintsSheet extends StatelessWidget {
                   borderRadius: BorderRadius.circular(18),
                   child: ListTile(
                     key: ValueKey(key),
+                    enabled: action != null,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 14,
                       vertical: 8,

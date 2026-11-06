@@ -8,6 +8,7 @@ import 'package:telugu_padakeli/screens/kids_game_screen.dart';
 import 'package:telugu_padakeli/screens/padakeli_screen.dart';
 import 'package:telugu_padakeli/services/kids_question_service.dart';
 import 'package:telugu_padakeli/services/local_puzzle_repository.dart';
+import 'package:telugu_padakeli/models/telugu_akshara.dart';
 
 class _StringSource implements PuzzleDataSource {
   _StringSource(this.value);
@@ -49,6 +50,32 @@ void main() {
       await expectLater(repository.getPuzzles(), throwsA(isA<Exception>()));
     });
   }
+
+  test(
+    'sample content remains pending human review without duplicate answers',
+    () async {
+      final raw =
+          jsonDecode(
+                await rootBundle.loadString('assets/data/sample_puzzles.json'),
+              )
+              as List<dynamic>;
+      expect(
+        raw.every(
+          (dynamic item) =>
+              (item as Map<String, dynamic>)['reviewStatus'] ==
+              'pending-human-review',
+        ),
+        isTrue,
+      );
+      final puzzles = await const LocalPuzzleRepository().getPuzzles();
+      final answers = puzzles
+          .expand((p) => [...p.acrossClues, ...p.downClues])
+          .map((clue) => TeluguAkshara.normalize(clue.answer))
+          .toList();
+      expect(answers, hasLength(13));
+      expect(answers.toSet(), hasLength(answers.length));
+    },
+  );
 
   for (final corruption in [
     'dimensions',

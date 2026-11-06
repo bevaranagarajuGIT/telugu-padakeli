@@ -1,3 +1,5 @@
+import 'telugu_akshara.dart';
+
 enum PuzzleDirection { across, down }
 
 class Puzzle {
@@ -41,6 +43,16 @@ class Puzzle {
 
   /// Reject unusable content before it can reach the crossword UI.
   void validate() {
+    if (id <= 0 ||
+        !const {
+          'beginner',
+          'easy',
+          'medium',
+          'hard',
+          'expert',
+        }.contains(level)) {
+      throw const FormatException('Invalid puzzle ID or difficulty.');
+    }
     if (gridSize <= 0 ||
         rows.length != gridSize ||
         rows.any((row) => row.length != gridSize)) {
@@ -49,12 +61,13 @@ class Puzzle {
     final covered = <int>{};
     final starts = <int, int>{};
     final numbers = <int, int>{};
-    final teluguStart = RegExp(r'^[అ-హౘ-ౡ]');
     for (var row = 0; row < gridSize; row++) {
       for (var column = 0; column < gridSize; column++) {
         final cell = rows[row][column];
-        if (cell != '#' && !teluguStart.hasMatch(cell)) {
-          throw const FormatException('Cells must start with a Telugu letter.');
+        if (cell != '#' && TeluguAkshara.split(cell).length != 1) {
+          throw const FormatException(
+            'Each cell must contain one Telugu akshara.',
+          );
         }
       }
     }
@@ -88,15 +101,46 @@ class Puzzle {
         }
         starts[start] = clue.number;
         numbers[clue.number] = start;
-        final answer = cells
-            .map((index) => answerAt(index ~/ gridSize, index % gridSize))
-            .join();
-        if (answer != clue.answer) {
+        final answer = TeluguAkshara.split(clue.answer);
+        if (answer.length != cells.length ||
+            Iterable<int>.generate(cells.length).any((i) {
+              final index = cells[i];
+              return !TeluguAkshara.equivalent(
+                answer[i],
+                answerAt(index ~/ gridSize, index % gridSize),
+              );
+            })) {
           throw const FormatException(
             'Clue answer does not match its grid cells.',
           );
         }
         covered.addAll(cells);
+      }
+      for (var row = 0; row < gridSize; row++) {
+        for (var column = 0; column < gridSize; column++) {
+          if (isBlocked(row, column)) continue;
+          final previousRow = row - (direction == PuzzleDirection.down ? 1 : 0);
+          final previousColumn =
+              column - (direction == PuzzleDirection.across ? 1 : 0);
+          if (previousRow >= 0 &&
+              previousColumn >= 0 &&
+              !isBlocked(previousRow, previousColumn)) {
+            continue;
+          }
+          final path = cellsForClue(
+            PuzzleClue(
+              number: 1,
+              clue: '',
+              answer: '',
+              row: row,
+              column: column,
+            ),
+            direction,
+          );
+          if (path.length > 1 && !seenStarts.contains(path.first)) {
+            throw const FormatException('Every multi-cell word needs a clue.');
+          }
+        }
       }
     }
     for (var row = 0; row < gridSize; row++) {
@@ -109,6 +153,32 @@ class Puzzle {
     }
     if (covered.isEmpty) {
       throw const FormatException('Puzzle has no playable cells.');
+    }
+    final reached = <int>{covered.first};
+    final queue = <int>[covered.first];
+    for (var i = 0; i < queue.length; i++) {
+      final index = queue[i];
+      final row = index ~/ gridSize;
+      final column = index % gridSize;
+      for (final (r, c) in [
+        (row - 1, column),
+        (row + 1, column),
+        (row, column - 1),
+        (row, column + 1),
+      ]) {
+        final next = r * gridSize + c;
+        if (r >= 0 &&
+            c >= 0 &&
+            r < gridSize &&
+            c < gridSize &&
+            covered.contains(next) &&
+            reached.add(next)) {
+          queue.add(next);
+        }
+      }
+    }
+    if (reached.length != covered.length) {
+      throw const FormatException('Puzzle words must form one connected grid.');
     }
   }
 

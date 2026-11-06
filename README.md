@@ -49,8 +49,8 @@ The compact blue-framed board uses yellow active cells and Across/Down clue tabs
 with each clue shown once and the normal-phone actions above bottom navigation. Its
 blocked cells use lavender tiles with locally drawn four-petal rangoli motifs;
 they remain non-interactive and excluded from accessibility navigation. The
-colourful, scrollable Hints sheet preserves basic hints, first-akshara reveal,
-and whole-word reveal without adding coins or paid hints. Large-font boards can
+colourful, scrollable Hints sheet offers authored simpler clues, first-unsolved
+akshara reveal, and one-cell reveal without adding coins or paid hints. Large-font boards can
 scroll horizontally rather than shrinking text or tap targets.
 
 Play & Learn uses a Template B-inspired purple/lavender layout, rounded answer
@@ -85,6 +85,70 @@ Phase A code:
 
 Persistent progress/settings, achievements, sound, new kids games, and the
 remaining reusable components are not part of Phase A.
+
+## Classic: Phase B
+
+The existing offline repository, Classic screen, numbered board, rangoli blocks,
+palette, clue tabs, difficulty cards and automatic progression are reused. The
+approved Splash, Welcome, Home and Kids implementations are unchanged.
+
+- Cells contain complete Telugu orthographic syllables, not code points or
+  generic grapheme clusters. Guninthalu, virama-linked consonant clusters,
+  anusvara/visarga and conjunct rendering joiners are handled explicitly.
+- Telugu's canonically decomposable AI vowel sign is normalized for comparison;
+  ZWJ/ZWNJ rendering variants of valid conjuncts compare equally. This is a
+  Telugu-specific comparison, not a general-purpose Unicode normalizer.
+- Validation checks individual aksharas, answer-to-cell boundaries, crossing
+  agreement, numbering, coverage of every multi-cell word, grid connectivity,
+  supported difficulty and unique puzzle IDs.
+- Tap a word's clue to select it. Tap the active crossing cell again to switch
+  Across/Down without changing the active cell. Palette input advances along the
+  selected word. Clear removes the active cell; Backspace removes it or moves
+  back and clears the preceding cell when it is already empty. Selected-word
+  reset also clears its shared intersections.
+- The displayed percentage is **filled cells**, not a claim that answers are
+  correct. Check validates the whole puzzle; wrong filled cells receive an error
+  icon, border and Telugu accessibility announcement. Editing clears the edited
+  cell's stale error. Correct grids retain the approved 1.1-second feedback and
+  automatic progression, with a static celebration that requires no motion.
+- Hints reveal the first unsolved cell in reading order, reveal one unsolved
+  active cell (or the next unsolved cell in the selected word), or display a
+  manually authored simpler clue when available. They never overwrite correct
+  cells or reveal an entire word at once. Successful hint actions are counted
+  per puzzle attempt; a full confirmed reset clears that count.
+- Full reset requires confirmation. Opening its dialog pauses pending automatic
+  progression; cancelling resumes it, and confirming cancels it and clears the
+  current board. No timer can advance the board behind the reset dialog.
+- Only validated, bundled levels are enabled. All five cards are data-driven;
+  Medium, Hard and Expert remain Coming Soon with the current six samples.
+- Larger grids and large-font boards can be scrolled horizontally without
+  reducing akshara size or 48-pixel cell targets. Other game content scrolls
+  vertically. No new dependencies or online services were introduced.
+
+### Content audit and release review
+
+All six existing original sample puzzles are explicitly marked
+`pending-human-review` in JSON. Technical validation is not linguistic approval.
+The 13 answers have no duplicate normalized spellings. The tautological Easy
+clue that repeated its answer was replaced with an original candidate wording;
+that wording and its hint still require Telugu editorial review.
+
+| Puzzle ID | Level | Answers requiring review |
+|---|---|---|
+| 1 | Beginner | ఆట, శంఖం, ఆకాశం |
+| 2 | Easy | కథ, కలం |
+| 3 | Beginner | అమ్మ, అరటి |
+| 4 | Beginner | ఇల్లు, ఇనుము |
+| 5 | Easy | తామర, తాళం |
+| 6 | Easy | పరుగు, పలక |
+
+A fluent Andhra Pradesh/Telangana Telugu editor should review spelling,
+orthographic cell boundaries, natural clue wording, meanings, regional
+inclusivity and difficulty. These small 3x3 teaching samples are not a finished
+newspaper-size content pack. No copied newspaper/textbook exercises or additional
+unreviewed candidate puzzles were added. Broader cultural, geography, proverb
+and literature categories need original, human-reviewed content in Phase C.
+Game state and hint counts remain in-session only; durable resume is future work.
 
 ## Splash and Welcome
 

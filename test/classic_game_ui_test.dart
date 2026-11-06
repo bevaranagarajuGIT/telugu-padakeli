@@ -28,6 +28,7 @@ Future<void> _open(
   double systemScale = 1,
   bool dark = false,
   double navigationHeight = 0,
+  List<Puzzle>? puzzles,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
@@ -40,7 +41,7 @@ Future<void> _open(
         child: child!,
       ),
       home: Scaffold(
-        body: PadakeliScreen(repository: _Repository(_puzzles)),
+        body: PadakeliScreen(repository: _Repository(puzzles ?? _puzzles)),
         bottomNavigationBar: navigationHeight == 0
             ? null
             : SizedBox(height: navigationHeight),
@@ -105,12 +106,37 @@ void main() {
       find.text('1. ${_puzzles.first.acrossClues.first.clue}'),
       findsOneWidget,
     );
-    for (final key in ['classic-check', 'open-hints']) {
+    for (final key in [
+      'classic-check',
+      'open-hints',
+      'classic-reset',
+      'classic-clear-cell',
+      'classic-backspace',
+      'classic-reset-word',
+    ]) {
       final rect = tester.getRect(find.byKey(ValueKey(key)));
       expect(rect.top, greaterThanOrEqualTo(0));
       expect(rect.bottom, lessThanOrEqualTo(844 - 88));
     }
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('short 320x568 phone keeps input and reset reachable', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await _open(tester, navigationHeight: 88);
+    await _tap(tester, find.byKey(const ValueKey('akshara-ఆ')));
+    await _tap(tester, find.byKey(const ValueKey('classic-backspace')));
+    await _tap(tester, find.byKey(const ValueKey('classic-reset')));
+    await tester.pumpAndSettle();
+    await _tap(tester, find.byKey(const ValueKey('classic-reset-confirm')));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.textContaining('నింపిన గడులు: 0%'), findsOneWidget);
   });
 
   for (final (width, appScale, systemScale) in [
@@ -143,7 +169,7 @@ void main() {
           await tester.tap(find.byTooltip('Hints'));
           await tester.pumpAndSettle();
           expect(find.text('సూచనలు (Hints)'), findsOneWidget);
-          expect(find.text('పిల్లలు కలిసి ఆడేది'), findsOneWidget);
+          expect(find.byKey(const ValueKey('hint-basic')), findsOneWidget);
           expect(tester.takeException(), isNull);
           await _tap(tester, find.text('మొదటి అక్షరం చూపించు'));
           await tester.pumpAndSettle();
@@ -166,6 +192,18 @@ void main() {
             findsOneWidget,
           );
           expect(find.text('ఇంకొంచెం ప్రయత్నించండి.'), findsOneWidget);
+          await _tap(tester, find.byKey(const ValueKey('classic-reset')));
+          await tester.pumpAndSettle();
+          expect(
+            find.byKey(const ValueKey('classic-reset-confirm')),
+            findsOneWidget,
+          );
+          expect(tester.takeException(), isNull);
+          await _tap(
+            tester,
+            find.byKey(const ValueKey('classic-reset-cancel')),
+          );
+          await tester.pumpAndSettle();
           expect(tester.takeException(), isNull);
           await tester.pumpWidget(const SizedBox.shrink());
         },
@@ -201,7 +239,7 @@ void main() {
             );
             expect(
               find.bySemanticsLabel(
-                RegExp('Row ${row + 1}, column ${column + 1}'),
+                RegExp('వరుస ${row + 1}, నిలువు ${column + 1}'),
               ),
               findsNothing,
             );
@@ -316,7 +354,9 @@ void main() {
       await _fill(tester, _puzzles.first);
       await _tap(tester, find.byKey(const ValueKey('classic-check')));
       if (action == 'Reset') {
-        await tester.tap(find.text('Reset'));
+        await _tap(tester, find.byKey(const ValueKey('classic-reset')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('classic-reset-confirm')));
       } else if (action == 'Change difficulty') {
         await tester.tap(find.byTooltip('Change difficulty'));
       } else {
@@ -344,4 +384,201 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets(
+    'canonical Telugu input checks correctly and absent/simple and solved hints stay disabled',
+    (tester) async {
+      const puzzle = Puzzle(
+        id: 8,
+        level: 'beginner',
+        gridSize: 1,
+        rows: [
+          ['క\u0c46\u0c56'],
+        ],
+        acrossClues: [
+          PuzzleClue(
+            number: 1,
+            clue: 'పరీక్ష',
+            answer: 'కై',
+            row: 0,
+            column: 0,
+          ),
+        ],
+        downClues: [],
+      );
+      await _open(tester, puzzles: [puzzle]);
+      await _tap(tester, find.byKey(const ValueKey('akshara-కై')));
+      await _tap(tester, find.byKey(const ValueKey('open-hints')));
+      await tester.pumpAndSettle();
+      for (final key in [
+        'hint-basic',
+        'hint-reveal-first',
+        'hint-reveal-cell',
+      ]) {
+        expect(
+          tester.widget<ListTile>(find.byKey(ValueKey(key))).onTap,
+          isNull,
+        );
+      }
+      await tester.tap(find.byTooltip('Close hints'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('సూచనలు: 0'), findsOneWidget);
+      await _tap(tester, find.byKey(const ValueKey('classic-check')));
+      expect(find.text('అద్భుతం! సమాధానం సరైనది.'), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 1100));
+      expect(
+        find.byKey(const ValueKey('classic-level-complete')),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'intersection toggles direction, input advances, clear and backspace work',
+    (tester) async {
+      await _open(tester);
+      await _tap(tester, find.byKey(const ValueKey('crossword-cell-0')));
+      expect(
+        tester
+            .widget<ListTile>(find.byKey(const ValueKey('clue-down-1')))
+            .selected,
+        isTrue,
+      );
+      await _tap(tester, find.byKey(const ValueKey('akshara-ఆ')));
+      expect(
+        tester.getCenter(find.byKey(const ValueKey('selected-cell'))),
+        tester.getCenter(find.byKey(const ValueKey('crossword-cell-3'))),
+      );
+      await _tap(tester, find.byKey(const ValueKey('classic-backspace')));
+      expect(
+        tester
+            .widget<Text>(find.byKey(const ValueKey('crossword-cell-value-0')))
+            .data,
+        '',
+      );
+      await _tap(tester, find.byKey(const ValueKey('akshara-ఆ')));
+      await _tap(tester, find.byKey(const ValueKey('akshara-కా')));
+      await _tap(tester, find.byKey(const ValueKey('classic-clear-cell')));
+      expect(
+        tester
+            .widget<Text>(find.byKey(const ValueKey('crossword-cell-value-3')))
+            .data,
+        'కా',
+      );
+      await _tap(tester, find.byKey(const ValueKey('classic-backspace')));
+      expect(
+        tester
+            .widget<Text>(find.byKey(const ValueKey('crossword-cell-value-3')))
+            .data,
+        '',
+      );
+    },
+  );
+
+  testWidgets(
+    'hints reveal only unsolved cells, share intersections and count actual use',
+    (tester) async {
+      await _open(tester);
+      Future<void> hint(String key) async {
+        await _tap(tester, find.byKey(const ValueKey('open-hints')));
+        await tester.pumpAndSettle();
+        await _tap(tester, find.byKey(ValueKey(key)));
+        await tester.pumpAndSettle();
+      }
+
+      await hint('hint-reveal-first');
+      expect(
+        tester
+            .widget<Text>(find.byKey(const ValueKey('crossword-cell-value-0')))
+            .data,
+        'ఆ',
+      );
+      await hint('hint-reveal-first');
+      expect(
+        tester
+            .widget<Text>(find.byKey(const ValueKey('crossword-cell-value-1')))
+            .data,
+        'ట',
+      );
+      await _tap(tester, find.text('నిలువు (Down)'));
+      await hint('hint-reveal-cell');
+      expect(
+        tester
+            .widget<Text>(find.byKey(const ValueKey('crossword-cell-value-3')))
+            .data,
+        'కా',
+      );
+      expect(
+        tester
+            .widget<Text>(find.byKey(const ValueKey('crossword-cell-value-6')))
+            .data,
+        '',
+      );
+      await hint('hint-basic');
+      expect(find.text('మేఘాలు ఉండే చోటు'), findsOneWidget);
+      expect(find.textContaining('సూచనలు: 4'), findsOneWidget);
+      await _tap(tester, find.byKey(const ValueKey('classic-reset-word')));
+      expect(
+        tester
+            .widget<Text>(find.byKey(const ValueKey('crossword-cell-value-0')))
+            .data,
+        '',
+      );
+      expect(
+        tester
+            .widget<Text>(find.byKey(const ValueKey('crossword-cell-value-1')))
+            .data,
+        'ట',
+      );
+    },
+  );
+
+  testWidgets(
+    'wrong cells have explicit feedback and full reset needs confirmation',
+    (tester) async {
+      await _open(tester);
+      await _tap(tester, find.byKey(const ValueKey('akshara-ట')));
+      await _tap(tester, find.byKey(const ValueKey('classic-check')));
+      expect(find.byKey(const ValueKey('crossword-error-0')), findsOneWidget);
+      expect(find.textContaining('20%'), findsOneWidget);
+      await _tap(tester, find.byKey(const ValueKey('classic-reset')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('classic-reset-cancel')));
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<Text>(find.byKey(const ValueKey('crossword-cell-value-0')))
+            .data,
+        'ట',
+      );
+      await _tap(tester, find.byKey(const ValueKey('classic-reset')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('classic-reset-confirm')));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('0%'), findsOneWidget);
+      expect(find.byKey(const ValueKey('crossword-error-0')), findsNothing);
+      expect(
+        tester
+            .widget<Text>(find.byKey(const ValueKey('crossword-cell-value-0')))
+            .data,
+        '',
+      );
+    },
+  );
+
+  testWidgets('cancelling reset during success resumes progression safely', (
+    tester,
+  ) async {
+    await _open(tester);
+    await _fill(tester, _puzzles.first);
+    await _tap(tester, find.byKey(const ValueKey('classic-check')));
+    await _tap(tester, find.byKey(const ValueKey('classic-reset')));
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 2));
+    expect(find.byKey(const ValueKey('classic-puzzle-1')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('classic-reset-cancel')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1100));
+    expect(find.byKey(const ValueKey('classic-puzzle-3')), findsOneWidget);
+  });
 }
