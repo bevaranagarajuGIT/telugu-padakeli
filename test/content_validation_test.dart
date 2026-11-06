@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
+import 'package:telugu_padakeli/core/app_settings_controller.dart';
 import 'package:telugu_padakeli/data/puzzle_data_source.dart';
 import 'package:telugu_padakeli/screens/kids_game_screen.dart';
 import 'package:telugu_padakeli/screens/padakeli_screen.dart';
@@ -183,14 +185,19 @@ void main() {
   testWidgets('all five kids levels finish with a final score and restart', (
     tester,
   ) async {
-    await tester.pumpWidget(const MaterialApp(home: KidsGameScreen()));
+    await tester.pumpWidget(
+      ChangeNotifierProvider(
+        create: (_) => AppSettingsController(),
+        child: const MaterialApp(home: KidsGameScreen()),
+      ),
+    );
     final levels = const KidsQuestionService().getLevels();
     for (final level in levels) {
       for (final question in level.questions) {
         final answer = find.byKey(ValueKey('kids-answer-${question.answer}'));
         await tester.ensureVisible(answer);
         await tester.tap(answer);
-        final check = find.text('Check');
+        final check = find.text('సరిచూడు');
         await tester.ensureVisible(check);
         await tester.tap(check);
         await tester.pump(const Duration(milliseconds: 1200));

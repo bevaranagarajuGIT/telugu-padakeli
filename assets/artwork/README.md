@@ -1,5 +1,18 @@
 # Home artwork
 
+## Phase C educational crop
+
+`kids/mango.png` is an 88x126 lossless crop of the approved original
+`home/learn.png`, using Pillow's `(70, 74, 158, 200)` pixel rectangle. It isolates
+the mango illustration for picture matching instead of asking a child to identify
+one object from a mixed mango/lotus scene. The approved source PNG is unchanged.
+The other playable picture is the existing `home/parrot-welcome.png`.
+Both are bundled offline with Telugu image descriptions; neither is a new
+third-party download or a placeholder. The source artwork's generation/service
+terms and distribution-review limits below also apply to this derived crop.
+More fruits, animals and everyday objects require original or licensed,
+human-reviewed illustrations before expanding the picture activity.
+
 ## Opening artwork
 
 The separate `opening/` directory contains `tirumala-temple.webp` and

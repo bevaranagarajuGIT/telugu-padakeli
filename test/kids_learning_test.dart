@@ -1,0 +1,278 @@
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:telugu_padakeli/core/app_settings_controller.dart';
+import 'package:telugu_padakeli/core/kids_learning_controller.dart';
+import 'package:telugu_padakeli/models/kids_learning.dart';
+import 'package:telugu_padakeli/models/telugu_akshara.dart';
+import 'package:telugu_padakeli/services/kids_learning_service.dart';
+import 'package:telugu_padakeli/services/kids_question_service.dart';
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  final activities = const KidsLearningService().getActivities();
+
+  test(
+    'English Helper defaults off and notifies immediately without duplicates',
+    () {
+      final settings = AppSettingsController();
+      addTearDown(settings.dispose);
+      var notifications = 0;
+      settings.addListener(() => notifications++);
+      expect(settings.englishHelper, isFalse);
+      settings.setEnglishHelper(true);
+      settings.setEnglishHelper(true);
+      expect(settings.englishHelper, isTrue);
+      expect(notifications, 1);
+      settings.setEnglishHelper(false);
+      expect(notifications, 2);
+      expect(AppSettingsController().englishHelper, isFalse);
+    },
+  );
+
+  test('three freely selectable categories have playable content', () {
+    final learning = KidsLearningController();
+    addTearDown(learning.dispose);
+    expect(learning.category, LearningCategory.early);
+    for (final category in LearningCategory.values) {
+      learning.selectCategory(category);
+      expect(learning.category, category);
+      expect(
+        activities.any((activity) => activity.categories.contains(category)),
+        isTrue,
+      );
+    }
+  });
+
+  test(
+    'all five activity types and 19 reviewed-pending questions validate',
+    () {
+      expect(
+        activities.map((a) => a.type).toSet(),
+        KidsActivityType.values.toSet(),
+      );
+      expect(activities.expand((a) => a.questions).length, 19);
+      expect(() => KidsLearningService.validate(activities), returnsNormally);
+      for (final question in activities.expand((a) => a.questions)) {
+        expect(question.reviewStatus, 'pending-human-review');
+        expect(question.audioAsset, isNull);
+        expect(question.englishPrompt, isNotEmpty);
+        expect(question.englishExplanation, isNotEmpty);
+      }
+    },
+  );
+
+  test('completion questions reuse original prompts, answers and hints', () {
+    final old = const KidsQuestionService().getLevels();
+    for (final level in [0, 2]) {
+      final activity = activities.firstWhere(
+        (a) => a.id == 'completion-$level',
+      );
+      for (var i = 0; i < 3; i++) {
+        expect(activity.questions[i].display, old[level].questions[i].prompt);
+        expect(activity.questions[i].answer, old[level].questions[i].answer);
+        expect(activity.questions[i].explanation, old[level].questions[i].hint);
+      }
+    }
+  });
+
+  test('duplicate activities are rejected', () {
+    expect(
+      () => KidsLearningService.validate([activities.first, activities.first]),
+      throwsFormatException,
+    );
+  });
+
+  test('choice validation rejects empty, ambiguous and non-Telugu choices', () {
+    for (final choices in [
+      [
+        const KidsChoice('మామిడి'),
+        const KidsChoice('మామిడి'),
+        const KidsChoice('జామ'),
+      ],
+      [
+        const KidsChoice('మామిడి'),
+        const KidsChoice(''),
+        const KidsChoice('జామ'),
+      ],
+      [
+        const KidsChoice('మామిడి'),
+        const KidsChoice('apple'),
+        const KidsChoice('జామ'),
+      ],
+    ]) {
+      final question = KidsLearningQuestion(
+        id: 'invalid',
+        prompt: 'ఇది ఏమిటి?',
+        englishPrompt: 'What is this?',
+        answer: 'మామిడి',
+        explanation: 'పండు',
+        englishExplanation: 'Fruit',
+        choices: choices,
+      );
+      expect(
+        () => question.validate(KidsActivityType.meaning),
+        throwsFormatException,
+      );
+    }
+  });
+
+  test('builder rejects mismatched tiles and incomplete answers', () {
+    const question = KidsLearningQuestion(
+      id: 'invalid-builder',
+      prompt: 'పదం',
+      englishPrompt: 'Word',
+      answer: 'అమ్మ',
+      tiles: ['అ', 'మ', 'మ'],
+      explanation: 'అమ్మ',
+      englishExplanation: 'Mother',
+    );
+    expect(
+      () => question.validate(KidsActivityType.builder),
+      throwsFormatException,
+    );
+  });
+
+  test('broken completion boundaries cannot hide behind joined equality', () {
+    const question = KidsLearningQuestion(
+      id: 'broken',
+      prompt: 'పదం',
+      englishPrompt: 'Word',
+      display: 'అమ్_',
+      answer: 'మ',
+      completedWord: 'అమ్మ',
+      explanation: 'అమ్మ',
+      englishExplanation: 'Mother',
+      choices: [KidsChoice('మ'), KidsChoice('క'), KidsChoice('ల')],
+    );
+    expect(
+      () => question.validate(KidsActivityType.completion),
+      throwsFormatException,
+    );
+  });
+
+  test('wrong answers retry, correct scoring locks until explicit Next', () {
+    final session = KidsActivitySession(activities.first, () {});
+    addTearDown(session.dispose);
+    session.selectChoice('జామ');
+    expect(session.check(), isFalse);
+    expect(session.score, 0);
+    session.next();
+    expect(session.index, 0);
+    session.selectChoice('మామిడి');
+    expect(session.check(), isTrue);
+    session.check();
+    session.selectChoice('జామ');
+    expect(session.score, 1);
+    expect(session.choice, 'మామిడి');
+    expect(session.index, 0);
+    session.next();
+    expect(session.index, 1);
+    expect(session.choice, isNull);
+  });
+
+  test('builder rejects partial and wrong order; tiles have identity', () {
+    final activity = activities.firstWhere(
+      (a) => a.type == KidsActivityType.builder,
+    );
+    final session = KidsActivitySession(activity, () {});
+    addTearDown(session.dispose);
+    session.selectTile(2);
+    session.selectTile(2);
+    expect(session.selectedTiles, [2]);
+    expect(session.check(), isFalse);
+    session.selectTile(1);
+    session.selectTile(0);
+    expect(session.check(), isFalse);
+    session.undoTile();
+    expect(session.selectedTiles, [2, 1]);
+    session.removeTile(1);
+    session.selectTile(0);
+    session.selectTile(1);
+    expect(session.check(), isTrue);
+    expect(session.score, 1);
+  });
+
+  test('repeated aksharas use both distinct tile instances exactly once', () {
+    final source = activities.firstWhere((a) => a.id == 'builder');
+    final repeated = source.questions.last;
+    final activity = KidsLearningActivity(
+      id: 'repeated',
+      type: KidsActivityType.builder,
+      categories: source.categories,
+      title: source.title,
+      englishTitle: source.englishTitle,
+      questions: [repeated],
+    );
+    activity.validate();
+    final session = KidsActivitySession(activity, () {});
+    addTearDown(session.dispose);
+    for (final i in [1, 0, 3, 2]) {
+      session.selectTile(i);
+    }
+    expect(session.selectedTiles.toSet().length, 4);
+    expect(session.check(), isTrue);
+  });
+
+  test('shared parser keeps conjunct and guninthalu tiles intact', () {
+    expect(TeluguAkshara.split('అమ్మ'), ['అ', 'మ్మ']);
+    final source = activities.firstWhere((a) => a.id == 'builder');
+    expect(source.questions[1].tiles, ['మ్మ', 'అ']);
+    expect(source.questions.first.tiles, ['మి', 'డి', 'మా']);
+  });
+
+  test(
+    'completion, restart and replay award one star per activity per session',
+    () {
+      final learning = KidsLearningController();
+      addTearDown(learning.dispose);
+      final activity = activities.first;
+      final session = learning.sessionFor(activity);
+      expect(learning.sessionFor(activity), same(session));
+      for (var replay = 0; replay < 2; replay++) {
+        for (final question in activity.questions) {
+          session.selectChoice(question.answer);
+          session.check();
+          session.check();
+          session.next();
+        }
+        expect(session.complete, isTrue);
+        expect(session.score, 2);
+        expect(learning.stars, 1);
+        session.next();
+        expect(learning.stars, 1);
+        session.restart();
+        expect(session.index, 0);
+        expect(session.score, 0);
+        expect(session.complete, isFalse);
+        expect(session.answerState, KidsAnswerState.ready);
+      }
+      expect(KidsLearningController().stars, 0);
+    },
+  );
+
+  test('clear attempt and restart do not earn rewards', () {
+    final learning = KidsLearningController();
+    addTearDown(learning.dispose);
+    final session = learning.sessionFor(
+      activities.firstWhere((a) => a.id == 'builder'),
+    );
+    session.selectTile(0);
+    session.clearAttempt();
+    expect(session.selectedTiles, isEmpty);
+    session.restart();
+    expect(learning.stars, 0);
+  });
+
+  test(
+    'all educational pictures load offline and have image descriptions',
+    () async {
+      for (final question in activities.expand((a) => a.questions)) {
+        if (question.imageAsset != null) {
+          final data = await rootBundle.load(question.imageAsset!);
+          expect(data.lengthInBytes, greaterThan(0));
+          expect(question.imageDescription, isNotEmpty);
+        }
+      }
+    },
+  );
+}

@@ -53,6 +53,18 @@ class SettingsScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 22),
+          Card(
+            child: SwitchListTile(
+              key: const ValueKey('english-helper-setting'),
+              title: const Text('ఇంగ్లీష్ సహాయం — English Helper'),
+              subtitle: const Text(
+                'పిల్లల ఆటల్లో తెలుగు కింద చిన్న ఇంగ్లీష్ వివరణలు',
+              ),
+              value: settings.englishHelper,
+              onChanged: settings.setEnglishHelper,
+            ),
+          ),
+          const SizedBox(height: 22),
           Text(
             'రోజువారీ పదకేళి, అభ్యాస పురోగతి త్వరలో వస్తాయి. '
             'ఈ దశలో సెట్టింగ్స్ యాప్ తెరిచి ఉన్నంతవరకే ఉంటాయి.',

@@ -5,9 +5,11 @@ import 'package:flutter/services.dart';
 
 import '../app/theme/app_colors.dart';
 import '../models/kids_question.dart';
+import '../models/telugu_akshara.dart';
 import '../services/kids_question_service.dart';
 import '../shared/widgets/home_artwork.dart';
 import '../widgets/premium_telugu_text.dart';
+import '../widgets/kids_learning_text.dart';
 
 class KidsGameScreen extends StatefulWidget {
   const KidsGameScreen({this.onBack, super.key});
@@ -65,7 +67,10 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
       return;
     }
 
-    final isCorrect = _selectedAnswer == _currentQuestion.answer;
+    final isCorrect = TeluguAkshara.equivalent(
+      _selectedAnswer!,
+      _currentQuestion.answer,
+    );
     setState(() {
       _wasCorrect = isCorrect;
       if (isCorrect) {
@@ -162,12 +167,12 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
         leading: widget.onBack == null
             ? null
             : IconButton(
-                tooltip: 'Back to Home',
+                tooltip: 'ఆటలకు వెళ్లు',
                 onPressed: widget.onBack,
                 icon: const Icon(Icons.arrow_back_rounded),
               ),
         title: Text(
-          'Play & Learn',
+          'పదాన్ని పూర్తి చేయి',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.titleMedium?.copyWith(
@@ -272,8 +277,9 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  PremiumTeluguText(
-                    'స్థాయి ${_levelIndex + 1} · ${_currentLevel.name}',
+                  KidsLearningText(
+                    'స్థాయి ${_levelIndex + 1} · ${_currentLevel.title}',
+                    english: _currentLevel.name,
                     key: const ValueKey('kids-level'),
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
@@ -288,7 +294,7 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
                 ],
               ),
               Semantics(
-                label: 'Score: $_score',
+                label: 'స్కోరు: $_score',
                 child: ExcludeSemantics(
                   child: Container(
                     key: const ValueKey('kids-score'),
@@ -331,7 +337,7 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
           ),
           const SizedBox(height: 6),
           Semantics(
-            label: 'Question progress',
+            label: 'ప్రశ్న పురోగతి',
             value: '${_index + 1} of ${_currentLevel.questions.length}',
             child: Row(
               children: [
@@ -416,9 +422,10 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        PremiumTeluguText(
+        KidsLearningText(
           'తప్పిన అక్షరాన్ని ఎంచుకోండి',
-          textAlign: TextAlign.center,
+          english: 'Choose the missing letter.',
+          center: true,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w700,
           ),
@@ -526,7 +533,7 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
             ),
           ),
           icon: const Icon(Icons.check_rounded),
-          label: const Text('Check'),
+          label: const KidsLearningText('సరిచూడు', english: 'Check answer'),
         ),
         if (_message != null) ...[const SizedBox(height: 12), _feedback()],
       ],

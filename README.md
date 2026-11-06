@@ -13,6 +13,8 @@ and older adults. Android and iOS platform projects are included.
 - Classic connected Telugu sample crosswords with clues, answer checking, and reset.
 - Kids missing-letter game with retries and one point per correctly answered
   question.
+- Telugu-first Kids dashboard with three freely selectable learning paths,
+  five activity types, optional English Helper and session-only completion stars.
 - Font-size and dark-mode settings through the home screen's settings button.
 - A gentle home entrance animation that respects system reduced-motion settings.
 - Locally bundled Telugu and Latin fonts. No runtime font downloads, account,
@@ -149,6 +151,102 @@ newspaper-size content pack. No copied newspaper/textbook exercises or additiona
 unreviewed candidate puzzles were added. Broader cultural, geography, proverb
 and literature categories need original, human-reviewed content in Phase C.
 Game state and hint counts remain in-session only; durable resume is future work.
+
+## Kids Learning: Phase C
+
+The Learn tab now opens a Telugu-first activity dashboard, extending the approved
+Template B purple/gold design with the existing local cards and parrot. Classic,
+Splash, Welcome, Home artwork and crossword parsing remain unchanged.
+
+| Learning path | Suggested ages | Available activities |
+| --- | --- | --- |
+| చిన్నారులు | 3-5 | Picture matching, letter recognition |
+| బాల మిత్రులు | 6-8 | Letter recognition, complete the word, word builder |
+| పద వీరులు | 9-12 | Complete the word, word builder, meaning match |
+
+These are freely selectable educational paths, not verified ages. No name,
+birthday, account, advertising, analytics, network service or new dependency is
+introduced. Sessions contain two to five questions. Picture/letter choices give
+immediate feedback; other games use an explicit Check action. Correct responses
+lock to prevent duplicate scoring; Next keeps feedback visible until the child
+is ready. Incorrect responses can be retried without losing points.
+
+The two missing-akshara activities adapt Beginner and Medium questions from
+`KidsQuestionService`, rather than replacing the original content. The dashboard's
+**మునుపటి అక్షరాభ్యాసం** action preserves all five original levels, automatic
+advancement and in-session answers. Activity sessions, selected category and the
+original practice survive switching Home/Learn tabs. Leaving an unfinished
+activity and reopening it resumes the same in-session attempt.
+
+Word builder uses the Phase B `TeluguAkshara` parser and canonical equivalence.
+Tiles have individual identities, including repeated aksharas in కలకల.
+Selected tiles can be removed individually, undone or cleared. Partial answers
+and incorrect orders cannot succeed. Restart clears only that activity attempt.
+
+One completed activity earns one star per app session, not one star per answer
+or replay. Shared activities retain their reward when switching age categories;
+replaying cannot inflate the total. The dashboard displays actual completed
+questions, and completion provides Replay/Return actions without a lives system.
+Celebration is static, so reduced motion never blocks feedback.
+
+**ఇంగ్లీష్ సహాయం — English Helper** is OFF by default. The existing Provider
+settings controller updates local translations immediately. English instructions,
+choice translations and explanations are smaller and below Telugu; they never
+replace it. Meaning explanations appear only after a correct answer. The setting,
+category, attempts and stars are **in-session only**, like the existing font/dark
+settings; restarting the app resets them. Onboarding persistence is unchanged.
+
+### Files and content review
+
+- `lib/models/kids_learning.dart`: typed activities/questions, categories,
+  bilingual choices, difficulty/review status, picture descriptions and validation.
+- `lib/services/kids_learning_service.dart`: six short activity packs covering
+  five types, 19 original/adapted questions and authored offline English helpers.
+- `lib/core/kids_learning_controller.dart`: testable attempts, tile identity,
+  answer locks, progression and duplicate-safe session rewards.
+- `lib/screens/kids_learning_screen.dart` and `kids_activity_screen.dart`:
+  responsive dashboard/gameplay, settings access and session navigation.
+- `lib/widgets/kids_learning_text.dart`: Telugu-primary/optional-English rendering.
+- Existing settings, AppShell and original Kids screen integrate these surfaces.
+  `pubspec.yaml` adds only a local asset directory; dependencies are unchanged.
+- `test/kids_learning_test.dart` and `kids_learning_ui_test.dart`: content,
+  settings, gameplay, rewards, bundled pictures, navigation and real-font layouts.
+  Existing Kids/integration tests retain their original gameplay assertions with
+  updated dashboard entry and Telugu labels.
+
+**All 19 questions remain `pending-human-review`.** Runtime validation checks
+unique IDs, valid choices, answer/tile agreement, complete akshara boundaries and
+required fields; it cannot approve spelling, English accuracy, age suitability or
+distractor/image alignment. A Telugu educator should review:
+
+| Pack | Content awaiting review |
+| --- | --- |
+| Pictures (2) | మామిడి, చిలుక, distractors and picture descriptions |
+| Letters (3) | అ–అరటి, ఆ–ఆవు, క–కలం and English vocabulary |
+| Word completion (6) | కమలం, అమ్మ, పాఠశాల, మామిడి, పశువు, చెట్టు |
+| Builder (5) | మామిడి, అమ్మ, పాప, మామ, కలకల and authored clues |
+| Meanings (3) | ధైర్యం/సాహసం, ఆనందం/సంతోషం, వెలుగు/చీకటి |
+
+Picture matching is intentionally limited to two genuine bundled illustrations:
+the existing parrot and a mango-only crop of approved original `home/learn.png`.
+See `assets/artwork/README.md` for provenance and distribution-review limits.
+No downloaded stock images or disguised placeholder artwork is used. A larger
+reviewed pack needs original/licensed fruit, animal and familiar-object pictures;
+broader letters, guninthalu, vegetables, colors, geography and culture need
+additional reviewed content, not automatically generated filler.
+
+### Offline pronunciation extension
+
+`KidsLearningQuestion.audioAsset` is an optional extension point and currently
+null for every question. No audio button or pronunciation claim is displayed.
+Future work must bundle educator-reviewed Telugu recordings, add an offline
+player and visual alternatives, and expose controls only for playable recordings.
+There is no online speech API or synthesized Telugu pronunciation.
+
+Phase D should prioritize educator/content review, physical Android/iOS testing,
+reviewed illustration/audio packs and durable local preferences/resume before
+adding more levels. Native iOS signing/testing still requires macOS/Xcode or a
+configured macOS build service; Flutter tests do not establish iPhone behavior.
 
 ## Splash and Welcome
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../screens/home_screen.dart';
-import '../../screens/kids_game_screen.dart';
+import '../../screens/kids_learning_screen.dart';
 import '../../screens/padakeli_screen.dart';
 import '../../screens/progress_screen.dart';
 import '../../screens/settings_screen.dart';
@@ -63,7 +63,7 @@ class _AppShellState extends State<AppShell> {
                 ? PadakeliScreen(onBack: () => _select(0))
                 : const SizedBox.shrink(),
             _visited.contains(2)
-                ? KidsGameScreen(onBack: () => _select(0))
+                ? KidsLearningScreen(onBack: () => _select(0))
                 : const SizedBox.shrink(),
             _visited.contains(3)
                 ? const ProgressScreen()

@@ -31,9 +31,11 @@ enum TeluguFontSize {
 class AppSettingsController extends ChangeNotifier {
   TeluguFontSize _fontSize = TeluguFontSize.normal;
   bool _darkMode = false;
+  bool _englishHelper = false;
 
   TeluguFontSize get fontSize => _fontSize;
   bool get darkMode => _darkMode;
+  bool get englishHelper => _englishHelper;
   double get fontScale => _fontSize.scale;
 
   void setFontSize(TeluguFontSize value) {
@@ -49,6 +51,12 @@ class AppSettingsController extends ChangeNotifier {
       return;
     }
     _darkMode = value;
+    notifyListeners();
+  }
+
+  void setEnglishHelper(bool value) {
+    if (_englishHelper == value) return;
+    _englishHelper = value;
     notifyListeners();
   }
 }

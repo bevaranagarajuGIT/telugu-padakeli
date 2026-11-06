@@ -113,7 +113,7 @@ void main() {
         if (dark) {
           await tester.tap(find.byTooltip('Settings'));
           await tester.pumpAndSettle();
-          await tester.tap(find.byType(SwitchListTile));
+          await tester.tap(find.widgetWithText(SwitchListTile, 'డార్క్ మోడ్'));
           await tester.pumpAndSettle();
           await tester.pageBack();
           await tester.pumpAndSettle();
