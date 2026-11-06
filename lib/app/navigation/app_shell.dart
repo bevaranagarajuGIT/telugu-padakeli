@@ -60,10 +60,10 @@ class _AppShellState extends State<AppShell> {
               ),
             ),
             _visited.contains(1)
-                ? const PadakeliScreen()
+                ? PadakeliScreen(onBack: () => _select(0))
                 : const SizedBox.shrink(),
             _visited.contains(2)
-                ? const KidsGameScreen()
+                ? KidsGameScreen(onBack: () => _select(0))
                 : const SizedBox.shrink(),
             _visited.contains(3)
                 ? const ProgressScreen()

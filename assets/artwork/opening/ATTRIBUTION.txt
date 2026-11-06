@@ -1,0 +1,26 @@
+Tirumala opening illustrations
+
+Architectural photographic reference:
+"Tirumala 090615.jpg", Nikhil B / Wikimedia Commons (Nikhilb239).
+https://commons.wikimedia.org/wiki/File:Tirumala_090615.jpg
+License: Creative Commons Attribution-ShareAlike 4.0 International.
+https://creativecommons.org/licenses/by-sa/4.0/
+
+Changes: new stylized, brightly coloured illustrations; removal of crowds;
+addition of a learning book, brass lamp, flowers, and an imagined family.
+The photo-derived temple and family illustrations are distributed as adaptations
+under CC BY-SA 4.0, with attribution to the photographic source above.
+This attribution does not imply endorsement by the photographer or TTD.
+This artwork license does not apply to the application source code.
+
+Original illustration generation was explicitly authorized by the user and
+performed through Copilot's image-generation tool on 2026-11-05.
+Generation IDs:
+Temple: 4a16de0367aadd98d76b693b78f189cf9b5954c9e9c0f4dc4c2f7cc35e986853
+Family: 4f726bdcb6e6934feac1c588996fbea28a18fef0623a65a01f2eab704117a17b
+
+The generator did not expose a backend model/version or a separate license
+grant. Review the applicable generation/service terms before distribution.
+The family is fictional. These are stylized illustrations, not photographs
+or an official architectural/TTD approval. Obtain human authenticity review
+before release. No artwork or lettering from another app was copied.

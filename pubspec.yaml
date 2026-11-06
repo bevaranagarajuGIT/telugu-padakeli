@@ -10,6 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   provider: ^6.1.5+1
+  shared_preferences: ^2.5.6
 
 dev_dependencies:
   flutter_test:
@@ -20,6 +21,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/artwork/home/
+    - assets/artwork/opening/
     - assets/data/
     - assets/fonts/OFL.txt
     - assets/fonts/Roboto-LICENSE.txt

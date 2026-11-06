@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:telugu_padakeli/core/app_theme.dart';
-import 'package:telugu_padakeli/main.dart';
+import 'helpers/returning_user_app.dart';
 import 'package:telugu_padakeli/screens/home_screen.dart';
+import 'package:telugu_padakeli/shared/widgets/app_header.dart';
 import 'package:telugu_padakeli/shared/widgets/feature_card.dart';
 import 'package:telugu_padakeli/shared/widgets/home_artwork.dart';
 import 'package:telugu_padakeli/widgets/premium_telugu_text.dart';
@@ -108,6 +109,90 @@ void main() {
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox.shrink());
       });
+    }
+  }
+
+  for (final width in [320.0, 390.0, 412.0]) {
+    for (final fontScale in [1.0, 1.2]) {
+      testWidgets(
+        'compact header fits width $width and font scale $fontScale',
+        (tester) async {
+          tester.view.physicalSize = Size(width, 844);
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.resetPhysicalSize);
+          addTearDown(tester.view.resetDevicePixelRatio);
+          final semantics = tester.ensureSemantics();
+          var openedSettings = false;
+          await tester.pumpWidget(
+            MaterialApp(
+              theme: AppTheme.light(fontScale),
+              home: HomeScreen(
+                onClassic: () {},
+                onLearn: () {},
+                onProgress: () {},
+                onSettings: () => openedSettings = true,
+                hasActivePuzzle: true,
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+          final scene = tester.getRect(find.byType(HomeScenery));
+          final title = tester.getRect(find.text('తెలుగు పదకేళి'));
+          final tagline = tester.getRect(find.text('పదాలతో ఆట, భాషతో ఆనందం'));
+          final mascot = tester.getRect(
+            find.byKey(const ValueKey('home-mascot-motion')),
+          );
+          expect(scene.contains(title.topLeft), isTrue);
+          expect(scene.contains(title.bottomRight), isTrue);
+          expect(scene.contains(tagline.topLeft), isTrue);
+          expect(scene.contains(tagline.bottomRight), isTrue);
+          expect(title.right, lessThanOrEqualTo(mascot.center.dx));
+          expect(tagline.right, lessThanOrEqualTo(mascot.center.dx));
+          if (fontScale > 1) {
+            expect(title.right + 12, lessThanOrEqualTo(mascot.left + 0.001));
+            expect(tagline.right + 12, lessThanOrEqualTo(mascot.left + 0.001));
+          }
+          final gradient = tester
+              .widgetList<DecoratedBox>(
+                find.descendant(
+                  of: find.byType(HomeScenery),
+                  matching: find.byType(DecoratedBox),
+                ),
+              )
+              .map((box) => box.decoration)
+              .whereType<BoxDecoration>()
+              .map((decoration) => decoration.gradient)
+              .whereType<LinearGradient>()
+              .single;
+          final textEdge = (tagline.right - scene.left) / scene.width;
+          final stops = gradient.stops!;
+          final segment = textEdge <= stops[1] ? 0 : 1;
+          final shade = Color.lerp(
+            gradient.colors[segment],
+            gradient.colors[segment + 1],
+            (textEdge - stops[segment]) / (stops[segment + 1] - stops[segment]),
+          )!;
+          final lightestBackground = Color.alphaBlend(shade, Colors.white);
+          expect(
+            1.05 / (lightestBackground.computeLuminance() + 0.05),
+            greaterThanOrEqualTo(4.5),
+          );
+          expect(
+            tester.getSize(find.byType(AppHeader)).height,
+            lessThanOrEqualTo(fontScale > 1 ? 400 : 300),
+          );
+          expect(find.bySemanticsLabel('తెలుగు పదకేళి'), findsOneWidget);
+          expect(
+            find.bySemanticsLabel('పదాలతో ఆట, భాషతో ఆనందం'),
+            findsOneWidget,
+          );
+          await tester.tap(find.byTooltip('Settings'));
+          expect(openedSettings, isTrue);
+          expect(tester.takeException(), isNull);
+          semantics.dispose();
+          await tester.pumpWidget(const SizedBox.shrink());
+        },
+      );
     }
   }
 

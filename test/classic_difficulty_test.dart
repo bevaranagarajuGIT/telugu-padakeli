@@ -116,6 +116,9 @@ void main() {
       isTrue,
     );
 
+    await tester.ensureVisible(find.text('అడ్డం (Across)'));
+    await tester.tap(find.text('అడ్డం (Across)'));
+    await tester.pumpAndSettle();
     final downClueTwo = find.byKey(const ValueKey('clue-across-2'));
     await tester.ensureVisible(downClueTwo);
     await tester.tap(downClueTwo);

@@ -32,7 +32,9 @@ void main() {
     'all bundled puzzles validate and every answer matches its cells',
     () async {
       final puzzles = await const LocalPuzzleRepository().getPuzzles();
-      expect(puzzles.map((p) => p.level), ['beginner', 'easy']);
+      expect(puzzles.map((p) => p.id), [1, 2, 3, 4, 5, 6]);
+      expect(puzzles.where((p) => p.level == 'beginner'), hasLength(3));
+      expect(puzzles.where((p) => p.level == 'easy'), hasLength(3));
       for (final puzzle in puzzles) {
         expect(puzzle.validate, returnsNormally);
       }
@@ -176,7 +178,13 @@ void main() {
     expect(find.textContaining('త్వరలో'), findsNothing);
     await tester.tap(find.text('మళ్లీ ఆడండి'));
     await tester.pumpAndSettle();
-    expect(find.text('★ 0'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('kids-score')),
+        matching: find.text('0'),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('కమ_'), findsOneWidget);
   });
 }

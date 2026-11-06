@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:telugu_padakeli/core/app_settings_controller.dart';
 import 'package:telugu_padakeli/core/app_theme.dart';
-import 'package:telugu_padakeli/main.dart';
+import 'helpers/returning_user_app.dart';
 import 'package:telugu_padakeli/screens/home_screen.dart';
 import 'package:telugu_padakeli/shared/widgets/feature_card.dart';
 import 'package:telugu_padakeli/shared/widgets/home_artwork.dart';

@@ -1,5 +1,32 @@
 # Home artwork
 
+## Opening artwork
+
+The separate `opening/` directory contains `tirumala-temple.webp` and
+`telugu-family.webp`, each 1280x960 with a 4:3 aspect ratio, totalling 894,232
+bytes. These are new stylized illustrations authorized by the user, not copied
+from the supplied application's reference. Temple composition follows the
+recognizable white Maha Dwaram, golden Ananda Nilayam vimana and forested hills
+in the licensed architectural reference. Family art adds fictional grandparents,
+parents, a boy and a girl sharing a blank puzzle book. Mango leaves, marigolds,
+a learning book and brass lamp provide restrained festive detail.
+
+Photographic source: **Nikhil B / Wikimedia Commons (Nikhilb239)**,
+[Tirumala 090615.jpg](https://commons.wikimedia.org/wiki/File:Tirumala_090615.jpg),
+licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
+Both photo-derived adaptations retain that artwork license; it does not license
+the app's source code. See bundled `opening/ATTRIBUTION.txt` for exact
+modifications, generation IDs and attribution. Welcome exposes these credits
+through Flutter's license page. No photographer or TTD endorsement is implied.
+Human architectural/authenticity and generation-service terms review remain
+release prerequisites. Do not treat generated architecture as verified fact.
+
+Original PNGs were 1448x1086. Bundled WebP copies use Pillow LANCZOS resizing to
+1280x960 and quality 92/method 6 encoding. They are displayed with `BoxFit.contain`,
+bounded decode width and no runtime network requests. Actual Telugu titles,
+description, Skip and Start labels remain accessible Flutter text. The opening
+layout follows the supplied two-phone reference without inventing extra pages.
+
 ## Source and distribution limits
 
 These are original static illustrations commissioned for this milestone through
@@ -66,8 +93,11 @@ Original tool image IDs (SHA-256 identifiers, **not** bundled-file checksums):
 
 ## Integration and motion
 
-The scene is decorative and never behind body/action text. The parrot welcomes
-new sessions and uses its static celebration pose when returning to Home after
+On compact screens, the title and tagline sit over the decorative scene with a
+blue contrast scrim; other body text and actions remain outside the artwork.
+The header grows with text, and the parrot stays on the right. Wider screens
+retain the side-by-side composition. The parrot welcomes new sessions and uses
+its static celebration pose when returning to Home after
 visiting Classic (a welcome-back illustration, **not** a completion reward).
 Feature illustrations retain real labels, Coming Soon states, and existing
 keyboard/semantic activation. Decorative images are excluded from semantics.

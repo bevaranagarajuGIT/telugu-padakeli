@@ -39,7 +39,7 @@ class AppHeader extends StatelessWidget {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 1040),
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 8, 24, 28),
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -68,14 +68,13 @@ class AppHeader extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 12),
                     LayoutBuilder(
                       builder: (context, constraints) {
-                        final showArt =
-                            MediaQuery.textScalerOf(
-                              context,
-                            ).scale(textTheme.bodyLarge?.fontSize ?? 16) <=
-                            22;
+                        final bodySize = MediaQuery.textScalerOf(
+                          context,
+                        ).scale(textTheme.bodyLarge?.fontSize ?? 16);
+                        final showArt = bodySize <= 22;
                         final title = Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -100,16 +99,10 @@ class AppHeader extends StatelessWidget {
                         if (!showArt) return title;
                         final artwork = HomeScenery(celebrating: celebrating);
                         if (constraints.maxWidth < 640) {
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              title,
-                              const SizedBox(height: 16),
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: artwork,
-                              ),
-                            ],
+                          return HomeScenery(
+                            celebrating: celebrating,
+                            foreground: title,
+                            reserveMascotSpace: bodySize > 18,
                           );
                         }
                         return Row(

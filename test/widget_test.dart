@@ -5,12 +5,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:telugu_padakeli/app/navigation/app_shell.dart';
 import 'package:telugu_padakeli/app/theme/app_colors.dart';
 import 'package:telugu_padakeli/core/app_settings_controller.dart';
-import 'package:telugu_padakeli/main.dart';
+import 'helpers/returning_user_app.dart';
 import 'package:telugu_padakeli/screens/home_screen.dart';
 import 'package:telugu_padakeli/shared/widgets/app_buttons.dart';
 import 'package:telugu_padakeli/shared/widgets/bottom_navigation.dart';
 import 'package:telugu_padakeli/shared/widgets/feature_card.dart';
 import 'package:telugu_padakeli/services/kids_question_service.dart';
+
+Finder _score(int value) => find.descendant(
+  of: find.byKey(const ValueKey('kids-score')),
+  matching: find.text('$value'),
+);
 
 void main() {
   test('Kids Game provides five levels with three questions each', () {
@@ -28,6 +33,7 @@ void main() {
 
   testWidgets('home screen shows primary actions', (tester) async {
     await tester.pumpWidget(const TeluguPadakeliApp());
+    await tester.pumpAndSettle();
 
     expect(find.text('Telugu Padakeli'), findsOneWidget);
     expect(find.text('తెలుగు పదకేళి'), findsOneWidget);
@@ -54,7 +60,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('kids-answer-లం')));
     await tester.tap(find.text('Check'));
     await tester.pump();
-    expect(find.text('★ 1'), findsOneWidget);
+    expect(_score(1), findsOneWidget);
     expect(find.text('సరైంది! మీ స్కోరు పెరిగింది.'), findsOneWidget);
     expect(find.byKey(const ValueKey('kids-feedback-success')), findsOneWidget);
     expect(
@@ -76,7 +82,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('తప్పు సమాధానం. మళ్ళీ ప్రయత్నించండి.'), findsOneWidget);
     expect(find.byKey(const ValueKey('kids-feedback-error')), findsOneWidget);
-    expect(find.text('★ 1'), findsOneWidget);
+    expect(_score(1), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey('kids-answer-మ్మ')));
     await tester.tap(find.text('Check'));
@@ -104,20 +110,20 @@ void main() {
 
     await tester.tap(find.text('Check'));
     await tester.pumpAndSettle();
-    expect(find.text('★ 0'), findsOneWidget);
+    expect(_score(0), findsOneWidget);
     expect(find.text('ఒక అక్షరం ఎంచుకోండి.'), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey('kids-answer-పం')));
     await tester.tap(find.text('Check'));
     await tester.pumpAndSettle();
-    expect(find.text('★ 0'), findsOneWidget);
+    expect(_score(0), findsOneWidget);
     expect(find.byKey(const ValueKey('kids-feedback-error')), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey('kids-answer-లం')));
     await tester.tap(find.text('Check'));
     await tester.pump(const Duration(milliseconds: 1200));
     await tester.pumpAndSettle();
-    expect(find.text('★ 1'), findsOneWidget);
+    expect(_score(1), findsOneWidget);
     expect(find.text('అ_'), findsOneWidget);
     expect(find.text('సరైంది! మీ స్కోరు పెరిగింది.'), findsNothing);
 
@@ -126,7 +132,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1200));
     await tester.pumpAndSettle();
     expect(find.text('పా_శాల'), findsOneWidget);
-    expect(find.text('★ 2'), findsOneWidget);
+    expect(_score(2), findsOneWidget);
   });
 
   testWidgets('progress card opens an honest coming-soon screen', (
@@ -310,8 +316,10 @@ void main() {
     for (final number in ['1', '2']) {
       expect(find.text(number, skipOffstage: false), findsOneWidget);
     }
-    expect(find.text('అడ్డం (Across →)'), findsOneWidget);
-    expect(find.text('నిలువు (Down ↓)'), findsOneWidget);
+    expect(find.text('అడ్డం (Across)'), findsOneWidget);
+    expect(find.text('నిలువు (Down)'), findsOneWidget);
+    expect(find.byKey(const ValueKey('clue-across-1')), findsOneWidget);
+    expect(find.byKey(const ValueKey('clue-across-2')), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('crossword-cell-0')));
     await tester.ensureVisible(find.byKey(const ValueKey('akshara-ఆ')));
     await tester.tap(find.byKey(const ValueKey('akshara-ఆ')));

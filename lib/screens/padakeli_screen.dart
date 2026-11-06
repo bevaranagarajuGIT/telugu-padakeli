@@ -1,19 +1,27 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
 
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+import '../app/theme/app_colors.dart';
 import '../models/puzzle.dart';
 import '../services/local_puzzle_repository.dart';
 import '../services/puzzle_repository.dart';
 import '../widgets/app_page.dart';
 import '../widgets/crossword_grid.dart';
-import '../widgets/section_title.dart';
+import '../widgets/classic_hints_sheet.dart';
+import '../widgets/difficulty_selection.dart';
+import '../widgets/premium_telugu_text.dart';
 
 class PadakeliScreen extends StatefulWidget {
   const PadakeliScreen({
     this.repository = const LocalPuzzleRepository(),
+    this.onBack,
     super.key,
   });
 
   final PuzzleRepository repository;
+  final VoidCallback? onBack;
 
   @override
   State<PadakeliScreen> createState() => _PadakeliScreenState();
@@ -29,6 +37,17 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
   PuzzleDirection _selectedDirection = PuzzleDirection.across;
   PuzzleClue? _selectedClue;
   int? _selectedCellIndex;
+  final _scrollController = ScrollController();
+  Timer? _advanceTimer;
+  bool _isAdvancing = false;
+  bool _isComplete = false;
+  bool? _wasCorrect;
+
+  List<Puzzle> get _levelPuzzles => _puzzles!
+      .where((puzzle) => puzzle.level == _selectedLevel)
+      .toList(growable: false);
+
+  int get _puzzleNumber => _levelPuzzles.indexOf(_puzzle!) + 1;
 
   List<PuzzleClue> _cluesFor(Puzzle puzzle, PuzzleDirection direction) =>
       direction == PuzzleDirection.across
@@ -77,6 +96,11 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
     }
     final puzzle = puzzles.where((puzzle) => puzzle.level == level).firstOrNull;
     if (puzzle == null) return;
+    _openPuzzle(puzzle);
+  }
+
+  void _openPuzzle(Puzzle puzzle) {
+    _advanceTimer?.cancel();
     if (_puzzle != null) {
       _disposeControllers();
     }
@@ -86,14 +110,18 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
     );
     setState(() {
       _puzzle = puzzle;
-      _selectedLevel = level;
+      _selectedLevel = puzzle.level;
       _message = null;
+      _wasCorrect = null;
+      _isAdvancing = false;
+      _isComplete = false;
       _selectedDirection = PuzzleDirection.across;
       _selectedClue = puzzle.acrossClues.firstOrNull;
       _selectedCellIndex = _selectedClue == null
           ? null
           : _selectedClue!.row * puzzle.gridSize + _selectedClue!.column;
     });
+    if (_scrollController.hasClients) _scrollController.jumpTo(0);
   }
 
   void _disposeControllers() {
@@ -105,6 +133,7 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
   }
 
   void _showDifficulties() {
+    _advanceTimer?.cancel();
     if (_puzzle != null) {
       _disposeControllers();
     }
@@ -114,12 +143,15 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
       _selectedClue = null;
       _selectedCellIndex = null;
       _message = null;
+      _wasCorrect = null;
+      _isAdvancing = false;
+      _isComplete = false;
     });
   }
 
   void _selectClue(PuzzleClue clue, PuzzleDirection direction) {
     final puzzle = _puzzle;
-    if (puzzle == null) {
+    if (puzzle == null || _isAdvancing || _isComplete) {
       return;
     }
     setState(() {
@@ -132,7 +164,7 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
 
   void _changeDirection(PuzzleDirection direction) {
     final puzzle = _puzzle;
-    if (puzzle == null) {
+    if (puzzle == null || _isAdvancing || _isComplete) {
       return;
     }
     final clues = _cluesFor(puzzle, direction);
@@ -161,7 +193,7 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
 
   void _selectCell(int index) {
     final puzzle = _puzzle;
-    if (puzzle == null) {
+    if (puzzle == null || _isAdvancing || _isComplete) {
       return;
     }
     if (_selectedCells.contains(index)) {
@@ -201,7 +233,10 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
   void _enterAkshara(String akshara) {
     final puzzle = _puzzle;
     final selectedIndex = _selectedCellIndex;
-    if (puzzle == null || selectedIndex == null) {
+    if (puzzle == null ||
+        selectedIndex == null ||
+        _isAdvancing ||
+        _isComplete) {
       return;
     }
     final row = selectedIndex ~/ puzzle.gridSize;
@@ -220,7 +255,7 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
   void _revealFirstAkshara() {
     final puzzle = _puzzle;
     final cells = _selectedCells;
-    if (puzzle == null || cells.isEmpty) {
+    if (puzzle == null || cells.isEmpty || _isAdvancing || _isComplete) {
       return;
     }
     final index = cells.first;
@@ -236,7 +271,7 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
   void _revealSelectedAnswer() {
     final puzzle = _puzzle;
     final cells = _selectedCells;
-    if (puzzle == null || cells.isEmpty) {
+    if (puzzle == null || cells.isEmpty || _isAdvancing || _isComplete) {
       return;
     }
     setState(() {
@@ -247,62 +282,42 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
       }
       _selectedCellIndex = cells.last;
       _message = 'ఎంచుకున్న సమాధానం చూపించబడింది.';
+      _wasCorrect = null;
     });
   }
 
   Future<void> _showHints() async {
     final clue = _selectedClue;
-    if (clue == null) {
+    final puzzle = _puzzle;
+    if (clue == null || _isAdvancing || _isComplete) {
       return;
     }
     await showModalBottomSheet<void>(
       context: context,
-      builder: (sheetContext) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'సూచనలు',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 8),
-              ListTile(
-                leading: const Icon(Icons.lightbulb_outline_rounded),
-                title: const Text('సులభమైన సూచన'),
-                subtitle: Text(clue.hint ?? clue.clue),
-              ),
-              ListTile(
-                key: const ValueKey('hint-reveal-first'),
-                leading: const Icon(Icons.looks_one_rounded),
-                title: const Text('మొదటి అక్షరం చూపించు'),
-                onTap: () {
-                  Navigator.of(sheetContext).pop();
-                  _revealFirstAkshara();
-                },
-              ),
-              ListTile(
-                key: const ValueKey('hint-reveal-answer'),
-                leading: const Icon(Icons.visibility_rounded),
-                title: const Text('ఎంచుకున్న సమాధానం చూపించు'),
-                onTap: () {
-                  Navigator.of(sheetContext).pop();
-                  _revealSelectedAnswer();
-                },
-              ),
-            ],
-          ),
-        ),
+      isScrollControlled: true,
+      useSafeArea: true,
+      constraints: BoxConstraints(
+        maxWidth: 560,
+        maxHeight: MediaQuery.sizeOf(context).height * 0.85,
+      ),
+      builder: (sheetContext) => ClassicHintsSheet(
+        clue: clue,
+        onRevealFirst: () {
+          Navigator.of(sheetContext).pop();
+          if (mounted && identical(puzzle, _puzzle)) _revealFirstAkshara();
+        },
+        onRevealAnswer: () {
+          Navigator.of(sheetContext).pop();
+          if (mounted && identical(puzzle, _puzzle)) _revealSelectedAnswer();
+        },
       ),
     );
   }
 
   @override
   void dispose() {
+    _advanceTimer?.cancel();
+    _scrollController.dispose();
     if (_puzzle != null) {
       for (final row in _controllers) {
         for (final controller in row) {
@@ -315,7 +330,7 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
 
   void _checkAnswer() {
     final puzzle = _puzzle;
-    if (puzzle == null) {
+    if (puzzle == null || _isAdvancing || _isComplete) {
       return;
     }
 
@@ -333,10 +348,27 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
     }
 
     setState(() {
+      _wasCorrect = isCorrect;
+      _isAdvancing = isCorrect;
       _message = isCorrect
           ? 'అద్భుతం! సమాధానం సరైనది.'
           : 'ఇంకొంచెం ప్రయత్నించండి.';
     });
+    if (isCorrect) {
+      _advanceTimer = Timer(const Duration(milliseconds: 1100), () {
+        if (!mounted || !identical(puzzle, _puzzle) || !_isAdvancing) return;
+        final nextIndex = _puzzleNumber;
+        if (nextIndex < _levelPuzzles.length) {
+          _openPuzzle(_levelPuzzles[nextIndex]);
+        } else {
+          setState(() {
+            _isComplete = true;
+            _isAdvancing = false;
+          });
+          if (_scrollController.hasClients) _scrollController.jumpTo(0);
+        }
+      });
+    }
   }
 
   void _reset() {
@@ -344,6 +376,7 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
     if (puzzle == null) {
       return;
     }
+    _advanceTimer?.cancel();
     for (var row = 0; row < puzzle.gridSize; row++) {
       for (var column = 0; column < puzzle.gridSize; column++) {
         _controllers[row][column].clear();
@@ -351,6 +384,8 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
     }
     setState(() {
       _message = null;
+      _wasCorrect = null;
+      _isAdvancing = false;
     });
   }
 
@@ -382,196 +417,308 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
       );
     }
     if (_selectedLevel == null) {
-      return AppPage(
-        title: 'Classic Padakeli',
-        child: _DifficultySelection(
-          onSelect: _loadPuzzle,
-          availableLevels: _puzzles!.map((puzzle) => puzzle.level).toSet(),
-        ),
+      return DifficultySelection(
+        onBack: widget.onBack,
+        onSelect: _loadPuzzle,
+        availableLevels: _puzzles!.map((puzzle) => puzzle.level).toSet(),
       );
     }
-    return AppPage(
-      title: 'పదకేళి',
-      actions: [
-        IconButton(
+    final theme = Theme.of(context);
+    final dark = theme.brightness == Brightness.dark;
+    final titleStyle = theme.textTheme.titleMedium!;
+    final titleSize = MediaQuery.textScalerOf(
+      context,
+    ).scale(titleStyle.fontSize!);
+    return Scaffold(
+      backgroundColor: theme.colorScheme.surface,
+      appBar: AppBar(
+        backgroundColor: AppColors.deepBlue,
+        foregroundColor: Colors.white,
+        systemOverlayStyle: SystemUiOverlayStyle.light,
+        toolbarHeight: (titleSize * 1.8 + 16).clamp(64, double.infinity),
+        leading: IconButton(
           tooltip: 'Change difficulty',
           onPressed: _showDifficulties,
-          icon: const Icon(Icons.tune_rounded),
+          icon: const Icon(Icons.arrow_back_rounded),
         ),
-      ],
-      child: puzzle == null
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                SegmentedButton<PuzzleDirection>(
-                  segments: const [
-                    ButtonSegment(
-                      value: PuzzleDirection.across,
-                      label: Text('అడ్డం (Across)'),
-                    ),
-                    ButtonSegment(
-                      value: PuzzleDirection.down,
-                      label: Text('నిలువు (Down)'),
-                    ),
-                  ],
-                  selected: {_selectedDirection},
-                  onSelectionChanged: (selection) =>
-                      _changeDirection(selection.first),
-                ),
-                if (_selectedClue != null) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    '${_selectedClue!.number}. ${_selectedClue!.clue}',
-                    key: const ValueKey('selected-clue'),
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 8),
-                CrosswordGrid(
-                  puzzle: puzzle,
-                  controllers: _controllers,
-                  selectedCellIndex: _selectedCellIndex,
-                  selectedCells: _selectedCells,
-                  onCellSelected: _selectCell,
-                  onAksharaSelected: _enterAkshara,
-                ),
-                const SizedBox(height: 18),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: [
-                    FilledButton.icon(
-                      onPressed: _checkAnswer,
-                      icon: const Icon(Icons.check_circle_rounded),
-                      label: const Text('Check Answer'),
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: _reset,
-                      icon: const Icon(Icons.refresh_rounded),
-                      label: const Text('Reset'),
-                    ),
-                    OutlinedButton.icon(
-                      key: const ValueKey('open-hints'),
-                      onPressed: _selectedClue == null ? null : _showHints,
-                      icon: const Icon(Icons.lightbulb_outline_rounded),
-                      label: const Text('Hints'),
-                    ),
-                  ],
-                ),
-                if (_message != null) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    _message!,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 22),
-                _ClueList(
-                  title: 'అడ్డం (Across →)',
-                  clues: puzzle.acrossClues,
-                  direction: PuzzleDirection.across,
-                  selectedClue: _selectedClue,
-                  selectedDirection: _selectedDirection,
-                  onSelect: _selectClue,
-                ),
-                const SizedBox(height: 18),
-                _ClueList(
-                  title: 'నిలువు (Down ↓)',
-                  clues: puzzle.downClues,
-                  direction: PuzzleDirection.down,
-                  selectedClue: _selectedClue,
-                  selectedDirection: _selectedDirection,
-                  onSelect: _selectClue,
-                ),
-              ],
-            ),
-    );
-  }
-}
-
-class _DifficultySelection extends StatelessWidget {
-  const _DifficultySelection({
-    required this.onSelect,
-    required this.availableLevels,
-  });
-
-  final Set<String> availableLevels;
-
-  final ValueChanged<String> onSelect;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final difficulties = [
-      (
-        'Beginner',
-        'ప్రారంభ స్థాయి',
-        'beginner',
-        availableLevels.contains('beginner'),
-      ),
-      ('Easy', 'సులభ స్థాయి', 'easy', availableLevels.contains('easy')),
-      ('Medium', 'మధ్యస్థ స్థాయి', null, false),
-      ('Hard', 'కఠిన స్థాయి', null, false),
-      ('Expert', 'నిపుణ స్థాయి', null, false),
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          'స్థాయిని ఎంచుకోండి',
-          textAlign: TextAlign.center,
-          style: theme.textTheme.titleLarge?.copyWith(
+        title: Text(
+          'పదకేళి · $_puzzleNumber / ${_levelPuzzles.length}',
+          key: const ValueKey('classic-puzzle-progress'),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: titleStyle.copyWith(
+            fontFamily: PremiumTeluguText.fontFamily,
+            height: PremiumTeluguText.lineHeight,
+            color: Colors.white,
             fontWeight: FontWeight.w700,
           ),
         ),
-        const SizedBox(height: 16),
-        for (final (name, title, level, isAvailable) in difficulties)
-          Card(
-            clipBehavior: Clip.antiAlias,
-            child: ListTile(
-              key: ValueKey('difficulty-$name'),
-              leading: Icon(
-                isAvailable
-                    ? Icons.play_circle_fill_rounded
-                    : Icons.lock_outline_rounded,
+        actions: [
+          IconButton(
+            tooltip: 'Hints',
+            onPressed: _selectedClue == null || _isAdvancing || _isComplete
+                ? null
+                : _showHints,
+            icon: const Icon(Icons.lightbulb_rounded, color: AppColors.gold),
+          ),
+        ],
+      ),
+      body: Container(
+        constraints: const BoxConstraints.expand(),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: dark
+                ? [AppColors.darkBackground, theme.colorScheme.surface]
+                : [
+                    const Color(0xFFE1EDFF),
+                    const Color(0xFFEFE5FF),
+                    AppColors.lightBlue,
+                  ],
+          ),
+        ),
+        child: SafeArea(
+          top: false,
+          child: SingleChildScrollView(
+            controller: _scrollController,
+            key: const ValueKey('classic-game-scroll'),
+            padding: const EdgeInsets.all(12),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 720),
+                child: _isComplete
+                    ? _completion()
+                    : puzzle == null
+                    ? const CircularProgressIndicator()
+                    : _gameContent(puzzle),
               ),
-              title: Text(name),
-              subtitle: Text(title),
-              trailing: isAvailable
-                  ? const Icon(Icons.chevron_right_rounded)
-                  : const Text('Coming Soon'),
-              enabled: isAvailable,
-              onTap: isAvailable ? () => onSelect(level!) : null,
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _gameContent(Puzzle puzzle) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final feedbackForeground = _wasCorrect == true
+        ? scheme.onTertiaryContainer
+        : _wasCorrect == false
+        ? scheme.onErrorContainer
+        : scheme.onSecondaryContainer;
+    return Column(
+      key: ValueKey('classic-puzzle-${puzzle.id}'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Align(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 240),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: AppColors.blue.withValues(alpha: 0.4),
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.deepBlue.withValues(alpha: 0.15),
+                    offset: const Offset(0, 5),
+                    blurRadius: 12,
+                  ),
+                ],
+              ),
+              child: CrosswordGrid(
+                puzzle: puzzle,
+                controllers: _controllers,
+                selectedCellIndex: _selectedCellIndex,
+                selectedCells: _selectedCells,
+                onCellSelected: _selectCell,
+                enabled: !_isAdvancing,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          alignment: WrapAlignment.center,
+          children: [
+            for (final (direction, label) in [
+              (PuzzleDirection.across, 'అడ్డం (Across)'),
+              (PuzzleDirection.down, 'నిలువు (Down)'),
+            ])
+              ChoiceChip(
+                label: PremiumTeluguText(
+                  label,
+                  style: theme.textTheme.labelLarge,
+                ),
+                selected: _selectedDirection == direction,
+                selectedColor: theme.colorScheme.secondaryContainer,
+                onSelected: _isAdvancing
+                    ? null
+                    : (_) => _changeDirection(direction),
+              ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        _ClueList(
+          clues: _cluesFor(puzzle, _selectedDirection),
+          direction: _selectedDirection,
+          selectedClue: _selectedClue,
+          selectedDirection: _selectedDirection,
+          onSelect: _selectClue,
+          enabled: !_isAdvancing,
+        ),
+        const SizedBox(height: 8),
+        AksharaPalette(
+          puzzle: puzzle,
+          onSelected: _enterAkshara,
+          enabled: !_isAdvancing,
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 10,
+          runSpacing: 10,
+          children: [
+            FilledButton.icon(
+              key: const ValueKey('open-hints'),
+              onPressed: _selectedClue == null || _isAdvancing
+                  ? null
+                  : _showHints,
+              style: _actionStyle(AppColors.gold, AppColors.ink),
+              icon: const Icon(Icons.lightbulb_rounded),
+              label: const Text('Hints'),
+            ),
+            FilledButton.icon(
+              key: const ValueKey('classic-check'),
+              onPressed: _isAdvancing ? null : _checkAnswer,
+              style: _actionStyle(const Color(0xFF087F42), Colors.white),
+              icon: const Icon(Icons.check_rounded),
+              label: const Text('Check Answer'),
+            ),
+            FilledButton.icon(
+              onPressed: _reset,
+              style: _actionStyle(const Color(0xFFFFCEBE), AppColors.ink),
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Reset'),
+            ),
+          ],
+        ),
+        if (_message != null) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: _wasCorrect == true
+                  ? scheme.tertiaryContainer
+                  : _wasCorrect == false
+                  ? scheme.errorContainer
+                  : scheme.secondaryContainer,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Semantics(
+              liveRegion: true,
+              child: Column(
+                children: [
+                  PremiumTeluguText(
+                    _message!,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: feedbackForeground,
+                    ),
+                  ),
+                  if (_isAdvancing)
+                    PremiumTeluguText(
+                      _puzzleNumber < _levelPuzzles.length
+                          ? 'తదుపరి పదకేళి తెరుచుకుంటోంది...'
+                          : 'స్థాయి పూర్తవుతోంది...',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: feedbackForeground,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ],
+    );
+  }
+
+  ButtonStyle _actionStyle(Color background, Color foreground) =>
+      FilledButton.styleFrom(
+        backgroundColor: background,
+        foregroundColor: foreground,
+        minimumSize: const Size(0, 52),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      );
+
+  Widget _completion() {
+    final theme = Theme.of(context);
+    return Card(
+      key: const ValueKey('classic-level-complete'),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Icon(Icons.verified_rounded, size: 72, color: AppColors.teal),
+            const SizedBox(height: 16),
+            PremiumTeluguText(
+              'స్థాయి పూర్తయింది!',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            PremiumTeluguText(
+              '${_levelPuzzles.length} / ${_levelPuzzles.length} పదకేళీలు పూర్తి చేశారు.',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyLarge,
+            ),
+            const SizedBox(height: 20),
+            FilledButton.icon(
+              key: const ValueKey('classic-replay'),
+              onPressed: () => _loadPuzzle(_selectedLevel!),
+              icon: const Icon(Icons.replay_rounded),
+              label: const Text('మళ్లీ ఆడండి'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton(
+              onPressed: _showDifficulties,
+              child: const Text('స్థాయిని ఎంచుకోండి'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
 
 class _ClueList extends StatelessWidget {
   const _ClueList({
-    required this.title,
     required this.clues,
     required this.direction,
     required this.selectedClue,
     required this.selectedDirection,
     required this.onSelect,
+    required this.enabled,
   });
 
-  final String title;
   final List<PuzzleClue> clues;
   final PuzzleDirection direction;
   final PuzzleClue? selectedClue;
   final PuzzleDirection selectedDirection;
   final void Function(PuzzleClue clue, PuzzleDirection direction) onSelect;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
@@ -581,16 +728,37 @@ class _ClueList extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SectionTitle(title),
             for (final clue in clues)
               ListTile(
                 key: ValueKey('clue-${direction.name}-${clue.number}'),
-                dense: true,
+                minTileHeight: 48,
+                minVerticalPadding: 6,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                selectedTileColor: Theme.of(
+                  context,
+                ).colorScheme.secondaryContainer.withValues(alpha: 0.6),
+                enabled: enabled,
                 selected:
                     identical(selectedClue, clue) &&
                     selectedDirection == direction,
-                title: Text('${clue.number}. ${clue.clue}'),
-                onTap: () => onSelect(clue, direction),
+                title: Text(
+                  '${clue.number}. ${clue.clue}',
+                  key:
+                      identical(selectedClue, clue) &&
+                          selectedDirection == direction
+                      ? const ValueKey('selected-clue')
+                      : null,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontFamily: PremiumTeluguText.fontFamily,
+                    fontFamilyFallback: const ['Roboto'],
+                    height: PremiumTeluguText.lineHeight,
+                    leadingDistribution: TextLeadingDistribution.even,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                onTap: enabled ? () => onSelect(clue, direction) : null,
               ),
           ],
         ),

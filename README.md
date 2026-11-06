@@ -5,6 +5,9 @@ and older adults. Android and iOS platform projects are included.
 
 ## What Works
 
+- Tirumala-inspired illustrated splash and a Telugu family welcome screen.
+- First-launch onboarding with Skip and Start actions; completion is saved locally
+  so returning users open Home directly.
 - Responsive home screen with the Telugu title, Classic Padakeli, Kids Learning
   Games, Daily Puzzle, and My Progress cards.
 - Classic connected Telugu sample crosswords with clues, answer checking, and reset.
@@ -31,6 +34,32 @@ Back returns from a destination to Home. Classic includes Beginner and Easy puzz
 and hints. Kids mode includes five levels with three multiple-choice questions
 each. Puzzle data is validated on loading, with a Retry action if loading fails.
 
+The Classic selector follows the colourful level-card reference: a blue backdrop,
+Telugu-first labels, and locally drawn sprout/star/mountain/crown emblems. Beginner
+and Easy open the existing puzzles; Medium, Hard, and Expert remain visibly locked
+and marked Coming Soon. Cards expand and scroll for larger font settings, support
+keyboard selection and dark mode, and provide a Back to Home action.
+
+Classic includes three puzzles each for Beginner and Easy. Check Answer validates
+the entire grid; a correct solution shows feedback for 1.1 seconds, then opens the
+next puzzle in the same difficulty with a fresh grid and clue selection. The last
+puzzle opens a level-complete screen with Replay and level-selection actions.
+Reset, changing difficulty, and disposal cancel pending progression.
+The compact blue-framed board uses yellow active cells and Across/Down clue tabs,
+with each clue shown once and the normal-phone actions above bottom navigation. Its
+blocked cells use lavender tiles with locally drawn four-petal rangoli motifs;
+they remain non-interactive and excluded from accessibility navigation. The
+colourful, scrollable Hints sheet preserves basic hints, first-akshara reveal,
+and whole-word reveal without adding coins or paid hints. Large-font boards can
+scroll horizontally rather than shrinking text or tap targets.
+
+Play & Learn uses a Template B-inspired purple/lavender layout, rounded answer
+tiles, question progress, and a hint scene with the bundled original learning
+cards and parrot. It preserves all five levels, retry/scoring rules, and automatic
+advance; the reference's hearts do not introduce a lives mechanic. The Back
+action returns Home without discarding in-session answers. Enlarged text uses a
+scrollable single-column layout, and dark mode preserves the same controls.
+
 Continue Playing retains the current classic puzzle while switching tabs within
 the same app session. It does not claim saved progress after closing the app.
 The daily feature is explicitly Coming Soon, with a working sample-puzzle action.
@@ -54,8 +83,45 @@ Phase A code:
 - `lib/screens/home_screen.dart`: responsive home and honest future-feature states.
 - `test/phase_a_theme_test.dart`: contrast, font presets, and navigation scaling.
 
-Splash/onboarding, persistent progress/settings, achievements, sound, new kids
-games, and the remaining reusable components are not part of Phase A.
+Persistent progress/settings, achievements, sound, new kids games, and the
+remaining reusable components are not part of Phase A.
+
+## Splash and Welcome
+
+The launch gate displays the branded splash while reading the local onboarding
+flag and, for new users, preparing the bundled opening illustrations. There is
+no artificial loading timer. One approved welcome page has one honest page
+indicator. Both **Skip** and **ప్రారంభిద్దాం** save
+`onboarding_completed_v1` using `shared_preferences` before opening the existing
+Home/navigation shell. Save failures keep Welcome open with a retryable message;
+initialization failures expose Retry rather than silently bypassing onboarding.
+Uninstalling or clearing this app's data resets completion. Settings, scores,
+and game progress remain in-memory; this does not add authentication or Firebase.
+
+Telugu copy is real bundled-font text, not baked into images. Artwork keeps its
+aspect ratio; content scrolls on small screens and at large accessibility sizes.
+The reference-led composition blends the temple artwork into a continuous blue
+sky, with mango/marigold garlands and a curved cream-and-gold splash footer.
+Welcome enlarges the family scene above a compact cream panel, floral divider
+and golden action, without the previous large gap between the copy and button.
+The short entrance fade and loading indicators respect reduced motion. Android's
+native launch bridge uses royal blue and the puzzle mark, including Android 12+
+system splash support. Android 12+ removes its launch overlay as soon as Flutter
+is ready instead of fading over the illustrated Flutter splash. Startup waits
+for an actually rasterized engine frame before starting image preparation and
+the 350 ms entrance fade, rather than consuming the animation behind Android's
+launch overlay. There is no separate loading timer. Reduced motion removes the
+animation wait.
+iOS uses the same launch background before Flutter paints.
+iOS build/runtime verification still requires macOS and Xcode.
+
+The temple and fictional multigenerational family are newly generated stylized
+illustrations based on a licensed Tirumala architectural photo. Attribution,
+CC BY-SA 4.0 adaptation terms, provenance, and release-review caveats are bundled
+in `assets/artwork/opening/ATTRIBUTION.txt` and available through Welcome's artwork
+credits action. **Human Tirumala architectural/authenticity review and generation
+service-terms review are required before release.** These images are not an
+official TTD endorsement or architectural certification.
 
 ## Original Home artwork milestone
 
