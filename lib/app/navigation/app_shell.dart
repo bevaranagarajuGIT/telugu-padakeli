@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../screens/home_screen.dart';
 import '../../screens/kids_learning_screen.dart';
 import '../../screens/padakeli_screen.dart';
 import '../../screens/progress_screen.dart';
 import '../../screens/settings_screen.dart';
+import '../../services/engagement_audio_manager.dart';
 import '../../shared/widgets/bottom_navigation.dart';
 
 class AppShell extends StatefulWidget {
@@ -31,7 +33,10 @@ class _AppShellState extends State<AppShell> {
   }
 
   void _select(int index) {
-    if (_selectedIndex != index) FocusScope.of(context).unfocus();
+    if (_selectedIndex != index) {
+      context.read<EngagementAudioManager?>()?.stop();
+      FocusScope.of(context).unfocus();
+    }
     setState(() {
       _selectedIndex = index;
       _visited.add(index);
@@ -63,7 +68,10 @@ class _AppShellState extends State<AppShell> {
                 ? PadakeliScreen(onBack: () => _select(0))
                 : const SizedBox.shrink(),
             _visited.contains(2)
-                ? KidsLearningScreen(onBack: () => _select(0))
+                ? TickerMode(
+                    enabled: _selectedIndex == 2 && !_settingsOpen,
+                    child: KidsLearningScreen(onBack: () => _select(0)),
+                  )
                 : const SizedBox.shrink(),
             _visited.contains(3)
                 ? const ProgressScreen()

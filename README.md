@@ -122,16 +122,22 @@ approved Splash, Welcome, Home and Kids implementations are unchanged.
   progression; cancelling resumes it, and confirming cancels it and clears the
   current board. No timer can advance the board behind the reset dialog.
 - Only validated, bundled levels are enabled. All five cards are data-driven;
-  Medium, Hard and Expert remain Coming Soon with the current six samples.
+  Beginner/Easy retain their six introductory boards. Medium, Hard and Expert
+  now each have two boards, with 5, 7 and 10 clues per board respectively.
 - Larger grids and large-font boards can be scrolled horizontally without
-  reducing akshara size or 48-pixel cell targets. Other game content scrolls
-  vertically. No new dependencies or online services were introduced.
+  reducing akshara size or 48-pixel cell targets. Boards larger than 3x3 use the
+  available content width, and horizontal scrolling follows the active cell
+  after selection, entry, hints and backspace. A visible scrollbar exposes
+  overflow. Larger boards also show an editable selected-word preview next to
+  the letter palette: tap a position to correct it, with the same shared
+  crossing values as the main grid. Other game content scrolls vertically.
+  No new dependencies or online services were introduced.
 
 ### Content audit and release review
 
-All six existing original sample puzzles are explicitly marked
+All twelve bundled puzzles, including the six unchanged introductory boards, are explicitly marked
 `pending-human-review` in JSON. Technical validation is not linguistic approval.
-The 13 answers have no duplicate normalized spellings. The tautological Easy
+The 57 answers have no duplicate normalized spellings. The tautological Easy
 clue that repeated its answer was replaced with an original candidate wording;
 that wording and its hint still require Telugu editorial review.
 
@@ -143,13 +149,17 @@ that wording and its hint still require Telugu editorial review.
 | 4 | Beginner | ఇల్లు, ఇనుము |
 | 5 | Easy | తామర, తాళం |
 | 6 | Easy | పరుగు, పలక |
+| 7-8 | Medium | 5 clues each; 5x5 and 6x6 grids |
+| 9-10 | Hard | 7 clues each; 6x6 and 7x7 grids |
+| 11-12 | Expert | 10 clues each; 8x8 and 11x11 grids |
 
 A fluent Andhra Pradesh/Telangana Telugu editor should review spelling,
 orthographic cell boundaries, natural clue wording, meanings, regional
-inclusivity and difficulty. These small 3x3 teaching samples are not a finished
-newspaper-size content pack. No copied newspaper/textbook exercises or additional
-unreviewed candidate puzzles were added. Broader cultural, geography, proverb
-and literature categories need original, human-reviewed content in Phase C.
+inclusivity and difficulty. New clues and hints are authored for this project,
+not copied from newspapers or textbooks. Static boards are checked with the
+actual `Puzzle.validate()` rules: connected cells, complete across/down runs,
+consistent numbering and intact Telugu aksharas. Technical validation does not
+make these puzzles a finished, editorially approved content pack.
 Game state and hint counts remain in-session only; durable resume is future work.
 
 ## Kids Learning: Phase C
@@ -160,21 +170,28 @@ Splash, Welcome, Home artwork and crossword parsing remain unchanged.
 
 | Learning path | Suggested ages | Available activities |
 | --- | --- | --- |
-| చిన్నారులు | 3-5 | Picture matching, letter recognition |
-| బాల మిత్రులు | 6-8 | Letter recognition, complete the word, word builder |
-| పద వీరులు | 9-12 | Complete the word, word builder, meaning match |
+| చిన్నారులు | 3-5 | 4 rounds: 5 / 5 / 5 / 5 questions |
+| బాల మిత్రులు | 6-8 | 5 rounds: 5 / 5 / 5 / 5 / 7 questions |
+| పద వీరులు | 9-12 | 6 rounds: 5 / 5 / 7 / 7 / 10 / 10 questions |
 
 These are freely selectable educational paths, not verified ages. No name,
 birthday, account, advertising, analytics, network service or new dependency is
-introduced. Sessions contain two to five questions. Picture/letter choices give
+introduced. Twelve activity packs contain 74 question entries across five game
+types. Packs shared between age paths are counted once. Short five-question
+starters keep early rounds approachable; only older paths grow to seven or ten.
+The dashboard numbers rounds within the selected path. Picture/letter choices give
 immediate feedback; other games use an explicit Check action. Correct responses
 lock to prevent duplicate scoring; Next keeps feedback visible until the child
 is ready. Incorrect responses can be retried without losing points.
 
-The two missing-akshara activities adapt Beginner and Medium questions from
+The four missing-akshara activities adapt Beginner, Easy, Medium and Master questions from
 `KidsQuestionService`, rather than replacing the original content. The dashboard's
-**మునుపటి అక్షరాభ్యాసం** action preserves all five original levels, automatic
-advancement and in-session answers. Activity sessions, selected category and the
+**మునుపటి అక్షరాభ్యాసం** action preserves the original fifteen questions at the
+start of their original five levels and adds two levels. Its seven rounds contain
+5 / 5 / 7 / 7 / 10 / 10 / 10 questions (54 total), each with an optional authored
+English hint. Complete-akshara/choice validation rejects broken content before
+play. Automatic advancement and in-session answer behavior are unchanged.
+Activity sessions, selected category and the
 original practice survive switching Home/Learn tabs. Leaving an unfinished
 activity and reopening it resumes the same in-session attempt.
 
@@ -187,7 +204,8 @@ One completed activity earns one star per app session, not one star per answer
 or replay. Shared activities retain their reward when switching age categories;
 replaying cannot inflate the total. The dashboard displays actual completed
 questions, and completion provides Replay/Return actions without a lives system.
-Celebration is static, so reduced motion never blocks feedback.
+Phase C+ adds bounded native star/particle feedback; reduced motion retains
+instant static feedback and never blocks gameplay.
 
 **ఇంగ్లీష్ సహాయం — English Helper** is OFF by default. The existing Provider
 settings controller updates local translations immediately. English instructions,
@@ -196,12 +214,68 @@ replace it. Meaning explanations appear only after a correct answer. The setting
 category, attempts and stars are **in-session only**, like the existing font/dark
 settings; restarting the app resets them. Onboarding persistence is unchanged.
 
+### Safe engagement: Phase C+
+
+Correct answers pulse a native star; retries retain encouraging Telugu text
+without punitive shaking. Activity completion and original-practice level
+transitions use 16 deterministic Canvas particles, once per visible event.
+Material answer/tile/check/next/replay buttons gain gentle press feedback.
+Motion is presentation-only: no delayed input, score changes or extra rewards.
+Animations stop under reduced motion, hidden tabs, covered routes or backgrounding.
+
+Kids completion now uses an original code-only blue/gold achievement medallion
+and complete Telugu-akshara tiles for the final learned word. Its bounded 800ms
+sequence reveals the star, flies a newly earned reward to the actual session
+total, and settles. Replay celebrates completion without another reward flight.
+Original seven-level practice shares the scene without claiming learning stars.
+Return to activities is the gold primary action; replay remains available.
+The lifecycle gates are shared with existing feedback through `EngagementTimeline`;
+all results/actions are available immediately, including with reduced motion.
+No completion-scene illustration, character rig, sound or dependency is added.
+
+Sound is OFF by default and session-only. The settings control explicitly says
+there are currently no sounds. `EngagementAudioManager` uses a silent backend:
+no audio dependencies, platform playback calls, downloads or files are added.
+It gates future approved audio by preference/foreground state and cancels pending
+cues on navigation, backgrounding, disabling sound or disposal. It never queues
+sounds to replay on resume. A future reviewed backend can be injected without
+changing answer/reward rules.
+
+`assets/artwork/README.md` records dated rights evidence and unresolved questions.
+Existing images are unchanged; new effects do not use them as animation inputs.
+The Tirumala photo's CC BY-SA rights are verified, but generated-illustration
+commercial clearance is still pending. Settings and Welcome expose license
+credits. No new parrot derivatives, characters or audio are approved by this work.
+
+### Special achievement / Bal Hanuman framework
+
+`SpecialAchievementCelebration` adds a skippable 3.5-second sequence: entrance
+light/bounce (0-0.6s), an original Flutter-drawn Bal Hanuman raising his hand,
+gently waving, nodding, blinking and moving his tail/gada (0.6-1.6s), three
+decorative stars/confetti (1.6-2.6s), and a static
+completion state (2.6-3.5s). The three effects are not three awarded stars.
+Actual rewards remain controller-owned and visible immediately. Native Telugu
+praise retains English Helper. Skip stops presentation/audio without advancing
+gameplay; Play Again and continuation work before the sequence finishes.
+Hidden/background/reduced-motion states snap to the static result, with no stale
+replay. The character uses separately transformed vector parts, not a flattened
+image. No external character image, animation pack or sound is bundled.
+The parrot remains the everyday mascot; Bal Hanuman appears only on completion.
+
+The current integration is Kids activity completion and the final original
+seven-level practice completion, not unfinished questions. Kids Next Level opens
+the next authored activity in the selected learning path; at the end of that path
+or original practice, Return to Activities replaces an unavailable next level.
+The previous practice's intermediate-level behavior and answer logic are intact.
+See the artwork manifest for the original code provenance, pending commercial
+release review and optional illustrated-character/audio replacement requirements.
+
 ### Files and content review
 
 - `lib/models/kids_learning.dart`: typed activities/questions, categories,
   bilingual choices, difficulty/review status, picture descriptions and validation.
-- `lib/services/kids_learning_service.dart`: six short activity packs covering
-  five types, 19 original/adapted questions and authored offline English helpers.
+- `lib/services/kids_learning_service.dart`: twelve activity packs covering
+  five types, 74 original/adapted questions and authored offline English helpers.
 - `lib/core/kids_learning_controller.dart`: testable attempts, tile identity,
   answer locks, progression and duplicate-safe session rewards.
 - `lib/screens/kids_learning_screen.dart` and `kids_activity_screen.dart`:
@@ -214,20 +288,22 @@ settings; restarting the app resets them. Onboarding persistence is unchanged.
   Existing Kids/integration tests retain their original gameplay assertions with
   updated dashboard entry and Telugu labels.
 
-**All 19 questions remain `pending-human-review`.** Runtime validation checks
+**All 74 activity questions remain `pending-human-review`; all 54 original-practice
+entries also await linguistic review.** Runtime validation checks
 unique IDs, valid choices, answer/tile agreement, complete akshara boundaries and
 required fields; it cannot approve spelling, English accuracy, age suitability or
 distractor/image alignment. A Telugu educator should review:
 
 | Pack | Content awaiting review |
 | --- | --- |
-| Pictures (2) | మామిడి, చిలుక, distractors and picture descriptions |
-| Letters (3) | అ–అరటి, ఆ–ఆవు, క–కలం and English vocabulary |
-| Word completion (6) | కమలం, అమ్మ, పాఠశాల, మామిడి, పశువు, చెట్టు |
-| Builder (5) | మామిడి, అమ్మ, పాప, మామ, కలకల and authored clues |
-| Meanings (3) | ధైర్యం/సాహసం, ఆనందం/సంతోషం, వెలుగు/చీకటి |
+| Pictures (5) | Original two identification prompts plus colour/classification using the same two images |
+| Letters (15) | Three five-question packs; displayed full aksharas, vocabulary and distractors |
+| Word completion (27) | Four canonical practice levels, bilingual hints and difficulty |
+| Builder (12) | Original five plus seven new words; authored clues and intact tiles |
+| Meanings (15) | Synonyms/antonyms, bilingual explanations and distractors |
 
-Picture matching is intentionally limited to two genuine bundled illustrations:
+No artwork, audio, animation, dependency or third-party exercise is added by this
+content expansion. Picture matching is intentionally limited to two genuine bundled illustrations:
 the existing parrot and a mango-only crop of approved original `home/learn.png`.
 See `assets/artwork/README.md` for provenance and distribution-review limits.
 No downloaded stock images or disguised placeholder artwork is used. A larger

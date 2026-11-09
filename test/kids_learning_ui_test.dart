@@ -150,19 +150,24 @@ void main() {
       await _tap(tester, find.byKey(const ValueKey('learning-choice-మామిడి')));
       expect(find.byKey(const ValueKey('learning-correct')), findsOneWidget);
       await _tap(tester, find.byKey(const ValueKey('learning-next')));
-      expect(find.text('ప్రశ్న 2 / 2'), findsOneWidget);
-      await _tap(tester, find.byKey(const ValueKey('learning-choice-చిలుక')));
-      await _tap(tester, find.byKey(const ValueKey('learning-next')));
+      expect(find.text('ప్రశ్న 2 / 5'), findsOneWidget);
+      for (final question in activities.first.questions.skip(1)) {
+        await _tap(
+          tester,
+          find.byKey(ValueKey('learning-choice-${question.answer}')),
+        );
+        await _tap(tester, find.byKey(const ValueKey('learning-next')));
+      }
       expect(find.text('అద్భుతం! ఆట పూర్తయింది.'), findsOneWidget);
       await _tap(tester, find.byKey(const ValueKey('learning-restart')));
-      expect(find.text('ప్రశ్న 1 / 2'), findsOneWidget);
+      expect(find.text('ప్రశ్న 1 / 5'), findsOneWidget);
       await _tap(tester, find.byTooltip('ఆటలకు వెళ్లు'));
       expect(
         tester.widget<Text>(find.byKey(const ValueKey('kids-stars'))).data,
         '1',
       );
       await _tap(tester, find.byKey(const ValueKey('kids-activity-pictures')));
-      expect(find.text('ప్రశ్న 1 / 2'), findsOneWidget);
+      expect(find.text('ప్రశ్న 1 / 5'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
@@ -203,7 +208,10 @@ void main() {
     'meaning helper does not reveal target meaning before an answer',
     (tester) async {
       final settings = AppSettingsController()..setEnglishHelper(true);
-      final session = KidsActivitySession(activities.last, () {});
+      final session = KidsActivitySession(
+        activities.firstWhere((a) => a.id == 'meanings'),
+        () {},
+      );
       addTearDown(settings.dispose);
       addTearDown(session.dispose);
       await tester.pumpWidget(

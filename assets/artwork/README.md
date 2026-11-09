@@ -50,6 +50,93 @@ interpret this record as an MIT, Apache, CC0, or other third-party license
 grant. Review the applicable generation/service terms before distribution.**
 Existing repository and bundled-font licensing is unchanged.
 
+### Rights investigation: 2026-11-06
+
+This is an evidence record, not a license grant or legal clearance. No generated
+illustration is marked CLEARED. The generation date recorded here is 2026-11-05;
+the image IDs below and in `opening/ATTRIBUTION.txt` identify tool outputs, not a
+provider, an accepted contract, a bundled-file checksum or proof of ownership.
+No additional provider/license record was found in the existing provenance.
+
+**Verified public policy evidence**
+
+- Existing bundled notices identify Noto's SIL Open Font License 1.1
+  (`assets/fonts/OFL.txt`) and Roboto's Apache License 2.0
+  (`assets/fonts/Roboto-LICENSE.txt`). They are unchanged and cover their font
+  materials, not generated illustrations or a new application-code license.
+- [GitHub Terms of Service, J.1/J.2/J.4/J.5](https://docs.github.com/en/site-policy/github-terms/github-terms-of-service#j-ai-features-training-and-your-data):
+  GitHub does not claim ownership of Input or Output. Output may be subject to
+  third-party copyrights/licenses; users must determine required licenses and
+  ensure lawful use. Non-ownership is not a third-party commercial license or
+  a guarantee that generated output is copyrightable or non-infringing.
+- The public policy repository's last path-specific revision before the recorded
+  generation date is [166eb97e485b7de3cd5dbaf8c8d16e4310fda46c,
+  committed 2026-04-27](https://github.com/github/site-policy/commit/166eb97e485b7de3cd5dbaf8c8d16e4310fda46c).
+  Its [pinned Terms of Service](https://github.com/github/site-policy/blob/166eb97e485b7de3cd5dbaf8c8d16e4310fda46c/Policies/github-terms/github-terms-of-service.md)
+  contain the same J.2 non-ownership and third-party-rights language.
+  This proves dated public wording, not which agreement governed this image tool.
+- The [live additional-product terms](https://docs.github.com/en/site-policy/github-terms/github-terms-for-additional-products-and-features#github-copilot),
+  displaying an effective date of 2026-08-27 when reviewed, route direct GitHub
+  volume purchases to Generative AI Services Terms, Microsoft purchases to
+  Microsoft Product Terms, and other Copilot users to Terms of Service J.
+  The [pinned April product-terms snapshot](https://github.com/github/site-policy/blob/166eb97e485b7de3cd5dbaf8c8d16e4310fda46c/Policies/github-terms/github-terms-for-additional-products-and-features.md)
+  still links Business/Enterprise to the older Copilot-specific terms.
+  Do not silently treat that older routing as the November contract.
+- [GitHub Generative AI Services Terms, March 2026](https://github.com/customer-terms/github-generative-ai-services-terms):
+  section 2 says GitHub does not own Inputs or Outputs; 5 requires lawful use and
+  compliance with resulting application licensing obligations. Section 1 limits
+  applicability by purchase route. Section 7 routes optional pre-release features
+  to pre-release terms. Section 8 distinguishes separately installed third-party
+  products from third-party models directly incorporated by GitHub; provider
+  terms must not be assumed merely because a model could be third-party.
+- [GitHub Pre-release License Terms](https://docs.github.com/en/site-policy/github-terms/github-pre-release-license-terms):
+  4(b) says GitHub does not own AI output; 2 limits use of the pre-release software
+  to non-production evaluation/testing and notes separate component agreements.
+  This is a candidate agreement, not proof this tool was governed by it. Its
+  software-use limits must not be misrepresented as an explicit output-image
+  commercial license or an established prohibition on every generated image.
+
+**Unresolved facts / release blockers**
+
+The tool's backend/provider/version, feature-specific terms, applicable account
+purchase/preview agreement and accepted version at generation time are unknown.
+There is no verified standalone commercial grant for these illustrations.
+Third-party visual similarity, trademark/personality rights, AI copyright
+eligibility and architectural authenticity are not cleared by the output IDs.
+No claim is made that a particular provider's terms apply. A dated public policy
+snapshot alone cannot settle these questions. Obtain written clarification from
+GitHub/the supplying service, or an independently licensed replacement approved
+by the user, before a commercial release or new parrot derivatives.
+
+| Material | Verified fact | Release status |
+| --- | --- | --- |
+| All seven `home/` PNGs, including both parrots | Recorded original tool IDs and briefs | Generation/service and third-party rights pending |
+| `kids/mango.png` | Documented crop of `home/learn.png` | Inherits unresolved source rights |
+| Both `opening/` WebPs | Source photograph's CC BY-SA 4.0 permission verified | Generated-adaptation rights and authenticity pending |
+| New Phase C+ effects | Flutter code draws circles/rectangles and animates Material icons; no image/audio inputs | No new external asset license required; not an artwork-clearance claim |
+| Audio | No recordings, music, voices or audio files added | Silent; future audio needs provenance and approval |
+
+### Tirumala CC BY-SA compliance
+
+The [Commons source page](https://commons.wikimedia.org/wiki/File:Tirumala_090615.jpg)
+identifies Nikhil B/Wikimedia Commons (Nikhilb239), own work, and CC BY-SA 4.0.
+Its permission explicitly includes commercial use and derivative works.
+The [legal code](https://creativecommons.org/licenses/by-sa/4.0/legalcode.en)
+2(a)(1) permits sharing/adaptation; 3(a) requires supplied creator/notices,
+source/license links and modification notices; 3(b) requires a same-element
+compatible adaptation license and forbids restrictions/DRM that impede reuse.
+Other rights and endorsements are not granted (2(b), 2(a)(6)).
+
+`opening/ATTRIBUTION.txt` supplies creator, source/license links, stylization and
+technical modification notices, warranty notice, no-endorsement statement, and
+CC BY-SA treatment of both adaptations, separately from app code. It is bundled
+and registered in `LicenseRegistry` by `main.dart`. Welcome's credits action is
+preserved; Settings now also opens licenses so returning users can access them.
+These requirements have been documented and the notice wiring checked, but
+generator rights remain unresolved: the two generated adaptations are not
+commercial-release cleared. A later distributor must preserve these notices and
+ensure its store/EULA/packaging does not restrict licensed artwork reuse.
+
 No reference board or Meowdoku screenshots were attached or present in this
 checkout. The artwork follows the user's written identity, not an assertion of
 fidelity to unseen references. No Meowdoku cat, logo, source, or artwork was used.
@@ -105,6 +192,95 @@ Original tool image IDs (SHA-256 identifiers, **not** bundled-file checksums):
 | Progress | `954c44debb7306cb358f2527198c1eeae3f56392b698fa80a45151bc19b554ba` |
 
 ## Integration and motion
+
+### Bal Hanuman special achievement: original Flutter vector character
+
+The supplied Meowdoku screenshot and Bing search-result thumbnails are visual
+references, not licenses or an original character master. No original Bal
+Hanuman artwork, layered rig, source license or verified sound was found in
+the bundled assets. No search-result images, modern cartoon designs, voices,
+music or animation packs were copied, traced, downloaded or bundled.
+
+On 2026-11-07 the user approved "Create an original Flutter-drawn Bal Hanuman
+(Recommended)" after being told this would be stylized vector art rather than
+a fully rendered illustration. `lib/widgets/bal_hanuman_character.dart` is the
+editable master: original Canvas paths, ovals, strokes and gradients authored
+in this repository with GitHub Copilot. No image-generation service, downloaded
+artwork, traced reference or third-party animation rig supplies its geometry.
+Its design uses traditional mythological attributes: a friendly monkey face,
+orange dhoti, gold ornaments, small gada and curled tail. It does not reuse
+the parrot or a modern cartoon's character, costume, logo, voice or pose.
+
+Head, arm, wrist, tail and gada have separate canvas pivots; eye shapes briefly
+blink. These are actual independent 2D vector transformations, not a single
+moving bitmap or a claim of 3D/full skeletal animation. The existing 3.5-second
+timeline owns all motion, skip, reduced-motion and lifecycle handling.
+`lib/widgets/special_achievement_celebration.dart` supplies finite light/particle
+effects and three decorative stars, not extra rewards. Actual star totals and
+Telugu word tiles remain unchanged. The parrot stays the everyday mascot.
+
+This records provenance and local-development approval, not legal clearance.
+No top-level LICENSE file was found during this change. Commercial distribution
+of repository source, any applicable accepted Copilot terms and third-party
+rights still require the release owner's review; no license grant or CLEARED
+status is invented. Existing disputed generated assets retain their prior status.
+No image/audio asset, layered export or pubspec dependency was added.
+
+An optional external illustration slot still moves only the whole supplied
+widget. Independently animated external artwork would require licensed layers.
+
+Optional replacement artwork, after rights review and approval:
+
+- `assets/artwork/celebrations/bal_hanuman/character.webp`: original transparent
+  full-body illustration, suggested 768x1024, target <=400 KiB; friendly joyful
+  face, orange dhoti, gold ornaments, small gada and curled tail. No text baked
+  in. Retain the editable source outside the production asset bundle.
+- `assets/artwork/celebrations/bal_hanuman/provenance.json`: creator, creation
+  date, source/master ID, applicable agreement/license and version, documented
+  commercial distribution/modification permissions, third-party-rights review,
+  approval record and any remaining questions. Unknown rights stay pending.
+- For later articulation: separately exported `body.webp`, `head.webp`,
+  `raised-hand.webp`, `gada.webp`, `tail.webp` and `rig.json` describing common
+  canvas coordinates, pivots, layer order and safe rotation limits. Obtain the
+  editable layered source and licensed modification rights before preparing
+  these derivatives. This task creates none of these files.
+- Optional reviewed audio: `assets/audio/celebrations/magic-entrance.wav`,
+  `star-reward.wav`, `level-completion.wav`, with corresponding provenance and
+  commercial/derivative permission records. No audio is currently bundled;
+  existing sound preferences/lifecycle gates retain intentional silence.
+
+Commission an independently designed, respectful mythological interpretation;
+approval of a concept alone does not clear modern third-party character art.
+No generated-output ownership statement is treated as a commercial license.
+No asset is marked CLEARED here. Before adding files, verify the actual source
+terms, record evidence/attribution and obtain approval; then register the approved
+asset directory in pubspec and bound the image's decode size for target devices.
+
+Phase C+ adds code-only correct-answer star pulses (420ms), encouraging retry
+feedback (220ms), 16 deterministic circle/rectangle completion particles (900ms),
+and 2.5% Material-button press feedback (100ms down / 140ms release). These use
+Flutter animation, Canvas and existing Material icons; no new asset files,
+reference images, sound, GIF, Lottie or character derivatives were used.
+New motion stops when hidden, covered, backgrounded or reduced motion is enabled,
+and does not resume stale celebrations. Scoring/reward ownership stays in the
+learning controller; only an actually earned star receives new-reward wording.
+The reusable reaction widget accepts a decorative child, but no parrot image is
+attached to it. Existing parrot images and their existing Home motion are unchanged.
+Audio is a silent backend with an OFF-by-default session preference; future
+backends require reviewed bundled sources and must cancel pending/active playback.
+No event queues audio for later replay after navigation, resume or re-enabling.
+
+The richer Kids completion scene in `lib/widgets/kids_completion_scene.dart`
+is newly authored Flutter/Canvas geometry: an eight-petal blue achievement
+medallion, a shaded five-point gold star, 16 bounded particles and a curved
+new-reward flight. It uses existing theme colors, Material icons and licensed
+fonts, not Meowdoku images, poses, branding or animation files. The 800ms scene
+replaces the static completion illustration on both Kids completion surfaces;
+the parrot files and its presentation elsewhere remain unchanged. The actual
+session-star count and final learned word remain visible without waiting for
+motion. Replay does not fly/claim another earned star, and original practice
+does not claim a learning reward. No new image/audio assets or external providers
+are involved; this does not change pending clearance of existing generated art.
 
 On compact screens, the title and tagline sit over the decorative scene with a
 blue contrast scrim; other body text and actions remain outside the artwork.

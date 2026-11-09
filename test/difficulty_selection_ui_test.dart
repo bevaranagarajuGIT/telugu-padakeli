@@ -158,7 +158,7 @@ void main() {
     await tester.tap(find.byTooltip('Change difficulty'));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('difficulty-Beginner')), findsOneWidget);
-    expect(find.text('Coming Soon'), findsNWidgets(3));
+    expect(find.text('Coming Soon'), findsNothing);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 }

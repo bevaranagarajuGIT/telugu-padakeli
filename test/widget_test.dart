@@ -18,7 +18,7 @@ Finder _score(int value) => find.descendant(
 );
 
 void main() {
-  test('Kids Game provides five levels with three questions each', () {
+  test('Kids Game provides seven progressively sized levels', () {
     final levels = const KidsQuestionService().getLevels();
 
     expect(levels.map((level) => level.name), [
@@ -27,8 +27,18 @@ void main() {
       'Medium',
       'Hard',
       'Expert',
+      'Master',
+      'Champion',
     ]);
-    expect(levels.every((level) => level.questions.length == 3), isTrue);
+    expect(levels.map((level) => level.questions.length), [
+      5,
+      5,
+      7,
+      7,
+      10,
+      10,
+      10,
+    ]);
   });
 
   testWidgets('home screen shows primary actions', (tester) async {
@@ -58,13 +68,13 @@ void main() {
 
     expect(find.byKey(const ValueKey('kids-level-status-0')), findsOneWidget);
     expect(find.byKey(const ValueKey('kids-question-panel')), findsOneWidget);
-    expect(find.text('ప్రశ్న 1 / 3'), findsOneWidget);
+    expect(find.text('ప్రశ్న 1 / 5'), findsOneWidget);
     expect(find.byType(TextField), findsNothing);
     await tester.tap(find.byKey(const ValueKey('kids-answer-లం')));
     await tester.tap(find.text('సరిచూడు'));
     await tester.pump();
     expect(_score(1), findsOneWidget);
-    expect(find.text('సరైంది! మీ స్కోరు పెరిగింది.'), findsOneWidget);
+    expect(find.text('శభాష్! సరైన సమాధానం.'), findsOneWidget);
     expect(find.byKey(const ValueKey('kids-feedback-success')), findsOneWidget);
     expect(
       (tester
@@ -83,7 +93,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('kids-answer-న్న')));
     await tester.tap(find.text('సరిచూడు'));
     await tester.pumpAndSettle();
-    expect(find.text('తప్పు సమాధానం. మళ్ళీ ప్రయత్నించండి.'), findsOneWidget);
+    expect(find.text('మళ్లీ ప్రయత్నించు! నువ్వు చేయగలవు.'), findsOneWidget);
     expect(find.byKey(const ValueKey('kids-feedback-error')), findsOneWidget);
     expect(_score(1), findsOneWidget);
 
@@ -97,6 +107,13 @@ void main() {
     await tester.tap(find.text('సరిచూడు'));
     await tester.pump(const Duration(milliseconds: 1200));
     await tester.pumpAndSettle();
+    for (final question
+        in const KidsQuestionService().getLevels().first.questions.skip(3)) {
+      await tester.tap(find.byKey(ValueKey('kids-answer-${question.answer}')));
+      await tester.tap(find.text('సరిచూడు'));
+      await tester.pump(const Duration(milliseconds: 1200));
+      await tester.pumpAndSettle();
+    }
     expect(find.text('స్థాయి 2 · సులభ స్థాయి'), findsOneWidget);
     expect(find.text('సులభ స్థాయి'), findsOneWidget);
     expect(find.text('ఆ_'), findsOneWidget);

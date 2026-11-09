@@ -44,13 +44,14 @@ void main() {
   });
 
   test(
-    'all five activity types and 19 reviewed-pending questions validate',
+    'all five activity types and 74 reviewed-pending questions validate',
     () {
       expect(
         activities.map((a) => a.type).toSet(),
         KidsActivityType.values.toSet(),
       );
-      expect(activities.expand((a) => a.questions).length, 19);
+      expect(activities, hasLength(12));
+      expect(activities.expand((a) => a.questions).length, 74);
       expect(() => KidsLearningService.validate(activities), returnsNormally);
       for (final question in activities.expand((a) => a.questions)) {
         expect(question.reviewStatus, 'pending-human-review');
@@ -63,17 +64,83 @@ void main() {
 
   test('completion questions reuse original prompts, answers and hints', () {
     final old = const KidsQuestionService().getLevels();
-    for (final level in [0, 2]) {
+    for (final level in [0, 1, 2, 5]) {
       final activity = activities.firstWhere(
         (a) => a.id == 'completion-$level',
       );
-      for (var i = 0; i < 3; i++) {
+      for (var i = 0; i < old[level].questions.length; i++) {
         expect(activity.questions[i].display, old[level].questions[i].prompt);
         expect(activity.questions[i].answer, old[level].questions[i].answer);
         expect(activity.questions[i].explanation, old[level].questions[i].hint);
+        expect(
+          activity.questions[i].englishExplanation,
+          old[level].questions[i].englishHint,
+        );
+        expect(activity.questions[i].difficulty, old[level].difficulty);
       }
     }
   });
+
+  test('age paths grow gradually without lengthening preschool rounds', () {
+    for (final (category, sizes) in [
+      (LearningCategory.early, [5, 5, 5, 5]),
+      (LearningCategory.explorers, [5, 5, 5, 5, 7]),
+      (LearningCategory.champions, [5, 5, 7, 7, 10, 10]),
+    ]) {
+      expect(
+        activities
+            .where((a) => a.categories.contains(category))
+            .map((a) => a.questions.length),
+        sizes,
+      );
+    }
+  });
+
+  test(
+    'every expanded round completes once; replay and category changes cannot duplicate rewards',
+    () {
+      final learning = KidsLearningController();
+      addTearDown(learning.dispose);
+      for (final (index, activity) in activities.indexed) {
+        final session = learning.sessionFor(activity);
+        for (var replay = 0; replay < 2; replay++) {
+          expect(session.complete, isFalse);
+          session.next();
+          expect(session.index, 0);
+          for (final question in activity.questions) {
+            expect(learning.stars, index + (replay == 0 ? 0 : 1));
+            if (activity.type == KidsActivityType.builder) {
+              final used = <int>{};
+              for (final cell in TeluguAkshara.split(question.answer)) {
+                final available = List.generate(question.tiles.length, (i) => i)
+                    .firstWhere(
+                      (i) =>
+                          !used.contains(i) &&
+                          TeluguAkshara.equivalent(question.tiles[i], cell),
+                    );
+                used.add(available);
+                session.selectTile(available);
+              }
+            } else {
+              session.selectChoice(question.answer);
+            }
+            expect(session.check(), isTrue);
+            session.check();
+            session.next();
+          }
+          expect(session.complete, isTrue);
+          expect(session.score, activity.questions.length);
+          expect(learning.stars, index + 1);
+          for (final category in LearningCategory.values) {
+            learning.selectCategory(category);
+            expect(learning.sessionFor(activity), same(session));
+            expect(learning.stars, index + 1);
+          }
+          session.restart();
+        }
+      }
+    },
+  );
 
   test('duplicate activities are rejected', () {
     expect(
@@ -236,11 +303,13 @@ void main() {
           session.next();
         }
         expect(session.complete, isTrue);
-        expect(session.score, 2);
+        expect(session.score, activity.questions.length);
         expect(learning.stars, 1);
+        expect(session.earnedStarOnCompletion, replay == 0);
         session.next();
         expect(learning.stars, 1);
         session.restart();
+        expect(session.earnedStarOnCompletion, isFalse);
         expect(session.index, 0);
         expect(session.score, 0);
         expect(session.complete, isFalse);

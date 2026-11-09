@@ -3,10 +3,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:telugu_padakeli/core/app_theme.dart';
 import 'package:telugu_padakeli/models/puzzle.dart';
+import 'package:telugu_padakeli/models/telugu_akshara.dart';
 import 'package:telugu_padakeli/screens/padakeli_screen.dart';
 import 'package:telugu_padakeli/services/local_puzzle_repository.dart';
 import 'package:telugu_padakeli/services/puzzle_repository.dart';
 import 'package:telugu_padakeli/widgets/premium_telugu_text.dart';
+import 'package:telugu_padakeli/widgets/crossword_grid.dart';
 
 class _Repository implements PuzzleRepository {
   const _Repository(this.puzzles);
@@ -118,6 +120,217 @@ void main() {
       expect(rect.top, greaterThanOrEqualTo(0));
       expect(rect.bottom, lessThanOrEqualTo(844 - 88));
     }
+    expect(tester.takeException(), isNull);
+  });
+
+  for (final (level, id) in [('Medium', 7), ('Hard', 9), ('Expert', 12)]) {
+    testWidgets(
+      '$level expanded board fits a small phone and accepts all answers',
+      (tester) async {
+        tester.view.physicalSize = const Size(320, 568);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final puzzle = _puzzles.firstWhere((p) => p.id == id);
+        await _open(tester, level: level, puzzles: [puzzle], systemScale: 1.5);
+        expect(tester.takeException(), isNull);
+        await _fill(tester, puzzle);
+        await _tap(tester, find.byKey(const ValueKey('classic-check')));
+        await tester.pumpAndSettle();
+        expect(find.text('అద్భుతం! సమాధానం సరైనది.'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  for (final (level, id) in [('Hard', 9), ('Expert', 12)]) {
+    testWidgets(
+      '$level palette input keeps the active cell horizontally visible',
+      (tester) async {
+        tester.view.physicalSize = const Size(320, 568);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final puzzle = _puzzles.firstWhere((p) => p.id == id);
+        await _open(tester, level: level, puzzles: [puzzle], systemScale: 1.5);
+        final clue = puzzle.acrossClues.reduce(
+          (a, b) =>
+              a.column + TeluguAkshara.split(a.answer).length >
+                  b.column + TeluguAkshara.split(b.answer).length
+              ? a
+              : b,
+        );
+        await _tap(tester, find.byKey(ValueKey('clue-across-${clue.number}')));
+        final viewport = find.descendant(
+          of: find.byType(CrosswordGrid),
+          matching: find.byType(SingleChildScrollView),
+        );
+        for (final akshara in TeluguAkshara.split(clue.answer)) {
+          await _tap(tester, find.byKey(ValueKey('akshara-$akshara')));
+          final active = tester.getRect(
+            find.byKey(const ValueKey('selected-cell')),
+          );
+          final visible = tester.getRect(viewport);
+          expect(active.left, greaterThanOrEqualTo(visible.left - 0.1));
+          expect(active.right, lessThanOrEqualTo(visible.right + 0.1));
+        }
+        final path = puzzle.cellsForClue(clue, PuzzleDirection.across);
+        for (final cell in path.reversed) {
+          await _tap(tester, find.byKey(const ValueKey('classic-backspace')));
+          final active = tester.getRect(
+            find.byKey(const ValueKey('selected-cell')),
+          );
+          final visible = tester.getRect(viewport);
+          expect(active.left, greaterThanOrEqualTo(visible.left - 0.1));
+          expect(active.right, lessThanOrEqualTo(visible.right + 0.1));
+          expect(
+            tester
+                .widget<Text>(find.byKey(ValueKey('classic-word-value-$cell')))
+                .data,
+            '_',
+          );
+        }
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  testWidgets(
+    'word preview updates, corrects earlier answers and shares crossings',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final puzzle = _puzzles.firstWhere((p) => p.id == 9);
+      await _open(tester, level: 'Hard', puzzles: [puzzle]);
+      final clue = puzzle.acrossClues.firstWhere((c) => c.number == 3);
+      final path = puzzle.cellsForClue(clue, PuzzleDirection.across);
+      final answer = TeluguAkshara.split(clue.answer);
+      await _tap(tester, find.byKey(ValueKey('clue-across-${clue.number}')));
+      for (final akshara in answer) {
+        await _tap(tester, find.byKey(ValueKey('akshara-$akshara')));
+      }
+      for (final (position, cell) in path.indexed) {
+        expect(
+          tester
+              .widget<Text>(find.byKey(ValueKey('classic-word-value-$cell')))
+              .data,
+          answer[position],
+        );
+        expect(
+          tester
+              .widget<Text>(find.byKey(ValueKey('crossword-cell-value-$cell')))
+              .data,
+          answer[position],
+        );
+      }
+      await _tap(
+        tester,
+        find.byKey(ValueKey('classic-word-cell-${path.last}')),
+      );
+      expect(
+        tester
+            .widget<ListTile>(
+              find.byKey(ValueKey('clue-across-${clue.number}')),
+            )
+            .selected,
+        isTrue,
+      );
+      await _tap(
+        tester,
+        find.byKey(ValueKey('classic-word-cell-${path.first}')),
+      );
+      await _tap(tester, find.byKey(const ValueKey('akshara-వా')));
+      expect(
+        tester
+            .widget<Text>(
+              find.byKey(ValueKey('classic-word-value-${path.first}')),
+            )
+            .data,
+        'వా',
+      );
+      await _tap(
+        tester,
+        find.byKey(ValueKey('classic-word-cell-${path.first}')),
+      );
+      await _tap(tester, find.byKey(ValueKey('akshara-${answer.first}')));
+      final down = puzzle.downClues.firstWhere(
+        (c) => puzzle.cellsForClue(c, PuzzleDirection.down).any(path.contains),
+      );
+      final shared = puzzle
+          .cellsForClue(down, PuzzleDirection.down)
+          .firstWhere(path.contains);
+      await _tap(tester, find.byKey(ValueKey('classic-word-cell-$shared')));
+      await _tap(tester, find.text('నిలువు (Down)'));
+      expect(
+        tester
+            .widget<Text>(find.byKey(ValueKey('classic-word-value-$shared')))
+            .data,
+        puzzle.answerAt(shared ~/ puzzle.gridSize, shared % puzzle.gridSize),
+      );
+      await _tap(tester, find.byKey(ValueKey('classic-word-cell-$shared')));
+      await _tap(tester, find.byKey(const ValueKey('classic-clear-cell')));
+      expect(
+        tester
+            .widget<Text>(find.byKey(ValueKey('classic-word-value-$shared')))
+            .data,
+        '_',
+      );
+      expect(
+        tester
+            .widget<Text>(find.byKey(ValueKey('crossword-cell-value-$shared')))
+            .data,
+        '',
+      );
+      await _tap(tester, find.byKey(const ValueKey('open-hints')));
+      await _tap(tester, find.byKey(const ValueKey('hint-reveal-cell')));
+      expect(
+        tester
+            .widget<Text>(find.byKey(ValueKey('classic-word-value-$shared')))
+            .data,
+        puzzle.answerAt(shared ~/ puzzle.gridSize, shared % puzzle.gridSize),
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('large-text word preview remains editable on a small phone', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final puzzle = _puzzles.firstWhere((p) => p.id == 9);
+    await _open(
+      tester,
+      level: 'Hard',
+      puzzles: [puzzle],
+      systemScale: 3.2,
+      dark: true,
+    );
+    final cell = puzzle
+        .cellsForClue(puzzle.acrossClues.first, PuzzleDirection.across)
+        .first;
+    final button = find.byKey(ValueKey('classic-word-cell-$cell'));
+    await _tap(tester, button);
+    expect(tester.getSize(button).height, greaterThanOrEqualTo(48));
+    expect(tester.getSize(button).width, greaterThanOrEqualTo(48));
+    await _tap(
+      tester,
+      find.byKey(
+        ValueKey(
+          'akshara-${puzzle.answerAt(cell ~/ puzzle.gridSize, cell % puzzle.gridSize)}',
+        ),
+      ),
+    );
+    expect(
+      tester
+          .widget<Text>(find.byKey(ValueKey('classic-word-value-$cell')))
+          .data,
+      puzzle.answerAt(cell ~/ puzzle.gridSize, cell % puzzle.gridSize),
+    );
     expect(tester.takeException(), isNull);
   });
 

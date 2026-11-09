@@ -674,7 +674,11 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
         Align(
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              maxWidth: MediaQuery.sizeOf(context).width >= 600 ? 360 : 240,
+              maxWidth: puzzle.gridSize > 3
+                  ? 720
+                  : MediaQuery.sizeOf(context).width >= 600
+                  ? 360
+                  : 240,
             ),
             child: Container(
               padding: const EdgeInsets.all(8),
@@ -738,6 +742,10 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
           enabled: !_isAdvancing && _selectedCellIndex != null,
         ),
         const SizedBox(height: 8),
+        if (puzzle.gridSize > 3 && _selectedCells.isNotEmpty) ...[
+          _answerEditor(puzzle),
+          const SizedBox(height: 8),
+        ],
         AksharaPalette(
           puzzle: puzzle,
           onSelected: _enterAkshara,
@@ -856,6 +864,74 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
           ),
         ],
       ],
+    );
+  }
+
+  Widget _answerEditor(Puzzle puzzle) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Card(
+      key: const ValueKey('classic-answer-editor'),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'మీ సమాధానం · ${_selectedClue!.number}',
+              style: theme.textTheme.labelLarge,
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final (position, index) in _selectedCells.indexed)
+                  Semantics(
+                    selected: index == _selectedCellIndex,
+                    label: 'పదంలో అక్షరం ${position + 1}',
+                    child: OutlinedButton(
+                      key: ValueKey('classic-word-cell-$index'),
+                      onPressed: _isAdvancing
+                          ? null
+                          : () {
+                              if (index != _selectedCellIndex) {
+                                _selectCell(index);
+                              }
+                            },
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(48, 48),
+                        padding: const EdgeInsets.all(8),
+                        backgroundColor: index == _selectedCellIndex
+                            ? AppColors.gold
+                            : scheme.surface,
+                        foregroundColor: index == _selectedCellIndex
+                            ? AppColors.ink
+                            : scheme.onSurface,
+                      ),
+                      child: Text(
+                        _controllers[index ~/ puzzle.gridSize][index %
+                                    puzzle.gridSize]
+                                .text
+                                .isEmpty
+                            ? '_'
+                            : _controllers[index ~/ puzzle.gridSize][index %
+                                      puzzle.gridSize]
+                                  .text,
+                        key: ValueKey('classic-word-value-$index'),
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontFamily: PremiumTeluguText.fontFamily,
+                          height: PremiumTeluguText.lineHeight,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 

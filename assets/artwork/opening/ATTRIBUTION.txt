@@ -13,6 +13,22 @@ under CC BY-SA 4.0, with attribution to the photographic source above.
 This attribution does not imply endorsement by the photographer or TTD.
 This artwork license does not apply to the application source code.
 
+The CC BY-SA 4.0 copyright permissions include commercial sharing and adaptation,
+subject to attribution and share-alike. Retain the creator credit, source and
+license links, supplied notices, and this modification notice. When sharing these
+adaptations, license the adaptation contributions under CC BY-SA 4.0 (or a
+permitted compatible license); do not impose additional restrictions or effective
+technological measures that prevent recipients exercising those artwork rights.
+The license does not require unrelated application code to use CC BY-SA.
+The licensed material is supplied without warranties, including non-infringement.
+Legal code: https://creativecommons.org/licenses/by-sa/4.0/legalcode.en
+Other rights, including trademarks, privacy and publicity, are not cleared by
+this copyright license. No photographer or TTD endorsement is implied.
+
+Technical changes to the generated illustrations: original 1448x1086 PNGs were
+resized with Pillow LANCZOS to 1280x960 and encoded as WebP at quality 92/method 6.
+These notices describe prior changes; the Phase C+ review did not change images.
+
 Original illustration generation was explicitly authorized by the user and
 performed through Copilot's image-generation tool on 2026-11-05.
 Generation IDs:
@@ -21,6 +37,9 @@ Family: 4f726bdcb6e6934feac1c588996fbea28a18fef0623a65a01f2eab704117a17b
 
 The generator did not expose a backend model/version or a separate license
 grant. Review the applicable generation/service terms before distribution.
+Status as reviewed 2026-11-06: photographic-source license verified; commercial
+release clearance of the generated adaptations remains unresolved. Declaring
+CC BY-SA treatment does not establish the generator's terms or third-party rights.
 The family is fictional. These are stylized illustrations, not photographs
 or an official architectural/TTD approval. Obtain human authenticity review
 before release. No artwork or lettering from another app was copied.

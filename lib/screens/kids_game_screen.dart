@@ -2,14 +2,18 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 
 import '../app/theme/app_colors.dart';
 import '../models/kids_question.dart';
 import '../models/telugu_akshara.dart';
 import '../services/kids_question_service.dart';
+import '../services/engagement_audio_manager.dart';
 import '../shared/widgets/home_artwork.dart';
 import '../widgets/premium_telugu_text.dart';
 import '../widgets/kids_learning_text.dart';
+import '../widgets/engagement_motion.dart';
+import '../widgets/special_achievement_celebration.dart';
 
 class KidsGameScreen extends StatefulWidget {
   const KidsGameScreen({this.onBack, super.key});
@@ -33,16 +37,33 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
   String? _selectedAnswer;
   String? _message;
   bool? _wasCorrect;
+  bool _levelCelebration = false;
+  int _feedbackRevision = 0;
+  EngagementAudioManager? _audio;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _audio = context.read<EngagementAudioManager?>();
+  }
+
+  void _play(EngagementCue cue) => _audio?.play(
+    cue,
+    isForeground:
+        TickerMode.valuesOf(context).enabled &&
+        (ModalRoute.isCurrentOf(context) ?? true),
+  );
 
   KidsQuestionLevel get _currentLevel => _levels[_levelIndex];
   KidsQuestion get _currentQuestion => _currentLevel.questions[_index];
-  Color get _levelColor => const [
+  static const _levelColors = [
     AppColors.teal,
     AppColors.blue,
     AppColors.purple,
     AppColors.orange,
     AppColors.pink,
-  ][_levelIndex];
+  ];
+  Color get _levelColor => _levelColors[_levelIndex % _levelColors.length];
   Color get _accent => Theme.of(context).brightness == Brightness.dark
       ? Color.lerp(AppColors.purple, Colors.white, 0.5)!
       : AppColors.purple;
@@ -51,6 +72,7 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
   void dispose() {
     _advanceTimer?.cancel();
     _clearFeedbackTimer?.cancel();
+    _audio?.stop();
     super.dispose();
   }
 
@@ -61,6 +83,8 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
     _clearFeedbackTimer?.cancel();
     if (_selectedAnswer == null) {
       setState(() {
+        _feedbackRevision++;
+        _levelCelebration = false;
         _message = 'ఒక అక్షరం ఎంచుకోండి.';
         _wasCorrect = null;
       });
@@ -72,18 +96,21 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
       _currentQuestion.answer,
     );
     setState(() {
+      _feedbackRevision++;
+      _levelCelebration = false;
       _wasCorrect = isCorrect;
       if (isCorrect) {
         if (!_hasScored) {
           _score++;
           _hasScored = true;
         }
-        _message = 'సరైంది! మీ స్కోరు పెరిగింది.';
+        _message = 'శభాష్! సరైన సమాధానం.';
         _isAdvancing = true;
       } else {
-        _message = 'తప్పు సమాధానం. మళ్ళీ ప్రయత్నించండి.';
+        _message = 'మళ్లీ ప్రయత్నించు! నువ్వు చేయగలవు.';
       }
     });
+    _play(isCorrect ? EngagementCue.correct : EngagementCue.retry);
 
     if (isCorrect) {
       _advanceTimer = Timer(const Duration(milliseconds: 1100), _advance);
@@ -109,6 +136,8 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
 
     if (_levelIndex + 1 < _levels.length) {
       setState(() {
+        _feedbackRevision++;
+        _levelCelebration = true;
         _levelIndex++;
         _index = 0;
         _hasScored = false;
@@ -117,6 +146,7 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
         _message = 'కొత్త స్థాయి: ${_levels[_levelIndex].title}';
         _wasCorrect = true;
       });
+      _play(EngagementCue.completion);
       _clearFeedbackTimer = Timer(const Duration(milliseconds: 1800), () {
         if (mounted) {
           setState(() {
@@ -129,15 +159,19 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
     }
 
     setState(() {
+      _levelCelebration = false;
       _isComplete = true;
       _isAdvancing = false;
     });
+    _play(EngagementCue.completion);
   }
 
   void _restart() {
     _advanceTimer?.cancel();
     _clearFeedbackTimer?.cancel();
+    _audio?.stop();
     setState(() {
+      _levelCelebration = false;
       _levelIndex = 0;
       _index = 0;
       _score = 0;
@@ -521,19 +555,22 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
           },
         ),
         const SizedBox(height: 16),
-        FilledButton.icon(
-          onPressed: _isAdvancing ? null : _check,
-          style: FilledButton.styleFrom(
-            minimumSize: const Size(0, 56),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            backgroundColor: AppColors.purple,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18),
+        TapFeedback(
+          enabled: !_isAdvancing,
+          child: FilledButton.icon(
+            onPressed: _isAdvancing ? null : _check,
+            style: FilledButton.styleFrom(
+              minimumSize: const Size(0, 56),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              backgroundColor: AppColors.purple,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
             ),
+            icon: const Icon(Icons.check_rounded),
+            label: const KidsLearningText('సరిచూడు', english: 'Check answer'),
           ),
-          icon: const Icon(Icons.check_rounded),
-          label: const KidsLearningText('సరిచూడు', english: 'Check answer'),
         ),
         if (_message != null) ...[const SizedBox(height: 12), _feedback()],
       ],
@@ -569,13 +606,25 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
         liveRegion: true,
         child: Row(
           children: [
-            Icon(
-              _wasCorrect == null
-                  ? Icons.info_outline_rounded
-                  : _wasCorrect!
-                  ? Icons.check_circle_rounded
-                  : Icons.cancel_rounded,
-              color: foreground,
+            SizedBox(
+              width: _levelCelebration ? 80 : 48,
+              child: EngagementReaction(
+                key: ValueKey('legacy-feedback-motion-$_feedbackRevision'),
+                moment: _levelCelebration
+                    ? EngagementMoment.completion
+                    : _wasCorrect == true
+                    ? EngagementMoment.correct
+                    : EngagementMoment.retry,
+                animate: _wasCorrect != null,
+                child: Icon(
+                  _wasCorrect == null
+                      ? Icons.info_outline_rounded
+                      : _wasCorrect!
+                      ? Icons.star_rounded
+                      : Icons.refresh_rounded,
+                  color: foreground,
+                ),
+              ),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -638,8 +687,9 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
                         ),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: PremiumTeluguText(
+                          child: KidsLearningText(
                             _currentQuestion.hint,
+                            english: _currentQuestion.englishHint,
                             style: theme.textTheme.bodyMedium,
                           ),
                         ),
@@ -672,12 +722,14 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Image.asset(
-          HomeArtwork.celebration,
-          width: 120,
-          height: 128,
-          excludeFromSemantics: true,
-          cacheWidth: 360,
+        SpecialAchievementCelebration(
+          key: const ValueKey('legacy-completion-motion'),
+          completed: _isComplete,
+          word: _currentQuestion.prompt.replaceFirst(
+            '_',
+            _currentQuestion.answer,
+          ),
+          onSkip: () => _audio?.stop(),
         ),
         const SizedBox(height: 16),
         PremiumTeluguText(
@@ -699,14 +751,39 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 24),
-        FilledButton.icon(
-          onPressed: _restart,
-          style: FilledButton.styleFrom(
-            backgroundColor: AppColors.purple,
-            foregroundColor: Colors.white,
+        if (widget.onBack != null) ...[
+          TapFeedback(
+            child: FilledButton.icon(
+              key: const ValueKey('legacy-completion-return'),
+              onPressed: widget.onBack,
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.gold,
+                foregroundColor: AppColors.ink,
+                minimumSize: const Size(48, 56),
+                padding: const EdgeInsets.all(16),
+              ),
+              icon: const Icon(Icons.arrow_forward_rounded),
+              iconAlignment: IconAlignment.end,
+              label: const KidsLearningText(
+                'ఆటలకు వెళ్లు',
+                english: 'Return to activities',
+                center: true,
+              ),
+            ),
           ),
-          icon: const Icon(Icons.replay_rounded),
-          label: const Text('మళ్లీ ఆడండి'),
+          const SizedBox(height: 12),
+        ],
+        TapFeedback(
+          child: OutlinedButton.icon(
+            key: const ValueKey('legacy-completion-restart'),
+            onPressed: _restart,
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(48, 56),
+              padding: const EdgeInsets.all(16),
+            ),
+            icon: const Icon(Icons.replay_rounded),
+            label: const Text('మళ్లీ ఆడండి'),
+          ),
         ),
       ],
     );

@@ -32,10 +32,12 @@ class AppSettingsController extends ChangeNotifier {
   TeluguFontSize _fontSize = TeluguFontSize.normal;
   bool _darkMode = false;
   bool _englishHelper = false;
+  bool _soundEnabled = false;
 
   TeluguFontSize get fontSize => _fontSize;
   bool get darkMode => _darkMode;
   bool get englishHelper => _englishHelper;
+  bool get soundEnabled => _soundEnabled;
   double get fontScale => _fontSize.scale;
 
   void setFontSize(TeluguFontSize value) {
@@ -57,6 +59,12 @@ class AppSettingsController extends ChangeNotifier {
   void setEnglishHelper(bool value) {
     if (_englishHelper == value) return;
     _englishHelper = value;
+    notifyListeners();
+  }
+
+  void setSoundEnabled(bool value) {
+    if (_soundEnabled == value) return;
+    _soundEnabled = value;
     notifyListeners();
   }
 }

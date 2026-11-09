@@ -18,7 +18,7 @@ void main() {
 
     expect(find.byKey(const ValueKey('difficulty-Beginner')), findsOneWidget);
     expect(find.byKey(const ValueKey('difficulty-Easy')), findsOneWidget);
-    expect(find.text('Coming Soon'), findsNWidgets(3));
+    expect(find.text('Coming Soon'), findsNothing);
     final easyDifficulty = find.byKey(const ValueKey('difficulty-Easy'));
     await tester.ensureVisible(easyDifficulty);
     await tester.tap(easyDifficulty);

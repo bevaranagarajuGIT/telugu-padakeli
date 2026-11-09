@@ -65,6 +65,29 @@ class SettingsScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 22),
+          Card(
+            child: SwitchListTile(
+              key: const ValueKey('sound-setting'),
+              title: const Text('శబ్దం'),
+              subtitle: const Text(
+                'ప్రస్తుతం శబ్దాలు లేవు. అనుమతి ఉన్న శబ్దాలు '
+                'జోడించిన తర్వాత ఈ సెట్టింగ్ పని చేస్తుంది.',
+              ),
+              value: settings.soundEnabled,
+              onChanged: settings.setSoundEnabled,
+            ),
+          ),
+          const SizedBox(height: 22),
+          TextButton.icon(
+            key: const ValueKey('licenses-setting'),
+            onPressed: () => showLicensePage(
+              context: context,
+              applicationName: 'Telugu Padakeli',
+            ),
+            icon: const Icon(Icons.description_outlined),
+            label: const Text('చిత్రాలు, లైసెన్సులు'),
+          ),
+          const SizedBox(height: 16),
           Text(
             'రోజువారీ పదకేళి, అభ్యాస పురోగతి త్వరలో వస్తాయి. '
             'ఈ దశలో సెట్టింగ్స్ యాప్ తెరిచి ఉన్నంతవరకే ఉంటాయి.',

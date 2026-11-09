@@ -7,6 +7,7 @@ import 'app/navigation/app_launch_gate.dart';
 import 'core/app_settings_controller.dart';
 import 'core/app_theme.dart';
 import 'services/onboarding_store.dart';
+import 'services/engagement_audio_manager.dart';
 
 void main() {
   LicenseRegistry.addLicense(() async* {
@@ -36,13 +37,23 @@ class TeluguPadakeliApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => AppSettingsController(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AppSettingsController()),
+        Provider(
+          create: (context) =>
+              EngagementAudioManager(context.read<AppSettingsController>()),
+          dispose: (_, audio) => audio.dispose(),
+        ),
+      ],
       child: Consumer<AppSettingsController>(
         builder: (context, settings, _) {
           return MaterialApp(
             title: 'Telugu Padakeli',
             debugShowCheckedModeBanner: false,
+            navigatorObservers: [
+              context.read<EngagementAudioManager>().navigationObserver,
+            ],
             theme: AppTheme.light(settings.fontScale),
             darkTheme: AppTheme.dark(settings.fontScale),
             themeMode: settings.darkMode ? ThemeMode.dark : ThemeMode.light,

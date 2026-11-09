@@ -7,7 +7,7 @@ import '../models/puzzle.dart';
 import '../models/telugu_akshara.dart';
 import 'premium_telugu_text.dart';
 
-class CrosswordGrid extends StatelessWidget {
+class CrosswordGrid extends StatefulWidget {
   const CrosswordGrid({
     required this.puzzle,
     required this.controllers,
@@ -28,12 +28,58 @@ class CrosswordGrid extends StatelessWidget {
   final Set<int> incorrectCells;
 
   @override
+  State<CrosswordGrid> createState() => _CrosswordGridState();
+}
+
+class _CrosswordGridState extends State<CrosswordGrid> {
+  final _horizontalScrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _horizontalScrollController.dispose();
+    super.dispose();
+  }
+
+  void _keepSelectionVisible(double cellExtent) {
+    final puzzle = widget.puzzle;
+    final index = widget.selectedCellIndex;
+    if (index == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted ||
+          !identical(widget.puzzle, puzzle) ||
+          widget.selectedCellIndex != index ||
+          !_horizontalScrollController.hasClients) {
+        return;
+      }
+      final position = _horizontalScrollController.position;
+      if (!position.hasContentDimensions) return;
+      final left = (index % puzzle.gridSize) * cellExtent;
+      final right = left + cellExtent;
+      final offset = position.pixels;
+      final target = left < offset
+          ? left
+          : right > offset + position.viewportDimension
+          ? right - position.viewportDimension
+          : offset;
+      final bounded = target.clamp(0.0, position.maxScrollExtent);
+      if ((bounded - offset).abs() > 0.1) {
+        _horizontalScrollController.jumpTo(bounded);
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final dark = theme.brightness == Brightness.dark;
-    final puzzle = this.puzzle;
-    final controllers = this.controllers;
+    final puzzle = widget.puzzle;
+    final controllers = widget.controllers;
+    final selectedCellIndex = widget.selectedCellIndex;
+    final selectedCells = widget.selectedCells;
+    final onCellSelected = widget.onCellSelected;
+    final enabled = widget.enabled;
+    final incorrectCells = widget.incorrectCells;
     final clueNumbers = <int, int>{};
     for (final clue in [...puzzle.acrossClues, ...puzzle.downClues]) {
       clueNumbers.putIfAbsent(
@@ -59,159 +105,172 @@ class CrosswordGrid extends StatelessWidget {
           12,
     );
     return LayoutBuilder(
-      builder: (context, constraints) => SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: SizedBox(
-          width: math.max(constraints.maxWidth, puzzle.gridSize * minimumCell),
-          child: AspectRatio(
-            aspectRatio: 1,
-            child: GridView.count(
-              primary: false,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: puzzle.gridSize,
-              children: List.generate(puzzle.gridSize * puzzle.gridSize, (
-                index,
-              ) {
-                final row = index ~/ puzzle.gridSize;
-                final column = index % puzzle.gridSize;
-                if (puzzle.isBlocked(row, column)) {
-                  return Container(
-                    key: ValueKey('crossword-blocked-cell-$index'),
-                    decoration: BoxDecoration(
-                      color: dark
-                          ? const Color(0xFF24243D)
-                          : const Color(0xFFEDE8F7),
-                      border: Border.all(
-                        color: dark
-                            ? scheme.outlineVariant
-                            : AppColors.deepBlue,
-                        width: 0.5,
-                      ),
-                    ),
-                    child: ExcludeSemantics(
-                      child: Center(
-                        child: FractionallySizedBox(
-                          widthFactor: 0.46,
-                          heightFactor: 0.46,
-                          child: CustomPaint(
-                            key: ValueKey('blocked-cell-motif-$index'),
-                            painter: _RangoliPainter(
-                              color: dark
-                                  ? const Color(0xFF9DAED6)
-                                  : const Color(0xFF788BB7),
+      builder: (context, constraints) {
+        final width = math.max(
+          constraints.maxWidth,
+          puzzle.gridSize * minimumCell,
+        );
+        _keepSelectionVisible(width / puzzle.gridSize);
+        return Scrollbar(
+          controller: _horizontalScrollController,
+          thumbVisibility: width > constraints.maxWidth,
+          child: SingleChildScrollView(
+            key: const ValueKey('crossword-grid-scroll'),
+            controller: _horizontalScrollController,
+            scrollDirection: Axis.horizontal,
+            child: SizedBox(
+              width: width,
+              child: AspectRatio(
+                aspectRatio: 1,
+                child: GridView.count(
+                  primary: false,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: puzzle.gridSize,
+                  children: List.generate(puzzle.gridSize * puzzle.gridSize, (
+                    index,
+                  ) {
+                    final row = index ~/ puzzle.gridSize;
+                    final column = index % puzzle.gridSize;
+                    if (puzzle.isBlocked(row, column)) {
+                      return Container(
+                        key: ValueKey('crossword-blocked-cell-$index'),
+                        decoration: BoxDecoration(
+                          color: dark
+                              ? const Color(0xFF24243D)
+                              : const Color(0xFFEDE8F7),
+                          border: Border.all(
+                            color: dark
+                                ? scheme.outlineVariant
+                                : AppColors.deepBlue,
+                            width: 0.5,
+                          ),
+                        ),
+                        child: ExcludeSemantics(
+                          child: Center(
+                            child: FractionallySizedBox(
+                              widthFactor: 0.46,
+                              heightFactor: 0.46,
+                              child: CustomPaint(
+                                key: ValueKey('blocked-cell-motif-$index'),
+                                painter: _RangoliPainter(
+                                  color: dark
+                                      ? const Color(0xFF9DAED6)
+                                      : const Color(0xFF788BB7),
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ),
-                  );
-                }
+                      );
+                    }
 
-                final clueNumber = clueNumbers[index];
-                final isSelected = selectedCellIndex == index;
-                final incorrect = incorrectCells.contains(index);
-                final isInSelectedWord = selectedCells.contains(index);
-                return Container(
-                  key: isSelected
-                      ? const ValueKey('selected-cell')
-                      : ValueKey('crossword-cell-container-$index'),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? AppColors.gold
-                        : isInSelectedWord
-                        ? dark
-                              ? AppColors.deepBlue
-                              : AppColors.lightBlue
-                        : scheme.surface,
-                    border: Border.all(
-                      color: isSelected
-                          ? AppColors.orange
-                          : incorrect
-                          ? scheme.error
-                          : dark
-                          ? scheme.outlineVariant
-                          : AppColors.deepBlue,
-                      width: isSelected || incorrect ? 2 : 1,
-                    ),
-                  ),
-                  child: Semantics(
-                    button: true,
-                    enabled: enabled,
-                    selected: isSelected,
-                    label:
-                        'వరుస ${row + 1}, నిలువు ${column + 1}${clueNumber == null ? '' : ', సూచన $clueNumber'}${incorrect ? ', తప్పు అక్షరం' : ''}',
-                    value: controllers[row][column].text.isEmpty
-                        ? 'ఖాళీ'
-                        : controllers[row][column].text,
-                    onTap: enabled ? () => onCellSelected(index) : null,
-                    child: ExcludeSemantics(
-                      child: Stack(
-                        children: [
-                          Positioned.fill(
-                            child: Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                key: ValueKey('crossword-cell-$index'),
-                                onTap: enabled
-                                    ? () => onCellSelected(index)
-                                    : null,
-                                child: Center(
-                                  child: Text(
-                                    controllers[row][column].text,
-                                    key: ValueKey(
-                                      'crossword-cell-value-$index',
+                    final clueNumber = clueNumbers[index];
+                    final isSelected = selectedCellIndex == index;
+                    final incorrect = incorrectCells.contains(index);
+                    final isInSelectedWord = selectedCells.contains(index);
+                    return Container(
+                      key: isSelected
+                          ? const ValueKey('selected-cell')
+                          : ValueKey('crossword-cell-container-$index'),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? AppColors.gold
+                            : isInSelectedWord
+                            ? dark
+                                  ? AppColors.deepBlue
+                                  : AppColors.lightBlue
+                            : scheme.surface,
+                        border: Border.all(
+                          color: isSelected
+                              ? AppColors.orange
+                              : incorrect
+                              ? scheme.error
+                              : dark
+                              ? scheme.outlineVariant
+                              : AppColors.deepBlue,
+                          width: isSelected || incorrect ? 2 : 1,
+                        ),
+                      ),
+                      child: Semantics(
+                        button: true,
+                        enabled: enabled,
+                        selected: isSelected,
+                        label:
+                            'వరుస ${row + 1}, నిలువు ${column + 1}${clueNumber == null ? '' : ', సూచన $clueNumber'}${incorrect ? ', తప్పు అక్షరం' : ''}',
+                        value: controllers[row][column].text.isEmpty
+                            ? 'ఖాళీ'
+                            : controllers[row][column].text,
+                        onTap: enabled ? () => onCellSelected(index) : null,
+                        child: ExcludeSemantics(
+                          child: Stack(
+                            children: [
+                              Positioned.fill(
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    key: ValueKey('crossword-cell-$index'),
+                                    onTap: enabled
+                                        ? () => onCellSelected(index)
+                                        : null,
+                                    child: Center(
+                                      child: Text(
+                                        controllers[row][column].text,
+                                        key: ValueKey(
+                                          'crossword-cell-value-$index',
+                                        ),
+                                        textAlign: TextAlign.center,
+                                        style: letterStyle.copyWith(
+                                          color: isSelected
+                                              ? AppColors.ink
+                                              : scheme.onSurface,
+                                        ),
+                                      ),
                                     ),
-                                    textAlign: TextAlign.center,
-                                    style: letterStyle.copyWith(
+                                  ),
+                                ),
+                              ),
+                              if (clueNumber != null)
+                                Positioned(
+                                  top: 2,
+                                  left: 4,
+                                  child: IgnorePointer(
+                                    child: Text(
+                                      '$clueNumber',
+                                      style: numberStyle.copyWith(
+                                        color: isSelected
+                                            ? AppColors.ink
+                                            : scheme.onSurface,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              if (incorrect)
+                                Positioned(
+                                  right: 2,
+                                  bottom: 2,
+                                  child: IgnorePointer(
+                                    child: Icon(
+                                      Icons.error_rounded,
+                                      key: ValueKey('crossword-error-$index'),
+                                      size: 14,
                                       color: isSelected
                                           ? AppColors.ink
-                                          : scheme.onSurface,
+                                          : scheme.error,
                                     ),
                                   ),
                                 ),
-                              ),
-                            ),
+                            ],
                           ),
-                          if (clueNumber != null)
-                            Positioned(
-                              top: 2,
-                              left: 4,
-                              child: IgnorePointer(
-                                child: Text(
-                                  '$clueNumber',
-                                  style: numberStyle.copyWith(
-                                    color: isSelected
-                                        ? AppColors.ink
-                                        : scheme.onSurface,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          if (incorrect)
-                            Positioned(
-                              right: 2,
-                              bottom: 2,
-                              child: IgnorePointer(
-                                child: Icon(
-                                  Icons.error_rounded,
-                                  key: ValueKey('crossword-error-$index'),
-                                  size: 14,
-                                  color: isSelected
-                                      ? AppColors.ink
-                                      : scheme.error,
-                                ),
-                              ),
-                            ),
-                        ],
+                        ),
                       ),
-                    ),
-                  ),
-                );
-              }),
+                    );
+                  }),
+                ),
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

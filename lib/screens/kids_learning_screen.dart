@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../app/theme/app_colors.dart';
 import '../core/kids_learning_controller.dart';
 import '../models/kids_learning.dart';
 import '../services/kids_learning_service.dart';
+import '../services/engagement_audio_manager.dart';
 import '../shared/widgets/home_artwork.dart';
 import '../widgets/kids_learning_text.dart';
 import 'kids_activity_screen.dart';
@@ -53,23 +55,54 @@ class _KidsLearningScreenState extends State<KidsLearningScreen> {
     super.dispose();
   }
 
-  Future<void> _open(KidsLearningActivity activity) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) =>
-            KidsActivityScreen(session: _learning.sessionFor(activity)),
-      ),
-    );
+  Future<void> _open(KidsLearningActivity initial) async {
+    var activity = initial;
+    while (mounted) {
+      final path = _activities!
+          .where((item) => item.categories.contains(_learning.category))
+          .toList();
+      final index = path.indexWhere((item) => item.id == activity.id);
+      final next = index >= 0 && index + 1 < path.length
+          ? path[index + 1]
+          : null;
+      final session = _learning.sessionFor(activity);
+      final advance = await Navigator.of(context).push<bool>(
+        MaterialPageRoute<bool>(
+          builder: (routeContext) => KidsActivityScreen(
+            session: session,
+            learning: _learning,
+            onNext: next == null
+                ? null
+                : () => Navigator.of(routeContext).pop(true),
+          ),
+        ),
+      );
+      if (!mounted || advance != true || !session.complete || next == null) {
+        break;
+      }
+      activity = next;
+    }
     if (mounted) setState(() {});
+  }
+
+  void _showLegacy(bool open) {
+    context.read<EngagementAudioManager?>()?.stop();
+    setState(() {
+      if (open) _legacyVisited = true;
+      _legacyOpen = open;
+    });
   }
 
   @override
   Widget build(BuildContext context) => IndexedStack(
     index: _legacyOpen ? 1 : 0,
     children: [
-      _dashboard(context),
+      TickerMode(enabled: !_legacyOpen, child: _dashboard(context)),
       _legacyVisited
-          ? KidsGameScreen(onBack: () => setState(() => _legacyOpen = false))
+          ? TickerMode(
+              enabled: _legacyOpen,
+              child: KidsGameScreen(onBack: () => _showLegacy(false)),
+            )
           : const SizedBox.shrink(),
     ],
   );
@@ -221,11 +254,15 @@ class _KidsLearningScreenState extends State<KidsLearningScreen> {
                         child: const Text('మళ్లీ ప్రయత్నించు'),
                       ),
                     ] else
-                      for (final activity in _activities!.where(
-                        (activity) =>
-                            activity.categories.contains(_learning.category),
-                      )) ...[
-                        _activityCard(activity, scheme),
+                      for (final (index, activity)
+                          in _activities!
+                              .where(
+                                (activity) => activity.categories.contains(
+                                  _learning.category,
+                                ),
+                              )
+                              .indexed) ...[
+                        _activityCard(activity, index + 1, scheme),
                         const SizedBox(height: 12),
                       ],
                     const SizedBox(height: 12),
@@ -234,12 +271,9 @@ class _KidsLearningScreenState extends State<KidsLearningScreen> {
                       icon: const Icon(Icons.menu_book_rounded),
                       label: const KidsLearningText(
                         'మునుపటి అక్షరాభ్యాసం',
-                        english: 'Original five-level practice',
+                        english: 'Original seven-level practice',
                       ),
-                      onPressed: () => setState(() {
-                        _legacyVisited = true;
-                        _legacyOpen = true;
-                      }),
+                      onPressed: () => _showLegacy(true),
                     ),
                   ],
                 ),
@@ -251,7 +285,11 @@ class _KidsLearningScreenState extends State<KidsLearningScreen> {
     );
   }
 
-  Widget _activityCard(KidsLearningActivity activity, ColorScheme scheme) {
+  Widget _activityCard(
+    KidsLearningActivity activity,
+    int round,
+    ColorScheme scheme,
+  ) {
     final color = switch (activity.type) {
       KidsActivityType.picture => AppColors.orange,
       KidsActivityType.letter => AppColors.actionBlue,
@@ -288,6 +326,12 @@ class _KidsLearningScreenState extends State<KidsLearningScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    KidsLearningText(
+                      'రౌండ్ $round',
+                      english: 'Round $round',
+                      style: Theme.of(context).textTheme.labelLarge,
+                    ),
+                    const SizedBox(height: 4),
                     KidsLearningText(
                       activity.title,
                       english: activity.englishTitle,

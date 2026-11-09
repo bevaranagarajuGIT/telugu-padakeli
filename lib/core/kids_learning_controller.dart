@@ -15,6 +15,7 @@ class KidsActivitySession extends ChangeNotifier {
   final _tiles = <int>[];
   KidsAnswerState _answerState = KidsAnswerState.ready;
   bool _complete = false;
+  bool _earnedStarOnCompletion = false;
 
   KidsLearningQuestion get question => activity.questions[_index];
   int get index => _index;
@@ -23,6 +24,7 @@ class KidsActivitySession extends ChangeNotifier {
   List<int> get selectedTiles => List.unmodifiable(_tiles);
   KidsAnswerState get answerState => _answerState;
   bool get complete => _complete;
+  bool get earnedStarOnCompletion => _earnedStarOnCompletion;
   bool get locked => _complete || _answerState == KidsAnswerState.correct;
   double get progress => _complete ? 1 : _score / activity.questions.length;
 
@@ -90,6 +92,7 @@ class KidsActivitySession extends ChangeNotifier {
     if (_complete || _answerState != KidsAnswerState.correct) return;
     if (_index + 1 == activity.questions.length) {
       _complete = true;
+      _earnedStarOnCompletion = false;
       onCompleted();
     } else {
       _index++;
@@ -106,6 +109,7 @@ class KidsActivitySession extends ChangeNotifier {
     _choice = null;
     _tiles.clear();
     _complete = false;
+    _earnedStarOnCompletion = false;
     _answerState = KidsAnswerState.ready;
     notifyListeners();
   }
@@ -127,12 +131,14 @@ class KidsLearningController extends ChangeNotifier {
   }
 
   KidsActivitySession sessionFor(KidsLearningActivity activity) =>
-      _sessions.putIfAbsent(
-        activity.id,
-        () => KidsActivitySession(activity, () {
-          if (_completed.add(activity.id)) notifyListeners();
-        }),
-      );
+      _sessions.putIfAbsent(activity.id, () {
+        late final KidsActivitySession session;
+        session = KidsActivitySession(activity, () {
+          session._earnedStarOnCompletion = _completed.add(activity.id);
+          if (session.earnedStarOnCompletion) notifyListeners();
+        });
+        return session;
+      });
 
   KidsActivitySession? existingSession(String id) => _sessions[id];
 

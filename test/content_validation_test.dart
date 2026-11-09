@@ -11,6 +11,7 @@ import 'package:telugu_padakeli/screens/padakeli_screen.dart';
 import 'package:telugu_padakeli/services/kids_question_service.dart';
 import 'package:telugu_padakeli/services/local_puzzle_repository.dart';
 import 'package:telugu_padakeli/models/telugu_akshara.dart';
+import 'package:telugu_padakeli/models/kids_question.dart';
 
 class _StringSource implements PuzzleDataSource {
   _StringSource(this.value);
@@ -35,9 +36,20 @@ void main() {
     'all bundled puzzles validate and every answer matches its cells',
     () async {
       final puzzles = await const LocalPuzzleRepository().getPuzzles();
-      expect(puzzles.map((p) => p.id), [1, 2, 3, 4, 5, 6]);
+      expect(puzzles.map((p) => p.id), List.generate(12, (i) => i + 1));
       expect(puzzles.where((p) => p.level == 'beginner'), hasLength(3));
       expect(puzzles.where((p) => p.level == 'easy'), hasLength(3));
+      for (final (level, count) in [
+        ('medium', 5),
+        ('hard', 7),
+        ('expert', 10),
+      ]) {
+        final boards = puzzles.where((p) => p.level == level);
+        expect(boards, hasLength(2));
+        for (final board in boards) {
+          expect(board.acrossClues.length + board.downClues.length, count);
+        }
+      }
       for (final puzzle in puzzles) {
         expect(puzzle.validate, returnsNormally);
       }
@@ -74,7 +86,7 @@ void main() {
           .expand((p) => [...p.acrossClues, ...p.downClues])
           .map((clue) => TeluguAkshara.normalize(clue.answer))
           .toList();
-      expect(answers, hasLength(13));
+      expect(answers, hasLength(57));
       expect(answers.toSet(), hasLength(answers.length));
     },
   );
@@ -115,9 +127,10 @@ void main() {
   }
 
   test('kids prompts reconstruct the intended Telugu words', () {
-    final questions = const KidsQuestionService()
-        .getLevels()
-        .expand((l) => l.questions)
+    final levels = const KidsQuestionService().getLevels();
+    final originals = levels
+        .take(5)
+        .expand((l) => l.questions.take(3))
         .toList();
     const words = [
       'కమలం',
@@ -136,11 +149,16 @@ void main() {
       'విద్యార్థి',
       'సామర్థ్యం',
     ];
-    expect(questions.length, words.length);
-    for (var i = 0; i < questions.length; i++) {
-      final question = questions[i];
+    expect(originals.map((q) => q.completedWord), words);
+    expect(levels.map((l) => l.questions.length), [5, 5, 7, 7, 10, 10, 10]);
+    final questions = levels.expand((l) => l.questions).toList();
+    expect(questions, hasLength(54));
+    expect(questions.map((q) => q.completedWord).toSet(), hasLength(54));
+    for (final question in questions) {
       expect('_'.allMatches(question.prompt).length, 1);
-      expect(question.prompt.replaceFirst('_', question.answer), words[i]);
+      expect(question.validate, returnsNormally);
+      expect(question.hint, isNotEmpty);
+      expect(question.englishHint, isNotEmpty);
       expect(question.options.toSet().length, question.options.length);
       expect(question.options.where((o) => o == question.answer).length, 1);
     }
@@ -165,6 +183,44 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  test(
+    'original practice rejects broken boundaries, ambiguous options and missing helpers',
+    () {
+      for (final question in [
+        const KidsQuestion(
+          prompt: 'అమ్_',
+          answer: 'మ',
+          hint: 'తల్లి',
+          englishHint: 'Mother.',
+          options: ['మ', 'క', 'ల'],
+        ),
+        const KidsQuestion(
+          prompt: 'అ_',
+          answer: 'మ్మ',
+          hint: 'తల్లి',
+          englishHint: 'Mother.',
+          options: ['మ్మ', 'మ్మ', 'ల్ల'],
+        ),
+        const KidsQuestion(
+          prompt: 'అ_',
+          answer: 'మ్మ',
+          hint: 'తల్లి',
+          englishHint: '',
+          options: ['మ్మ', 'న్న', 'ల్ల'],
+        ),
+        const KidsQuestion(
+          prompt: 'అ__',
+          answer: 'మ్మ',
+          hint: 'తల్లి',
+          englishHint: 'Mother.',
+          options: ['మ్మ', 'న్న', 'ల్ల'],
+        ),
+      ]) {
+        expect(question.validate, throwsFormatException);
+      }
+    },
+  );
+
   testWidgets(
     'invalid puzzle content shows recovery instead of an endless spinner',
     (tester) async {
@@ -182,7 +238,7 @@ void main() {
     },
   );
 
-  testWidgets('all five kids levels finish with a final score and restart', (
+  testWidgets('all seven kids levels finish with a final score and restart', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -204,12 +260,13 @@ void main() {
         await tester.pumpAndSettle();
       }
     }
-    expect(find.text('మొత్తం స్కోరు: 15 / 15'), findsOneWidget);
+    expect(find.text('మొత్తం స్కోరు: 54 / 54'), findsOneWidget);
     expect(
-      find.text('అభినందనలు! అన్ని 5 స్థాయిలను పూర్తి చేశారు.'),
+      find.text('అభినందనలు! అన్ని 7 స్థాయిలను పూర్తి చేశారు.'),
       findsOneWidget,
     );
     expect(find.textContaining('త్వరలో'), findsNothing);
+    await tester.ensureVisible(find.text('మళ్లీ ఆడండి'));
     await tester.tap(find.text('మళ్లీ ఆడండి'));
     await tester.pumpAndSettle();
     expect(

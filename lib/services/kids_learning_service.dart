@@ -1,4 +1,5 @@
 import '../models/kids_learning.dart';
+import '../models/telugu_akshara.dart';
 import '../shared/widgets/home_artwork.dart';
 import 'kids_question_service.dart';
 
@@ -8,23 +9,12 @@ class KidsLearningService {
   List<KidsLearningActivity> getActivities() {
     final legacy = const KidsQuestionService().getLevels();
     KidsLearningActivity completion(int level, LearningCategory category) {
-      final translations = level == 0
-          ? [
-              'A flower that blooms in water.',
-              'Another word for mother.',
-              'A place where children study.',
-            ]
-          : [
-              'A sweet yellow fruit.',
-              'A domesticated animal.',
-              'A large plant.',
-            ];
       return KidsLearningActivity(
         id: 'completion-$level',
         type: KidsActivityType.completion,
         categories: {category},
-        title: 'పదాన్ని పూర్తి చేయి',
-        englishTitle: 'Complete the word',
+        title: 'పదాన్ని పూర్తి చేయి — ${legacy[level].title}',
+        englishTitle: 'Complete the word — ${legacy[level].name}',
         questions: [
           for (var i = 0; i < legacy[level].questions.length; i++)
             KidsLearningQuestion(
@@ -38,16 +28,62 @@ class KidsLearningService {
                 legacy[level].questions[i].answer,
               ),
               explanation: legacy[level].questions[i].hint,
-              englishExplanation: translations[i],
+              englishExplanation: legacy[level].questions[i].englishHint,
               choices: [
                 for (final option in legacy[level].questions[i].options)
                   KidsChoice(option),
               ],
-              difficulty: level + 1,
+              difficulty: legacy[level].difficulty,
             ),
         ],
       );
     }
+
+    KidsLearningQuestion letter(
+      String id,
+      String display,
+      String answer,
+      String english,
+      List<KidsChoice> choices,
+    ) => KidsLearningQuestion(
+      id: id,
+      display: display,
+      prompt: 'ఈ అక్షరంతో మొదలయ్యే పదం ఏది?',
+      englishPrompt: 'Which word begins with this letter?',
+      answer: answer,
+      choices: choices,
+      explanation: '$display — $answer',
+      englishExplanation: english,
+    );
+
+    KidsLearningQuestion meaning(
+      String id,
+      String display,
+      String answer,
+      String englishDisplay,
+      String englishAnswer,
+      List<KidsChoice> choices, {
+      bool opposite = false,
+      int difficulty = 3,
+    }) => KidsLearningQuestion(
+      id: id,
+      display: display,
+      prompt: opposite
+          ? 'దీనికి వ్యతిరేక పదం ఏది?'
+          : 'దీనికి దగ్గర అర్థం ఉన్న పదం ఏది?',
+      englishPrompt: opposite
+          ? 'Which word is the opposite?'
+          : 'Which word has a similar meaning?',
+      answer: answer,
+      choices: choices,
+      explanation: opposite
+          ? '$display అనే పదానికి వ్యతిరేక పదం $answer.'
+          : '$display, $answer దగ్గర అర్థాలు కలిగిన పదాలు.',
+      englishExplanation: opposite
+          ? '$englishAnswer is the opposite of $englishDisplay.'
+          : '$englishDisplay and $englishAnswer have similar meanings.',
+      difficulty: difficulty,
+    );
 
     final activities = [
       const KidsLearningActivity(
@@ -87,16 +123,61 @@ class KidsLearningService {
             explanation: 'చిలుక ఒక పక్షి.',
             englishExplanation: 'A parrot is a bird.',
           ),
+          KidsLearningQuestion(
+            id: 'picture-mango-colour',
+            prompt: 'ఈ పండు ఏ రంగులో ఉంది?',
+            englishPrompt: 'What colour is this fruit?',
+            answer: 'పసుపు',
+            imageAsset: 'assets/artwork/kids/mango.png',
+            imageDescription: 'ఆకులతో పసుపు రంగు మామిడి పండు బొమ్మ',
+            choices: [
+              KidsChoice('నీలం', 'Blue'),
+              KidsChoice('పసుపు', 'Yellow'),
+              KidsChoice('ఎరుపు', 'Red'),
+            ],
+            explanation: 'ఈ బొమ్మలో మామిడి పండు పసుపు రంగులో ఉంది.',
+            englishExplanation: 'The mango in this picture is yellow.',
+          ),
+          KidsLearningQuestion(
+            id: 'picture-parrot-kind',
+            prompt: 'ఈ చిలుక దేనికి ఉదాహరణ?',
+            englishPrompt: 'What kind of animal is this parrot?',
+            answer: 'పక్షి',
+            imageAsset: HomeArtwork.welcome,
+            imageDescription: 'పచ్చని చిలుక బొమ్మ',
+            choices: [
+              KidsChoice('చేప', 'Fish'),
+              KidsChoice('కీటకం', 'Insect'),
+              KidsChoice('పక్షి', 'Bird'),
+            ],
+            explanation: 'చిలుకకు రెక్కలు ఉంటాయి. చిలుక ఒక పక్షి.',
+            englishExplanation: 'A parrot has wings. It is a bird.',
+          ),
+          KidsLearningQuestion(
+            id: 'picture-mango-kind',
+            prompt: 'ఈ మామిడి దేనికి ఉదాహరణ?',
+            englishPrompt: 'What kind of food is this mango?',
+            answer: 'పండు',
+            imageAsset: 'assets/artwork/kids/mango.png',
+            imageDescription: 'ఆకులతో పసుపు రంగు మామిడి పండు బొమ్మ',
+            choices: [
+              KidsChoice('పండు', 'Fruit'),
+              KidsChoice('ధాన్యం', 'Grain'),
+              KidsChoice('పప్పు', 'Pulse'),
+            ],
+            explanation: 'మామిడి చెట్టుకు కాసే ఒక పండు.',
+            englishExplanation: 'A mango is a fruit that grows on a tree.',
+          ),
         ],
       ),
-      const KidsLearningActivity(
+      KidsLearningActivity(
         id: 'letters',
         type: KidsActivityType.letter,
         categories: {LearningCategory.early, LearningCategory.explorers},
         title: 'అక్షరాలను గుర్తించు',
         englishTitle: 'Letter recognition',
         questions: [
-          KidsLearningQuestion(
+          const KidsLearningQuestion(
             id: 'letter-a',
             display: 'అ',
             prompt: 'ఈ అక్షరంతో మొదలయ్యే పదం ఏది?',
@@ -110,7 +191,7 @@ class KidsLearningService {
             explanation: 'అ — అరటి',
             englishExplanation: 'Banana.',
           ),
-          KidsLearningQuestion(
+          const KidsLearningQuestion(
             id: 'letter-aa',
             display: 'ఆ',
             prompt: 'ఈ అక్షరంతో మొదలయ్యే పదం ఏది?',
@@ -124,7 +205,7 @@ class KidsLearningService {
             explanation: 'ఆ — ఆవు',
             englishExplanation: 'Cow.',
           ),
-          KidsLearningQuestion(
+          const KidsLearningQuestion(
             id: 'letter-ka',
             display: 'క',
             prompt: 'ఈ అక్షరంతో మొదలయ్యే పదం ఏది?',
@@ -138,10 +219,88 @@ class KidsLearningService {
             explanation: 'క — కలం',
             englishExplanation: 'Pen.',
           ),
+          letter('letter-cha', 'చి', 'చిలుక', 'Parrot.', const [
+            KidsChoice('గడియారం', 'Clock'),
+            KidsChoice('చిలుక', 'Parrot'),
+            KidsChoice('కలం', 'Pen'),
+          ]),
+          letter('letter-ga', 'గ', 'గడియారం', 'Clock.', const [
+            KidsChoice('గడియారం', 'Clock'),
+            KidsChoice('చిలుక', 'Parrot'),
+            KidsChoice('అరటి', 'Banana'),
+          ]),
+        ],
+      ),
+      KidsLearningActivity(
+        id: 'letters-2',
+        type: KidsActivityType.letter,
+        categories: const {LearningCategory.early},
+        title: 'అచ్చులతో ఆట',
+        englishTitle: 'Vowel word game',
+        questions: [
+          letter('letter-i', 'ఇ', 'ఇల్లు', 'House.', const [
+            KidsChoice('ఈగ', 'Fly'),
+            KidsChoice('ఇల్లు', 'House'),
+            KidsChoice('ఉడుత', 'Squirrel'),
+          ]),
+          letter('letter-ii', 'ఈ', 'ఈగ', 'Fly.', const [
+            KidsChoice('ఈగ', 'Fly'),
+            KidsChoice('ఇల్లు', 'House'),
+            KidsChoice('ఊయల', 'Swing'),
+          ]),
+          letter('letter-u', 'ఉ', 'ఉడుత', 'Squirrel.', const [
+            KidsChoice('ఎలుక', 'Mouse'),
+            KidsChoice('ఇల్లు', 'House'),
+            KidsChoice('ఉడుత', 'Squirrel'),
+          ]),
+          letter('letter-uu', 'ఊ', 'ఊయల', 'Swing.', const [
+            KidsChoice('ఊయల', 'Swing'),
+            KidsChoice('ఉడుత', 'Squirrel'),
+            KidsChoice('ఈగ', 'Fly'),
+          ]),
+          letter('letter-e', 'ఎ', 'ఎలుక', 'Mouse.', const [
+            KidsChoice('ఊయల', 'Swing'),
+            KidsChoice('ఎలుక', 'Mouse'),
+            KidsChoice('ఇల్లు', 'House'),
+          ]),
+        ],
+      ),
+      KidsLearningActivity(
+        id: 'letters-3',
+        type: KidsActivityType.letter,
+        categories: const {LearningCategory.early},
+        title: 'మరిన్ని అక్షరాలు',
+        englishTitle: 'More letter discoveries',
+        questions: [
+          letter('letter-ee', 'ఏ', 'ఏనుగు', 'Elephant.', const [
+            KidsChoice('ఏనుగు', 'Elephant'),
+            KidsChoice('ఒంటె', 'Camel'),
+            KidsChoice('ఓడ', 'Ship'),
+          ]),
+          letter('letter-ai', 'ఐ', 'ఐదు', 'Five.', const [
+            KidsChoice('ఒంటె', 'Camel'),
+            KidsChoice('ఐదు', 'Five'),
+            KidsChoice('తల', 'Head'),
+          ]),
+          letter('letter-o', 'ఒం', 'ఒంటె', 'Camel.', const [
+            KidsChoice('ఓడ', 'Ship'),
+            KidsChoice('ఏనుగు', 'Elephant'),
+            KidsChoice('ఒంటె', 'Camel'),
+          ]),
+          letter('letter-oo', 'ఓ', 'ఓడ', 'Ship.', const [
+            KidsChoice('ఓడ', 'Ship'),
+            KidsChoice('ఒంటె', 'Camel'),
+            KidsChoice('ఐదు', 'Five'),
+          ]),
+          letter('letter-ta', 'త', 'తల', 'Head.', const [
+            KidsChoice('ఏనుగు', 'Elephant'),
+            KidsChoice('తల', 'Head'),
+            KidsChoice('ఓడ', 'Ship'),
+          ]),
         ],
       ),
       completion(0, LearningCategory.explorers),
-      completion(2, LearningCategory.champions),
+      completion(1, LearningCategory.explorers),
       const KidsLearningActivity(
         id: 'builder',
         type: KidsActivityType.builder,
@@ -196,14 +355,14 @@ class KidsLearningService {
           ),
         ],
       ),
-      const KidsLearningActivity(
+      KidsLearningActivity(
         id: 'meanings',
         type: KidsActivityType.meaning,
         categories: {LearningCategory.champions},
         title: 'అర్థాన్ని గుర్తించు',
         englishTitle: 'Meaning match',
         questions: [
-          KidsLearningQuestion(
+          const KidsLearningQuestion(
             id: 'meaning-courage',
             display: 'ధైర్యం',
             prompt: 'దీనికి దగ్గర అర్థం ఉన్న పదం ఏది?',
@@ -218,7 +377,7 @@ class KidsLearningService {
             englishExplanation: 'Courage means facing something without fear.',
             difficulty: 3,
           ),
-          KidsLearningQuestion(
+          const KidsLearningQuestion(
             id: 'meaning-joy',
             display: 'ఆనందం',
             prompt: 'దీనికి దగ్గర అర్థం ఉన్న పదం ఏది?',
@@ -233,7 +392,7 @@ class KidsLearningService {
             englishExplanation: 'Joy and happiness have similar meanings.',
             difficulty: 3,
           ),
-          KidsLearningQuestion(
+          const KidsLearningQuestion(
             id: 'meaning-dark',
             display: 'వెలుగు',
             prompt: 'దీనికి వ్యతిరేక పదం ఏది?',
@@ -248,6 +407,209 @@ class KidsLearningService {
             englishExplanation: 'Darkness is the opposite of light.',
             difficulty: 3,
           ),
+          meaning(
+            'meaning-truth',
+            'నిజం',
+            'సత్యం',
+            'truth',
+            'truthfulness',
+            const [
+              KidsChoice('అబద్ధం', 'Lie'),
+              KidsChoice('సత్యం', 'Truth'),
+              KidsChoice('భయం', 'Fear'),
+            ],
+          ),
+          meaning('meaning-anger', 'కోపం', 'ఆగ్రహం', 'anger', 'rage', const [
+            KidsChoice('ఆగ్రహం', 'Anger'),
+            KidsChoice('శాంతి', 'Peace'),
+            KidsChoice('ఆనందం', 'Joy'),
+          ]),
+        ],
+      ),
+      completion(2, LearningCategory.champions),
+      KidsLearningActivity(
+        id: 'builder-2',
+        type: KidsActivityType.builder,
+        categories: const {
+          LearningCategory.explorers,
+          LearningCategory.champions,
+        },
+        title: 'మరిన్ని పదాలు నిర్మించు',
+        englishTitle: 'Word builder challenge',
+        questions: [
+          for (final (index, word) in const [
+            (
+              'పలక',
+              'రాసి చెరిపే సాధనం పేరు నిర్మించండి',
+              'Build the word for slate.',
+            ),
+            (
+              'కమలం',
+              'నీటిలో పూసే పువ్వు పేరు నిర్మించండి',
+              'Build the word for lotus.',
+            ),
+            (
+              'పుస్తకం',
+              'పేజీలు ఉండే చదివే వస్తువు పేరు నిర్మించండి',
+              'Build the word for book.',
+            ),
+            (
+              'ఇల్లు',
+              'మనం నివసించే చోటు పేరు నిర్మించండి',
+              'Build the word for house.',
+            ),
+            (
+              'చిలుక',
+              'పచ్చని పక్షి పేరు నిర్మించండి',
+              'Build the word for parrot.',
+            ),
+            (
+              'అరటి',
+              'గుత్తిగా పెరిగే పండు పేరు నిర్మించండి',
+              'Build the word for banana.',
+            ),
+            (
+              'ఆకాశం',
+              'మేఘాలు కనిపించే చోటు పేరు నిర్మించండి',
+              'Build the word for sky.',
+            ),
+          ].indexed)
+            KidsLearningQuestion(
+              id: 'build-2-$index',
+              prompt: word.$2,
+              englishPrompt: word.$3,
+              answer: word.$1,
+              tiles: [
+                ...TeluguAkshara.split(word.$1).skip(1),
+                TeluguAkshara.split(word.$1).first,
+              ],
+              explanation:
+                  '${TeluguAkshara.split(word.$1).join(' + ')} = ${word.$1}',
+              englishExplanation: word.$3,
+              difficulty: 3,
+            ),
+        ],
+      ),
+      completion(5, LearningCategory.champions),
+      KidsLearningActivity(
+        id: 'meanings-2',
+        type: KidsActivityType.meaning,
+        categories: const {LearningCategory.champions},
+        title: 'అర్థాలు, వ్యతిరేక పదాలు',
+        englishTitle: 'Synonyms and opposites',
+        questions: [
+          meaning(
+            'meaning-big',
+            'చిన్న',
+            'పెద్ద',
+            'small',
+            'big',
+            const [
+              KidsChoice('పెద్ద', 'Big'),
+              KidsChoice('కొత్త', 'New'),
+              KidsChoice('మంచి', 'Good'),
+            ],
+            opposite: true,
+            difficulty: 4,
+          ),
+          meaning(
+            'meaning-cold',
+            'వేడి',
+            'చలి',
+            'heat',
+            'cold',
+            const [
+              KidsChoice('వెలుగు', 'Light'),
+              KidsChoice('చలి', 'Cold'),
+              KidsChoice('గాలి', 'Air'),
+            ],
+            opposite: true,
+            difficulty: 4,
+          ),
+          meaning(
+            'meaning-night',
+            'పగలు',
+            'రాత్రి',
+            'day',
+            'night',
+            const [
+              KidsChoice('ఉదయం', 'Morning'),
+              KidsChoice('మధ్యాహ్నం', 'Noon'),
+              KidsChoice('రాత్రి', 'Night'),
+            ],
+            opposite: true,
+            difficulty: 4,
+          ),
+          meaning(
+            'meaning-bad',
+            'మంచి',
+            'చెడు',
+            'good',
+            'bad',
+            const [
+              KidsChoice('చెడు', 'Bad'),
+              KidsChoice('కొత్త', 'New'),
+              KidsChoice('పెద్ద', 'Big'),
+            ],
+            opposite: true,
+            difficulty: 4,
+          ),
+          meaning(
+            'meaning-old',
+            'కొత్త',
+            'పాత',
+            'new',
+            'old',
+            const [
+              KidsChoice('మంచి', 'Good'),
+              KidsChoice('పాత', 'Old'),
+              KidsChoice('చిన్న', 'Small'),
+            ],
+            opposite: true,
+            difficulty: 4,
+          ),
+          meaning(
+            'meaning-far',
+            'దగ్గర',
+            'దూరం',
+            'near',
+            'far',
+            const [
+              KidsChoice('వేడి', 'Heat'),
+              KidsChoice('చలి', 'Cold'),
+              KidsChoice('దూరం', 'Far'),
+            ],
+            opposite: true,
+            difficulty: 4,
+          ),
+          meaning('meaning-water', 'నీరు', 'జలం', 'water', 'water', const [
+            KidsChoice('జలం', 'Water'),
+            KidsChoice('నిప్పు', 'Fire'),
+            KidsChoice('గాలి', 'Air'),
+          ], difficulty: 4),
+          meaning('meaning-earth', 'భూమి', 'పృథ్వి', 'earth', 'earth', const [
+            KidsChoice('ఆకాశం', 'Sky'),
+            KidsChoice('పృథ్వి', 'Earth'),
+            KidsChoice('సముద్రం', 'Sea'),
+          ], difficulty: 4),
+          meaning(
+            'meaning-friend',
+            'మిత్రుడు',
+            'స్నేహితుడు',
+            'friend',
+            'friend',
+            const [
+              KidsChoice('శత్రువు', 'Enemy'),
+              KidsChoice('అతిథి', 'Guest'),
+              KidsChoice('స్నేహితుడు', 'Friend'),
+            ],
+            difficulty: 4,
+          ),
+          meaning('meaning-forest', 'వనం', 'అడవి', 'woodland', 'forest', const [
+            KidsChoice('అడవి', 'Forest'),
+            KidsChoice('ఊరు', 'Village'),
+            KidsChoice('ఇల్లు', 'House'),
+          ], difficulty: 4),
         ],
       ),
     ];

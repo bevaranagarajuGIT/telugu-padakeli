@@ -61,7 +61,7 @@ void main() {
           );
           await tester.pumpAndSettle();
           expect(find.bySemanticsLabel('స్కోరు: 0'), findsOneWidget);
-          expect(find.text('ప్రశ్న 1 / 3'), findsOneWidget);
+          expect(find.text('ప్రశ్న 1 / 5'), findsOneWidget);
           expect(find.text('కమ_'), findsOneWidget);
           expect(find.text('నీటిలో పూసే పువ్వు'), findsOneWidget);
           expect(tester.takeException(), isNull);
@@ -98,6 +98,31 @@ void main() {
       );
     }
   }
+
+  testWidgets(
+    'original practice English hints follow Helper without replacing Telugu',
+    (tester) async {
+      final settings = AppSettingsController();
+      addTearDown(settings.dispose);
+      await tester.pumpWidget(
+        ChangeNotifierProvider.value(
+          value: settings,
+          child: const MaterialApp(home: KidsGameScreen()),
+        ),
+      );
+      const english = 'A flower that blooms in water.';
+      expect(find.text(english), findsNothing);
+      settings.setEnglishHelper(true);
+      await tester.pumpAndSettle();
+      expect(find.text(english), findsOneWidget);
+      expect(find.text('నీటిలో పూసే పువ్వు'), findsOneWidget);
+      settings.setEnglishHelper(false);
+      await tester.pumpAndSettle();
+      expect(find.text(english), findsNothing);
+      expect(find.text('నీటిలో పూసే పువ్వు'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('learning back action returns Home without discarding progress', (
     tester,
