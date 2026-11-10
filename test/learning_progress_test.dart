@@ -11,6 +11,7 @@ import 'package:telugu_padakeli/models/puzzle.dart';
 import 'package:telugu_padakeli/services/daily_puzzle_service.dart';
 import 'package:telugu_padakeli/services/kids_learning_service.dart';
 import 'package:telugu_padakeli/services/learning_store.dart';
+import 'package:telugu_padakeli/services/onboarding_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _DelayedStore extends MemoryLearningStore {
@@ -45,7 +46,7 @@ void main() {
     'real preferences round-trip settings without touching onboarding',
     () async {
       SharedPreferences.setMockInitialValues({
-        'padakeli.onboarding.completed': true,
+        PreferencesOnboardingStore.completionKey: true,
       });
       final saved = _progress(PreferencesLearningStore());
       await saved.load();
@@ -67,7 +68,7 @@ void main() {
       expect(reopened.dailyGoal, 5);
       expect(
         (await SharedPreferences.getInstance()).getBool(
-          'padakeli.onboarding.completed',
+          PreferencesOnboardingStore.completionKey,
         ),
         isTrue,
       );

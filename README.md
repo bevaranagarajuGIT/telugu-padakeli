@@ -48,8 +48,12 @@ The `padakeli.learning.v1` record contains settings (font, theme, Helper, sound,
 daily goal), Kids category/current attempts/solved IDs, original-practice state,
 Classic and date-specific Daily boards, answer records, completions, rewards and
 achievements. Classic restores puzzle/difficulty, cells, selected direction/clue/
-cell, hints and completion. Writes debounce for 250ms, serialize snapshots in
-order, and flush when the app becomes inactive/backgrounded.
+cell, hints and completion. Its latest board remains the Home Resume target;
+each difficulty also retains its own current board. Re-selecting a difficulty
+does not restart it or discard another difficulty's unfinished answers. Existing
+version-1 saves without these additional board entries still resume normally.
+Writes debounce for 250ms, serialize snapshots in order, and flush when the app
+becomes inactive/backgrounded.
 
 Stable IDs plus exact content signatures prevent old answers from being applied
 to changed content. Kids keeps unchanged solved questions and returns to the
@@ -57,13 +61,24 @@ first changed/unsolved question. A changed Classic board starts fresh while othe
 progress is retained. A changed original-practice pack restarts that attempt;
 historical rewards/records remain. Reopening never grants another reward.
 
-Missing saves start clean. Unreadable JSON/schema sections are preserved once at
-`padakeli.learning.v1.recovery`, with a visible notice. Unsupported versions and
-failed reads block writes rather than overwriting unknown data. Write failure
-keeps play responsive and exposes Retry saving in Settings. Read failure asks
-for an app restart. Reset requires an explicit confirmation, clears learning
-state/rewards/Daily boards and removes stale screens, but preserves preferences
-and the separate completed-Welcome flag.
+Missing saves start clean. Unreadable JSON is preserved at
+`padakeli.learning.v1.recovery`, with a visible notice. If a version-1 record has
+an unreadable top-level section, only that section starts empty; all other
+readable sections, including board answers and reward identities, are retained.
+The complete original record is copied before any repair. If a different
+recovery copy already exists, writes are blocked: neither the earlier copy nor
+the current damaged record is silently overwritten. Unreadable reward identities
+(or a missing reward ledger despite saved completions) also block writes and new
+star awards; readable progress remains available, but lost reward history is not
+guessed or silently replaced. There is no automatic
+in-app backup-restore tool; such a conflict needs recovery/support or an
+explicitly confirmed reset, not a promise that restarting repairs corruption.
+Unsupported older/newer versions and failed reads also block writes rather than
+overwriting unknown data. Write failure keeps play responsive and exposes Retry
+saving in Settings. Read failure asks for an app restart. Reset requires an
+explicit confirmation, clears learning state/rewards/all difficulty and Daily
+boards and removes stale screens, but preserves preferences and the separate
+completed-Welcome flag.
 
 This is device-local convenience storage, **not** encrypted storage, a cloud
 backup or a guaranteed transactional database. Abrupt process termination before

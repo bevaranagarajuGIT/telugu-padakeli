@@ -11,6 +11,7 @@ import 'package:telugu_padakeli/screens/kids_game_screen.dart';
 import 'package:telugu_padakeli/screens/padakeli_screen.dart';
 import 'package:telugu_padakeli/services/learning_store.dart';
 import 'package:telugu_padakeli/services/local_puzzle_repository.dart';
+import 'package:telugu_padakeli/services/onboarding_store.dart';
 import 'package:telugu_padakeli/services/puzzle_repository.dart';
 import 'package:telugu_padakeli/widgets/crossword_grid.dart';
 
@@ -146,6 +147,106 @@ void main() {
   );
 
   testWidgets(
+    'Classic difficulty re-selection retains the current puzzle, cells and hints',
+    (tester) async {
+      final saved = LearningProgress(MemoryLearningStore(), autoSave: false);
+      addTearDown(saved.dispose);
+      final puzzle = puzzles
+          .where((item) => item.level == 'beginner')
+          .skip(1)
+          .first;
+      final clue = puzzle.acrossClues.first;
+      final selected = clue.row * puzzle.gridSize + clue.column;
+      saved.saveBoard('classic', {
+        'id': puzzle.id,
+        'signature': puzzle.progressSignature,
+        'cells': [
+          for (
+            var index = 0;
+            index < puzzle.gridSize * puzzle.gridSize;
+            index++
+          )
+            index == selected
+                ? puzzle.answerAt(
+                    index ~/ puzzle.gridSize,
+                    index % puzzle.gridSize,
+                  )
+                : '',
+        ],
+        'direction': 'across',
+        'clue': clue.number,
+        'cell': selected,
+        'hints': 2,
+        'complete': false,
+      });
+      await _mount(
+        tester,
+        saved,
+        PadakeliScreen(repository: _Repository(puzzles)),
+      );
+      final snapshot = saved.board('classic');
+      await tester.tap(find.byTooltip('Change difficulty'));
+      await tester.pumpAndSettle();
+      await _tap(tester, 'difficulty-Beginner');
+      await tester.pumpAndSettle();
+      expect(saved.board('classic'), snapshot);
+      final grid = tester.widget<CrosswordGrid>(find.byType(CrosswordGrid));
+      expect(grid.puzzle.id, puzzle.id);
+      expect(
+        grid.controllers[clue.row][clue.column].text,
+        puzzle.answerAt(clue.row, clue.column),
+      );
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets(
+    'Classic difficulty switching and relaunch retain each unfinished level',
+    (tester) async {
+      final saved = LearningProgress(MemoryLearningStore(), autoSave: false);
+      addTearDown(saved.dispose);
+      final repository = _Repository(puzzles);
+      await _mount(tester, saved, PadakeliScreen(repository: repository));
+      await _tap(tester, 'difficulty-Beginner');
+      await _tap(tester, 'akshara-ఆ');
+      await _tap(tester, 'open-hints');
+      await _tap(tester, 'hint-reveal-first');
+      await tester.pumpAndSettle();
+      final beginner = saved.board('classic');
+      await tester.tap(find.byTooltip('Change difficulty'));
+      await tester.pumpAndSettle();
+      await _tap(tester, 'difficulty-Easy');
+      await _tap(tester, 'akshara-క');
+      final easy = saved.board('classic');
+      await tester.tap(find.byTooltip('Change difficulty'));
+      await tester.pumpAndSettle();
+      await _tap(tester, 'difficulty-Beginner');
+      await tester.pumpAndSettle();
+      expect(saved.board('classic'), beginner);
+
+      final restored = await _reopen(tester, saved);
+      addTearDown(restored.dispose);
+      await _mount(tester, restored, PadakeliScreen(repository: repository));
+      expect(restored.board('classic'), beginner);
+      await tester.tap(find.byTooltip('Change difficulty'));
+      await tester.pumpAndSettle();
+      await _tap(tester, 'difficulty-Easy');
+      await tester.pumpAndSettle();
+      expect(restored.board('classic'), easy);
+      expect(
+        tester
+            .widget<CrosswordGrid>(find.byType(CrosswordGrid))
+            .controllers[0][0]
+            .text,
+        'క',
+      );
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets(
     'original practice restores a scored attempt without double credit or automatic celebration',
     (tester) async {
       final saved = LearningProgress(MemoryLearningStore(), autoSave: false);
@@ -259,7 +360,7 @@ void main() {
     'reset cancellation retains real data; confirmation removes Resume but preserves settings and Welcome',
     (tester) async {
       SharedPreferences.setMockInitialValues({
-        'padakeli.onboarding.completed': true,
+        PreferencesOnboardingStore.completionKey: true,
       });
       final saved = LearningProgress(
         PreferencesLearningStore(),
@@ -289,7 +390,7 @@ void main() {
       expect(reopened.settings['englishHelper'], true);
       expect(
         (await SharedPreferences.getInstance()).getBool(
-          'padakeli.onboarding.completed',
+          PreferencesOnboardingStore.completionKey,
         ),
         true,
       );

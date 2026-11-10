@@ -56,6 +56,7 @@ class LearningProgress extends ChangeNotifier {
               'unchanged. Update the app or explicitly reset progress.';
           return;
         }
+        final damagedSections = <String>[];
         for (final section in [
           'settings',
           'sessions',
@@ -71,7 +72,32 @@ class LearningProgress extends ChangeNotifier {
         ]) {
           if (decoded.containsKey(section) &&
               decoded[section] is! Map<String, dynamic>) {
-            throw FormatException('Invalid saved $section section.');
+            damagedSections.add(section);
+          }
+        }
+        if (!decoded.containsKey('rewards') &&
+            (savedMap(decoded['activities']).isNotEmpty ||
+                savedMap(decoded['puzzles']).isNotEmpty)) {
+          damagedSections.add('rewards');
+        }
+        if (damagedSections.isNotEmpty) {
+          await store.preserveRecoveryCopy(raw);
+          for (final section in damagedSections) {
+            decoded[section] = <String, dynamic>{};
+          }
+          if (damagedSections.contains('rewards')) {
+            _blocked = true;
+            recoveryNotice =
+                'Saved reward identities are unreadable or missing. Readable '
+                'progress is available, but play is temporary and no stars '
+                'will be awarded. The original save and recovery copy have '
+                'been kept unchanged. Recover the save or explicitly reset '
+                'progress before saving again.';
+          } else {
+            recoveryNotice =
+                'Unreadable saved sections (${damagedSections.join(', ')}) '
+                'were recovered as empty. All other readable progress was '
+                'kept. The original save is preserved in a recovery copy.';
           }
         }
         _data = decoded;
@@ -212,6 +238,7 @@ class LearningProgress extends ChangeNotifier {
   }
 
   bool _reward(String id) {
+    if (_blocked) return false;
     final rewards = _section('rewards');
     if (rewards.containsKey(id)) return false;
     rewards[id] = today;

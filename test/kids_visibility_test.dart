@@ -82,7 +82,7 @@ void main() {
                     builder: (context, child) => MediaQuery(
                       data: MediaQuery.of(context).copyWith(
                         disableAnimations: reduced,
-                        padding: const EdgeInsets.only(bottom: 24),
+                        padding: const EdgeInsets.only(top: 28, bottom: 24),
                       ),
                       child: child!,
                     ),

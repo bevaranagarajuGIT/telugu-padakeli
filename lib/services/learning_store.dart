@@ -40,8 +40,15 @@ class PreferencesLearningStore implements LearningStore {
   @override
   Future<void> preserveRecoveryCopy(String value) async {
     final preferences = await SharedPreferences.getInstance();
-    if (!preferences.containsKey('$key.recovery') &&
-        !await preferences.setString('$key.recovery', value)) {
+    final existing = preferences.get('$key.recovery');
+    if (existing != null) {
+      if (existing == value) return;
+      throw const LearningStorageException(
+        'A different recovery copy already exists. The current save must '
+        'not be overwritten.',
+      );
+    }
+    if (!await preferences.setString('$key.recovery', value)) {
       throw const LearningStorageException(
         'The recovery copy could not be saved.',
       );
@@ -60,5 +67,13 @@ class MemoryLearningStore implements LearningStore {
   Future<void> write(String value) async => this.value = value;
 
   @override
-  Future<void> preserveRecoveryCopy(String value) async => recovery ??= value;
+  Future<void> preserveRecoveryCopy(String value) async {
+    if (recovery != null && recovery != value) {
+      throw const LearningStorageException(
+        'A different recovery copy already exists. The current save must '
+        'not be overwritten.',
+      );
+    }
+    recovery ??= value;
+  }
 }

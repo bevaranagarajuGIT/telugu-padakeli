@@ -757,7 +757,7 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
           totalStars: widget.learning?.stars,
           onSkip: () => _audio?.stop(),
           sceneHeight: (MediaQuery.sizeOf(context).height - 480).clamp(
-            110,
+            (110.0 - MediaQuery.paddingOf(context).top).clamp(64.0, 110.0),
             264,
           ),
         ),

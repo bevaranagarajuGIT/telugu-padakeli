@@ -116,7 +116,7 @@ class _PadakeliScreenState extends State<PadakeliScreen>
   void _persist() {
     final puzzle = _puzzle;
     if (puzzle == null || _storage == null) return;
-    _storage!.saveBoard(_slot, {
+    final snapshot = <String, dynamic>{
       'id': puzzle.id,
       'signature': puzzle.progressSignature,
       'cells': [
@@ -128,7 +128,15 @@ class _PadakeliScreenState extends State<PadakeliScreen>
       'cell': _selectedCellIndex,
       'hints': _hintCount,
       'complete': _isComplete,
-    }, active: TickerMode.valuesOf(context).enabled);
+    };
+    _storage!.saveBoard(
+      _slot,
+      snapshot,
+      active: TickerMode.valuesOf(context).enabled,
+    );
+    if (widget.dailyDate == null) {
+      _storage!.saveBoard('classic:${puzzle.level}', snapshot, active: false);
+    }
   }
 
   Future<void> _loadPuzzles() async {
@@ -175,7 +183,13 @@ class _PadakeliScreenState extends State<PadakeliScreen>
     }
     final puzzle = puzzles.where((puzzle) => puzzle.level == level).firstOrNull;
     if (puzzle == null) return;
-    _openPuzzle(puzzle);
+    final saved = _storage?.board('classic:$level') ?? <String, dynamic>{};
+    final current = _storage?.board(_slot) ?? <String, dynamic>{};
+    final resume = saved.isNotEmpty ? saved : current;
+    final previous = puzzles
+        .where((item) => item.level == level && item.id == resume['id'])
+        .firstOrNull;
+    _openPuzzle(previous ?? puzzle, saved: previous != null ? resume : saved);
   }
 
   void _openPuzzle(Puzzle puzzle, {Map<String, dynamic> saved = const {}}) {
