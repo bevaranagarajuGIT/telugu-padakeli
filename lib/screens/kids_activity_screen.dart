@@ -34,16 +34,21 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
   bool _freshFeedback = false;
   bool _freshCompletion = false;
   bool _leavingCompletion = false;
-  final _scroll = ScrollController();
+  final _scroll = ScrollController(keepScrollOffset: false);
   final _completionFocus = FocusNode(debugLabel: 'Activity completion heading');
   late int _previousIndex;
+
+  bool get _hasQuestionAction =>
+      session.answerState == KidsAnswerState.correct ||
+      (session.activity.type != KidsActivityType.picture &&
+          session.activity.type != KidsActivityType.letter);
 
   @override
   void initState() {
     super.initState();
+    _previousIndex = session.index;
     _previousAnswer = session.answerState;
     _previousComplete = session.complete;
-    _previousIndex = session.index;
     session.addListener(_sessionChanged);
   }
 
@@ -59,6 +64,7 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
     if (oldWidget.session == session) return;
     oldWidget.session.removeListener(_sessionChanged);
     _audio?.stop();
+    _previousIndex = session.index;
     _previousAnswer = session.answerState;
     _previousComplete = session.complete;
     _freshFeedback = false;
@@ -133,9 +139,9 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
       listenable: session,
       builder: (context, _) => Scaffold(
         bottomNavigationBar: session.complete
-            ? LearningActionFooter(child: _completionPrimary(context))
-            : session.answerState == KidsAnswerState.correct
-            ? LearningActionFooter(child: _nextControl(context))
+            ? LearningActionFooter(child: _completionAction(context))
+            : _hasQuestionAction
+            ? LearningActionFooter(child: _questionAction(context))
             : null,
         appBar: AppBar(
           backgroundColor: AppColors.purple,
@@ -233,24 +239,6 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
                             _feedback(context),
                             const SizedBox(height: 16),
                           ],
-                          if (session.answerState != KidsAnswerState.correct &&
-                              session.activity.type !=
-                                  KidsActivityType.picture &&
-                              session.activity.type != KidsActivityType.letter)
-                            TapFeedback(
-                              child: FilledButton(
-                                key: const ValueKey('learning-check'),
-                                onPressed: session.check,
-                                child: const Padding(
-                                  padding: EdgeInsets.all(12),
-                                  child: KidsLearningText.control(
-                                    'సరిచూడు',
-                                    english: 'Check answer',
-                                    center: true,
-                                  ),
-                                ),
-                              ),
-                            ),
                           const SizedBox(height: 16),
                           TextButton(
                             onPressed: () => Navigator.of(context).pop(),
@@ -264,6 +252,87 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
                       ),
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _questionAction(BuildContext context) {
+    final correct = session.answerState == KidsAnswerState.correct;
+    final finalQuestion =
+        session.index + 1 == session.activity.questions.length;
+    return SizedBox(
+      width: double.infinity,
+      child: TapFeedback(
+        child: FilledButton.icon(
+          key: ValueKey(correct ? 'learning-next' : 'learning-check'),
+          onPressed: correct ? session.next : session.check,
+          icon: Icon(
+            correct ? Icons.arrow_forward_rounded : Icons.check_rounded,
+          ),
+          iconAlignment: IconAlignment.end,
+          style: FilledButton.styleFrom(
+            backgroundColor: correct
+                ? AppColors.purple
+                : Theme.of(context).colorScheme.primary,
+            foregroundColor: Colors.white,
+            minimumSize: const Size(48, 64),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+            ),
+          ),
+          label: KidsLearningText.control(
+            correct
+                ? (finalQuestion ? 'ఆట ముగించు' : 'తరువాతి ప్రశ్న')
+                : 'సరిచూడు',
+            english: correct
+                ? (finalQuestion ? 'Finish activity' : 'Next question')
+                : 'Check answer',
+            center: true,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _completionAction(BuildContext context) {
+    final theme = Theme.of(context);
+    return TapFeedback(
+      child: FilledButton.icon(
+        key: ValueKey(
+          widget.onNext == null ? 'learning-return' : 'learning-next-activity',
+        ),
+        onPressed: _leavingCompletion
+            ? null
+            : () => _leaveCompletion(
+                widget.onNext ?? () => Navigator.of(context).pop(),
+              ),
+        icon: const Icon(Icons.arrow_forward_rounded),
+        iconAlignment: IconAlignment.end,
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.gold,
+          foregroundColor: AppColors.ink,
+          minimumSize: const Size(48, 64),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+        ),
+        label: KidsLearningText.control(
+          widget.onNext == null ? 'ఆటలకు వెళ్లు' : 'తరువాతి స్థాయి',
+          english: widget.onNext == null
+              ? 'Return to activities'
+              : 'Next level',
+          center: true,
+          style: theme.textTheme.titleMedium?.copyWith(
+            color: AppColors.ink,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),
@@ -785,49 +854,4 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
       ],
     );
   }
-
-  Widget _nextControl(BuildContext context) {
-    final finish = session.index + 1 == session.activity.questions.length;
-    return TapFeedback(
-      child: FilledButton(
-        key: const ValueKey('learning-next'),
-        onPressed: session.next,
-        style: FilledButton.styleFrom(
-          minimumSize: const Size(48, 64),
-          padding: const EdgeInsets.all(12),
-        ),
-        child: KidsLearningText.control(
-          finish ? 'ఆట ముగించు' : 'తరువాతి ప్రశ్న',
-          english: finish ? 'Finish activity' : 'Next question',
-          center: true,
-        ),
-      ),
-    );
-  }
-
-  Widget _completionPrimary(BuildContext context) => FilledButton.icon(
-    key: ValueKey(
-      widget.onNext == null ? 'learning-return' : 'learning-next-activity',
-    ),
-    onPressed: _leavingCompletion
-        ? null
-        : () => _leaveCompletion(
-            widget.onNext ?? () => Navigator.of(context).pop(),
-          ),
-    icon: const Icon(Icons.arrow_forward_rounded),
-    style: FilledButton.styleFrom(
-      backgroundColor: AppColors.gold,
-      foregroundColor: AppColors.ink,
-      minimumSize: const Size(48, 64),
-      padding: const EdgeInsets.all(12),
-    ),
-    label: KidsLearningText.control(
-      widget.onNext == null ? 'ఆటలకు వెళ్లు' : 'తరువాతి స్థాయి',
-      english: widget.onNext == null ? 'Return to activities' : 'Next level',
-      center: true,
-      style: Theme.of(
-        context,
-      ).textTheme.titleMedium?.copyWith(color: AppColors.ink),
-    ),
-  );
 }

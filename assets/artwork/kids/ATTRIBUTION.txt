@@ -11,8 +11,13 @@ tool/prepare_learning_artwork.dart extracts equal cells without trimming any
 identifying details, removes disconnected neighboring-object fragments, scales
 proportionally, and adds consistent empty margins.
 PNG files are 512 square; Flutter displays them with BoxFit.contain.
-Mango and parrot are currently used in picture questions; the other seven
-are reserved artwork and do not imply additional reviewed learning content.
+Parrot is currently used in picture questions; the other eight are reserved
+artwork and do not imply additional reviewed learning content.
+
+Picture questions use mango-v2.png, generated separately on 2026-11-10 with
+OpenAI's built-in image generation tool and included without image editing.
+Its full original prompt and provenance are preserved in mango-v2.md.
+No external reference image was supplied. The sheet mango.png is retained.
 
 The new mango replaces the earlier UI-card crop, not the Tirumala/family art.
 Existing opening/home illustration attribution remains applicable separately.

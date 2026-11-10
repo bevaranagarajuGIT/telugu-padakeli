@@ -9,6 +9,7 @@ import 'helpers/returning_user_app.dart';
 import 'package:telugu_padakeli/screens/home_screen.dart';
 import 'package:telugu_padakeli/shared/widgets/app_buttons.dart';
 import 'package:telugu_padakeli/shared/widgets/bottom_navigation.dart';
+import 'package:telugu_padakeli/shared/widgets/feature_card.dart';
 import 'package:telugu_padakeli/services/kids_question_service.dart';
 
 Finder _score(int value) => find.descendant(
@@ -209,7 +210,6 @@ void main() {
           ),
         ),
       );
-
       final daily = tester.getRect(find.byKey(const ValueKey('home-daily')));
       final progress = tester.getRect(
         find.byKey(const ValueKey('home-progress')),
@@ -220,6 +220,50 @@ void main() {
       expect(daily.height, lessThan(172));
     },
   );
+
+  testWidgets('active puzzle resume appears before the playable cards', (
+    tester,
+  ) async {
+    var opened = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeScreen(
+          onClassic: () => opened = true,
+          onLearn: () {},
+          onProgress: () {},
+          onSettings: () {},
+          hasActivePuzzle: true,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      tester.getRect(find.text('Resume Classic')).bottom,
+      lessThan(tester.getRect(find.byType(FeatureCard).first).top),
+    );
+    await tester.tap(find.text('Resume Classic'));
+    expect(opened, isTrue);
+  });
+
+  testWidgets('playable feature cards have matching heights', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeScreen(
+          onClassic: () {},
+          onLearn: () {},
+          onProgress: () {},
+          onSettings: () {},
+        ),
+      ),
+    );
+
+    final heights = [
+      for (var index = 0; index < 2; index++)
+        tester.getSize(find.byType(FeatureCard).at(index)).height,
+    ];
+    expect(heights[0], heights[1]);
+    expect(find.byType(FeatureCard), findsNWidgets(2));
+  });
 
   testWidgets(
     'working secondary actions expose honest labels without coming-soon',

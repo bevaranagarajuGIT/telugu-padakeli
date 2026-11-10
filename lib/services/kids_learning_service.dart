@@ -97,7 +97,7 @@ class KidsLearningService {
             prompt: 'ఇది ఏమిటి?',
             englishPrompt: 'What is this?',
             answer: 'మామిడి',
-            imageAsset: 'assets/artwork/kids/mango.png',
+            imageAsset: 'assets/artwork/kids/mango-v2.png',
             imageDescription: 'ఆకులతో పసుపు రంగు మామిడి పండు బొమ్మ',
             choices: [
               KidsChoice('మామిడి', 'Mango'),
@@ -127,7 +127,7 @@ class KidsLearningService {
             prompt: 'ఈ పండు ఏ రంగులో ఉంది?',
             englishPrompt: 'What colour is this fruit?',
             answer: 'పసుపు',
-            imageAsset: 'assets/artwork/kids/mango.png',
+            imageAsset: 'assets/artwork/kids/mango-v2.png',
             imageDescription: 'ఆకులతో పసుపు రంగు మామిడి పండు బొమ్మ',
             choices: [
               KidsChoice('నీలం', 'Blue'),
@@ -157,7 +157,7 @@ class KidsLearningService {
             prompt: 'ఈ మామిడి దేనికి ఉదాహరణ?',
             englishPrompt: 'What kind of food is this mango?',
             answer: 'పండు',
-            imageAsset: 'assets/artwork/kids/mango.png',
+            imageAsset: 'assets/artwork/kids/mango-v2.png',
             imageDescription: 'ఆకులతో పసుపు రంగు మామిడి పండు బొమ్మ',
             choices: [
               KidsChoice('పండు', 'Fruit'),

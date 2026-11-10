@@ -8,8 +8,12 @@ banana, lotus, cat, fish, pencil and elephant. Equal sheet cells are fitted into
 512x512 RGBA canvases with consistent safe margins using the existing Dart image
 dependency and `tool/prepare_learning_artwork.dart`. Objects are not stretched or
 tightly cropped. Disconnected neighboring-object fragments are removed before
-scaling, preserving the main object's connected silhouette. Mango/parrot are used in picture questions; seven reserved
-objects do not inflate question or reviewed-vocabulary counts.
+scaling, preserving the main object's connected silhouette. The parrot is used
+in picture questions; reserved objects do not inflate question or
+reviewed-vocabulary counts. Picture questions use the newer standalone
+`kids/mango-v2.png`, generated separately without image editing; its original
+prompt and provenance are preserved in `kids/mango-v2.md`. The sheet's
+`kids/mango.png` remains available.
 
 `kids/ATTRIBUTION.txt` records the source ID, transformation, use, missing audio
 and unresolved human art/rights review. It is bundled in the application's

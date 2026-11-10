@@ -130,8 +130,10 @@ Telugu educator must review natural wording, translations, plausible distractors
 regional inclusivity and difficulty. No filler questions were added.
 
 The user-approved original nine-object illustration sheet supplies consistently
-padded PNG vocabulary assets; standalone mango and parrot replace the card crop
-and mixed-scene picture. Other objects are prepared artwork, not extra exercises.
+padded PNG vocabulary assets; the standalone parrot replaces the mixed-scene
+picture. Picture questions use the newer standalone `mango-v2.png` from the
+layout refinement, documented in `assets/artwork/kids/mango-v2.md`. The sheet
+mango and other objects remain prepared artwork, not extra exercises.
 Images use `BoxFit.contain` and accurate text descriptions. No Telugu lettering
 is baked into images. See `assets/artwork/kids/ATTRIBUTION.txt` and
 `assets/artwork/README.md` for provenance, generation and distribution limits.

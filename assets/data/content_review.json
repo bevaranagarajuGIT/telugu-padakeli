@@ -285,11 +285,11 @@
           "జామ": "Guava"
         }
       },
-      "picture": "assets/artwork/kids/mango.png",
+      "picture": "assets/artwork/kids/mango-v2.png",
       "pictureDescription": "ఆకులతో పసుపు రంగు మామిడి పండు బొమ్మ",
       "audio": null,
       "recordingScript": "మామిడి",
-      "contentSignature": "{\"id\":\"kids:pictures:picture-mango\",\"activity\":\"pictures\",\"category\":[\"చిన్నారులు\"],\"type\":\"picture\",\"difficulty\":1,\"prompt\":\"ఇది ఏమిటి?\",\"display\":null,\"answer\":\"మామిడి\",\"completedWord\":null,\"distractors\":[\"అరటి\",\"జామ\"],\"tiles\":[],\"explanation\":\"మామిడి ఒక పండు.\",\"englishHelper\":{\"prompt\":\"What is this?\",\"explanation\":\"A mango is a fruit.\",\"choices\":{\"మామిడి\":\"Mango\",\"అరటి\":\"Banana\",\"జామ\":\"Guava\"}},\"picture\":\"assets/artwork/kids/mango.png\",\"pictureDescription\":\"ఆకులతో పసుపు రంగు మామిడి పండు బొమ్మ\",\"audio\":null,\"recordingScript\":\"మామిడి\"}",
+      "contentSignature": "{\"id\":\"kids:pictures:picture-mango\",\"activity\":\"pictures\",\"category\":[\"చిన్నారులు\"],\"type\":\"picture\",\"difficulty\":1,\"prompt\":\"ఇది ఏమిటి?\",\"display\":null,\"answer\":\"మామిడి\",\"completedWord\":null,\"distractors\":[\"అరటి\",\"జామ\"],\"tiles\":[],\"explanation\":\"మామిడి ఒక పండు.\",\"englishHelper\":{\"prompt\":\"What is this?\",\"explanation\":\"A mango is a fruit.\",\"choices\":{\"మామిడి\":\"Mango\",\"అరటి\":\"Banana\",\"జామ\":\"Guava\"}},\"picture\":\"assets/artwork/kids/mango-v2.png\",\"pictureDescription\":\"ఆకులతో పసుపు రంగు మామిడి పండు బొమ్మ\",\"audio\":null,\"recordingScript\":\"మామిడి\"}",
       "reviewStatus": "pending-human-review",
       "reviewerNotes": ""
     },
@@ -355,11 +355,11 @@
           "ఎరుపు": "Red"
         }
       },
-      "picture": "assets/artwork/kids/mango.png",
+      "picture": "assets/artwork/kids/mango-v2.png",
       "pictureDescription": "ఆకులతో పసుపు రంగు మామిడి పండు బొమ్మ",
       "audio": null,
       "recordingScript": "పసుపు",
-      "contentSignature": "{\"id\":\"kids:pictures:picture-mango-colour\",\"activity\":\"pictures\",\"category\":[\"చిన్నారులు\"],\"type\":\"picture\",\"difficulty\":1,\"prompt\":\"ఈ పండు ఏ రంగులో ఉంది?\",\"display\":null,\"answer\":\"పసుపు\",\"completedWord\":null,\"distractors\":[\"నీలం\",\"ఎరుపు\"],\"tiles\":[],\"explanation\":\"ఈ బొమ్మలో మామిడి పండు పసుపు రంగులో ఉంది.\",\"englishHelper\":{\"prompt\":\"What colour is this fruit?\",\"explanation\":\"The mango in this picture is yellow.\",\"choices\":{\"నీలం\":\"Blue\",\"పసుపు\":\"Yellow\",\"ఎరుపు\":\"Red\"}},\"picture\":\"assets/artwork/kids/mango.png\",\"pictureDescription\":\"ఆకులతో పసుపు రంగు మామిడి పండు బొమ్మ\",\"audio\":null,\"recordingScript\":\"పసుపు\"}",
+      "contentSignature": "{\"id\":\"kids:pictures:picture-mango-colour\",\"activity\":\"pictures\",\"category\":[\"చిన్నారులు\"],\"type\":\"picture\",\"difficulty\":1,\"prompt\":\"ఈ పండు ఏ రంగులో ఉంది?\",\"display\":null,\"answer\":\"పసుపు\",\"completedWord\":null,\"distractors\":[\"నీలం\",\"ఎరుపు\"],\"tiles\":[],\"explanation\":\"ఈ బొమ్మలో మామిడి పండు పసుపు రంగులో ఉంది.\",\"englishHelper\":{\"prompt\":\"What colour is this fruit?\",\"explanation\":\"The mango in this picture is yellow.\",\"choices\":{\"నీలం\":\"Blue\",\"పసుపు\":\"Yellow\",\"ఎరుపు\":\"Red\"}},\"picture\":\"assets/artwork/kids/mango-v2.png\",\"pictureDescription\":\"ఆకులతో పసుపు రంగు మామిడి పండు బొమ్మ\",\"audio\":null,\"recordingScript\":\"పసుపు\"}",
       "reviewStatus": "pending-human-review",
       "reviewerNotes": ""
     },
@@ -425,11 +425,11 @@
           "పప్పు": "Pulse"
         }
       },
-      "picture": "assets/artwork/kids/mango.png",
+      "picture": "assets/artwork/kids/mango-v2.png",
       "pictureDescription": "ఆకులతో పసుపు రంగు మామిడి పండు బొమ్మ",
       "audio": null,
       "recordingScript": "పండు",
-      "contentSignature": "{\"id\":\"kids:pictures:picture-mango-kind\",\"activity\":\"pictures\",\"category\":[\"చిన్నారులు\"],\"type\":\"picture\",\"difficulty\":1,\"prompt\":\"ఈ మామిడి దేనికి ఉదాహరణ?\",\"display\":null,\"answer\":\"పండు\",\"completedWord\":null,\"distractors\":[\"ధాన్యం\",\"పప్పు\"],\"tiles\":[],\"explanation\":\"మామిడి చెట్టుకు కాసే ఒక పండు.\",\"englishHelper\":{\"prompt\":\"What kind of food is this mango?\",\"explanation\":\"A mango is a fruit that grows on a tree.\",\"choices\":{\"పండు\":\"Fruit\",\"ధాన్యం\":\"Grain\",\"పప్పు\":\"Pulse\"}},\"picture\":\"assets/artwork/kids/mango.png\",\"pictureDescription\":\"ఆకులతో పసుపు రంగు మామిడి పండు బొమ్మ\",\"audio\":null,\"recordingScript\":\"పండు\"}",
+      "contentSignature": "{\"id\":\"kids:pictures:picture-mango-kind\",\"activity\":\"pictures\",\"category\":[\"చిన్నారులు\"],\"type\":\"picture\",\"difficulty\":1,\"prompt\":\"ఈ మామిడి దేనికి ఉదాహరణ?\",\"display\":null,\"answer\":\"పండు\",\"completedWord\":null,\"distractors\":[\"ధాన్యం\",\"పప్పు\"],\"tiles\":[],\"explanation\":\"మామిడి చెట్టుకు కాసే ఒక పండు.\",\"englishHelper\":{\"prompt\":\"What kind of food is this mango?\",\"explanation\":\"A mango is a fruit that grows on a tree.\",\"choices\":{\"పండు\":\"Fruit\",\"ధాన్యం\":\"Grain\",\"పప్పు\":\"Pulse\"}},\"picture\":\"assets/artwork/kids/mango-v2.png\",\"pictureDescription\":\"ఆకులతో పసుపు రంగు మామిడి పండు బొమ్మ\",\"audio\":null,\"recordingScript\":\"పండు\"}",
       "reviewStatus": "pending-human-review",
       "reviewerNotes": ""
     },
