@@ -60,19 +60,17 @@ class _AppLaunchGateState extends State<AppLaunchGate> {
     try {
       await widget.waitForFirstFrame();
       if (!mounted) return;
-      setState(() => _entranceReady = true);
       final completed = await widget.store.hasCompleted();
       if (!mounted) return;
-      if (!completed) {
-        await Future.wait([
-          _precache(openingTempleAsset),
-          _precache(openingFamilyAsset),
-        ]);
-        if (!mounted) return;
-        // Paint the decoded splash artwork before transitioning, without a timer.
-        await WidgetsBinding.instance.endOfFrame;
-      }
+      await Future.wait([
+        _precache(openingTempleAsset),
+        if (!completed) _precache(openingFamilyAsset),
+      ]);
       if (!mounted) return;
+      // Start the entrance only after the actual temple image has painted.
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) return;
+      setState(() => _entranceReady = true);
       if (!MediaQuery.disableAnimationsOf(context)) {
         await _splashEntered.future;
       }

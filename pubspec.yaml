@@ -16,6 +16,22 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+  image: ^4.12.0
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/artwork/branding/app-icon.png
+  adaptive_icon_background: "#20A5F5"
+  adaptive_icon_foreground: assets/artwork/branding/app-icon.png
+  adaptive_icon_foreground_inset: 16
+  remove_alpha_ios: true
+  web:
+    generate: true
+    image_path: assets/artwork/branding/app-icon.png
+    background_color: "#F5FAFF"
+    theme_color: "#873AF2"
 
 flutter:
   uses-material-design: true

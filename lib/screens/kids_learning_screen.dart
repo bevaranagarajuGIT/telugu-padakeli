@@ -129,13 +129,13 @@ class _KidsLearningScreenState extends State<KidsLearningScreen> {
             overflow: TextOverflow.ellipsis,
           ),
           leading: IconButton(
-            tooltip: 'హోమ్‌కు వెళ్లు',
+            tooltip: 'హోమ్‌కు వెళ్లు / Back to Home',
             onPressed: widget.onBack,
             icon: const Icon(Icons.arrow_back_rounded),
           ),
           actions: [
             IconButton(
-              tooltip: 'సెట్టింగ్స్',
+              tooltip: 'సెట్టింగ్స్ / Settings',
               icon: const Icon(Icons.settings_outlined),
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
@@ -239,7 +239,7 @@ class _KidsLearningScreenState extends State<KidsLearningScreen> {
                             onSelected: (_) =>
                                 _learning.selectCategory(category),
                             padding: const EdgeInsets.all(10),
-                            label: KidsLearningText(
+                            label: KidsLearningText.control(
                               '${category.title} · ${category.ages}',
                               english: category.english,
                             ),
@@ -251,7 +251,11 @@ class _KidsLearningScreenState extends State<KidsLearningScreen> {
                       Text(_error!),
                       TextButton(
                         onPressed: () => setState(_load),
-                        child: const Text('మళ్లీ ప్రయత్నించు'),
+                        child: const KidsLearningText.control(
+                          'మళ్లీ ప్రయత్నించు',
+                          english: 'Try again',
+                          center: true,
+                        ),
                       ),
                     ] else
                       for (final (index, activity)
@@ -269,7 +273,7 @@ class _KidsLearningScreenState extends State<KidsLearningScreen> {
                     OutlinedButton.icon(
                       key: const ValueKey('kids-legacy'),
                       icon: const Icon(Icons.menu_book_rounded),
-                      label: const KidsLearningText(
+                      label: const KidsLearningText.control(
                         'మునుపటి అక్షరాభ్యాసం',
                         english: 'Original seven-level practice',
                       ),
@@ -332,7 +336,7 @@ class _KidsLearningScreenState extends State<KidsLearningScreen> {
                       style: Theme.of(context).textTheme.labelLarge,
                     ),
                     const SizedBox(height: 4),
-                    KidsLearningText(
+                    KidsLearningText.control(
                       activity.title,
                       english: activity.englishTitle,
                       style: Theme.of(context).textTheme.titleLarge,

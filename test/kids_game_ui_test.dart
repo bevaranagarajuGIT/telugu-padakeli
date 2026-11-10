@@ -111,6 +111,7 @@ void main() {
         ),
       );
       const english = 'A flower that blooms in water.';
+      expect(find.text('Check answer'), findsOneWidget);
       expect(find.text(english), findsNothing);
       settings.setEnglishHelper(true);
       await tester.pumpAndSettle();
@@ -119,6 +120,7 @@ void main() {
       settings.setEnglishHelper(false);
       await tester.pumpAndSettle();
       expect(find.text(english), findsNothing);
+      expect(find.text('Check answer'), findsOneWidget);
       expect(find.text('నీటిలో పూసే పువ్వు'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
@@ -127,7 +129,7 @@ void main() {
   testWidgets('learning back action returns Home without discarding progress', (
     tester,
   ) async {
-    await tester.pumpWidget(const TeluguPadakeliApp());
+    await pumpReturningUserApp(tester);
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Play & Learn'));
     await tester.tap(find.text('Play & Learn'));
@@ -137,11 +139,13 @@ void main() {
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.byKey(const ValueKey('kids-answer-లం')));
     await tester.tap(find.byKey(const ValueKey('kids-answer-లం')));
-    await tester.ensureVisible(find.byTooltip('ఆటలకు వెళ్లు'));
-    await tester.tap(find.byTooltip('ఆటలకు వెళ్లు'));
+    await tester.ensureVisible(
+      find.byTooltip('ఆటలకు వెళ్లు / Return to activities'),
+    );
+    await tester.tap(find.byTooltip('ఆటలకు వెళ్లు / Return to activities'));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.byTooltip('హోమ్‌కు వెళ్లు'));
-    await tester.tap(find.byTooltip('హోమ్‌కు వెళ్లు'));
+    await tester.ensureVisible(find.byTooltip('హోమ్‌కు వెళ్లు / Back to Home'));
+    await tester.tap(find.byTooltip('హోమ్‌కు వెళ్లు / Back to Home'));
     await tester.pumpAndSettle();
     expect(find.text('Classic Padakeli'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('nav-learn')));

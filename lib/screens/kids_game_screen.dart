@@ -201,7 +201,7 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
         leading: widget.onBack == null
             ? null
             : IconButton(
-                tooltip: 'ఆటలకు వెళ్లు',
+                tooltip: 'ఆటలకు వెళ్లు / Return to activities',
                 onPressed: widget.onBack,
                 icon: const Icon(Icons.arrow_back_rounded),
               ),
@@ -229,7 +229,9 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
         child: SafeArea(
           top: false,
           child: SingleChildScrollView(
-            key: const ValueKey('kids-scroll'),
+            key: ValueKey(
+              _isComplete ? 'kids-completion-scroll' : 'kids-scroll',
+            ),
             padding: const EdgeInsets.all(16),
             child: Center(
               child: ConstrainedBox(
@@ -569,7 +571,11 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
               ),
             ),
             icon: const Icon(Icons.check_rounded),
-            label: const KidsLearningText('సరిచూడు', english: 'Check answer'),
+            label: const KidsLearningText.control(
+              'సరిచూడు',
+              english: 'Check answer',
+              center: true,
+            ),
           ),
         ),
         if (_message != null) ...[const SizedBox(height: 12), _feedback()],
@@ -725,10 +731,6 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
         SpecialAchievementCelebration(
           key: const ValueKey('legacy-completion-motion'),
           completed: _isComplete,
-          word: _currentQuestion.prompt.replaceFirst(
-            '_',
-            _currentQuestion.answer,
-          ),
           onSkip: () => _audio?.stop(),
         ),
         const SizedBox(height: 16),
@@ -764,7 +766,7 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
               ),
               icon: const Icon(Icons.arrow_forward_rounded),
               iconAlignment: IconAlignment.end,
-              label: const KidsLearningText(
+              label: const KidsLearningText.control(
                 'ఆటలకు వెళ్లు',
                 english: 'Return to activities',
                 center: true,
@@ -782,7 +784,11 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
               padding: const EdgeInsets.all(16),
             ),
             icon: const Icon(Icons.replay_rounded),
-            label: const Text('మళ్లీ ఆడండి'),
+            label: const KidsLearningText.control(
+              'మళ్లీ ఆడండి',
+              english: 'Play again',
+              center: true,
+            ),
           ),
         ),
       ],

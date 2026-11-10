@@ -3,6 +3,8 @@ import 'telugu_akshara.dart';
 enum PuzzleDirection { across, down }
 
 class Puzzle {
+  static const levels = ['beginner', 'easy', 'medium', 'hard', 'expert'];
+
   const Puzzle({
     required this.id,
     required this.level,
@@ -43,14 +45,7 @@ class Puzzle {
 
   /// Reject unusable content before it can reach the crossword UI.
   void validate() {
-    if (id <= 0 ||
-        !const {
-          'beginner',
-          'easy',
-          'medium',
-          'hard',
-          'expert',
-        }.contains(level)) {
+    if (id <= 0 || !levels.contains(level)) {
       throw const FormatException('Invalid puzzle ID or difficulty.');
     }
     if (gridSize <= 0 ||
@@ -223,6 +218,8 @@ class PuzzleClue {
   final int row;
   final int column;
   final String? hint;
+
+  int get aksharaCount => TeluguAkshara.split(answer).length;
 
   factory PuzzleClue.fromJson(Map<String, dynamic> json) {
     return PuzzleClue(

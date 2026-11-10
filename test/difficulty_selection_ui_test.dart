@@ -142,7 +142,7 @@ void main() {
   testWidgets('selector Back returns Home and Classic remains usable', (
     tester,
   ) async {
-    await tester.pumpWidget(const TeluguPadakeliApp());
+    await pumpReturningUserApp(tester);
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('nav-classic')));
     await tester.pumpAndSettle();

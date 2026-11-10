@@ -3,13 +3,10 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../app/theme/app_colors.dart';
-import '../models/telugu_akshara.dart';
 import 'engagement_motion.dart';
-import 'premium_telugu_text.dart';
 
 class KidsCompletionScene extends StatelessWidget {
   const KidsCompletionScene({
-    required this.word,
     this.animate = true,
     this.earnedStar = false,
     this.totalStars,
@@ -17,7 +14,6 @@ class KidsCompletionScene extends StatelessWidget {
     super.key,
   }) : assert(totalStars == null || totalStars >= 0);
 
-  final String word;
   final bool animate;
   final bool earnedStar;
   final int? totalStars;
@@ -41,7 +37,7 @@ class KidsCompletionScene extends StatelessWidget {
           builder: (context, motion) => RepaintBoundary(
             child: SizedBox(
               height:
-                  (character == null ? 236.0 : 316.0) +
+                  (character == null ? 236.0 : 264.0) +
                   math.max(0.0, counterHeight - 48),
               child: LayoutBuilder(
                 builder: (context, constraints) {
@@ -181,43 +177,6 @@ class KidsCompletionScene extends StatelessWidget {
                   );
                 },
               ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Semantics(
-          key: const ValueKey('completion-word'),
-          label: word,
-          child: ExcludeSemantics(
-            child: Wrap(
-              alignment: WrapAlignment.center,
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final akshara in TeluguAkshara.split(word))
-                  Container(
-                    constraints: const BoxConstraints(minWidth: 52),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHigh,
-                      border: Border.all(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.4),
-                      ),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: PremiumTeluguText(
-                      akshara,
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        color: theme.colorScheme.onSurface,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-              ],
             ),
           ),
         ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:telugu_padakeli/app/theme/app_colors.dart';
 import 'package:telugu_padakeli/core/app_settings_controller.dart';
 import 'package:telugu_padakeli/core/app_theme.dart';
 import 'package:telugu_padakeli/core/kids_learning_controller.dart';
@@ -36,10 +37,27 @@ Widget _host(
 );
 
 Future<void> _tap(WidgetTester tester, Finder finder) async {
-  await tester.ensureVisible(finder);
+  await Scrollable.ensureVisible(tester.element(finder), alignment: 0.5);
   await tester.pumpAndSettle();
   await tester.tap(finder);
   await tester.pumpAndSettle();
+}
+
+void _completeSession(KidsActivitySession session) {
+  for (final question in session.activity.questions) {
+    if (session.activity.type == KidsActivityType.builder) {
+      final unused = List.generate(question.tiles.length, (i) => i);
+      for (final akshara in TeluguAkshara.split(question.answer)) {
+        final index = unused.firstWhere((i) => question.tiles[i] == akshara);
+        unused.remove(index);
+        session.selectTile(index);
+      }
+    } else {
+      session.selectChoice(question.answer);
+    }
+    session.check();
+    session.next();
+  }
 }
 
 void main() {
@@ -74,7 +92,7 @@ void main() {
         find.byKey(const ValueKey('kids-activity-meanings')),
         findsNothing,
       );
-      expect(find.text('Picture matching'), findsNothing);
+      expect(find.text('Picture matching'), findsOneWidget);
       await _tap(tester, find.byKey(const ValueKey('kids-category-explorers')));
       expect(
         find.byKey(const ValueKey('kids-activity-completion-0')),
@@ -103,10 +121,153 @@ void main() {
       expect(find.text('అర్థాన్ని గుర్తించు'), findsOneWidget);
       settings.setEnglishHelper(false);
       await tester.pumpAndSettle();
-      expect(find.text('Meaning match'), findsNothing);
+      expect(find.text('Meaning match'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
+
+  for (final dark in [false, true]) {
+    testWidgets(
+      'vibrant quiz keeps clear answer states and contrast dark=$dark',
+      (tester) async {
+        tester.view.physicalSize = const Size(390, 844);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final settings = AppSettingsController()..setEnglishHelper(true);
+        final session = KidsActivitySession(
+          activities.firstWhere(
+            (activity) => activity.type == KidsActivityType.picture,
+          ),
+          () {},
+        );
+        addTearDown(settings.dispose);
+        addTearDown(session.dispose);
+        await tester.pumpWidget(
+          _host(KidsActivityScreen(session: session), settings, dark: dark),
+        );
+        await tester.pumpAndSettle();
+        final scheme = Theme.of(
+          tester.element(find.byType(KidsActivityScreen)),
+        ).colorScheme;
+        for (final key in [
+          'learning-progress-panel',
+          'learning-question-panel',
+        ]) {
+          final decoration =
+              tester.widget<Container>(find.byKey(ValueKey(key))).decoration!
+                  as BoxDecoration;
+          expect(decoration.color, isNot(scheme.surface));
+        }
+        expect(
+          tester
+              .widget<LinearProgressIndicator>(
+                find.byType(LinearProgressIndicator),
+              )
+              .minHeight,
+          8,
+        );
+
+        void expectChoiceContrast(KidsChoice choice) {
+          final button = tester.widget<OutlinedButton>(
+            find.byKey(ValueKey('learning-choice-${choice.telugu}')),
+          );
+          for (final states in [
+            <WidgetState>{},
+            {WidgetState.disabled},
+          ]) {
+            final colors = [
+              button.style!.foregroundColor!.resolve(states)!,
+              button.style!.backgroundColor!.resolve(states)!,
+            ];
+            final luminances =
+                colors.map((color) => color.computeLuminance()).toList()
+                  ..sort();
+            expect(
+              (luminances.last + 0.05) / (luminances.first + 0.05),
+              greaterThanOrEqualTo(4.5),
+            );
+          }
+        }
+
+        for (final choice in session.question.choices) {
+          expectChoiceContrast(choice);
+          final button = find.byKey(
+            ValueKey('learning-choice-${choice.telugu}'),
+          );
+          expect(tester.getSize(button).height, greaterThanOrEqualTo(64));
+          expect(tester.getRect(button).bottom, lessThanOrEqualTo(844));
+          expect(
+            tester
+                .widget<Icon>(
+                  find.byKey(
+                    ValueKey('learning-choice-status-${choice.telugu}'),
+                  ),
+                )
+                .icon,
+            Icons.circle_outlined,
+          );
+        }
+        final wrong = session.question.choices.firstWhere(
+          (choice) => choice.telugu != session.question.answer,
+        );
+        await _tap(
+          tester,
+          find.byKey(ValueKey('learning-choice-${wrong.telugu}')),
+        );
+        expect(find.byKey(const ValueKey('learning-retry')), findsOneWidget);
+        expect(
+          tester
+              .widget<Icon>(
+                find.byKey(ValueKey('learning-choice-status-${wrong.telugu}')),
+              )
+              .icon,
+          Icons.refresh_rounded,
+        );
+        expectChoiceContrast(wrong);
+        final answer = session.question.choices.firstWhere(
+          (choice) => choice.telugu == session.question.answer,
+        );
+        await _tap(
+          tester,
+          find.byKey(ValueKey('learning-choice-${answer.telugu}')),
+        );
+        expect(find.byKey(const ValueKey('learning-correct')), findsOneWidget);
+        expect(
+          tester
+              .widget<Icon>(
+                find.byKey(ValueKey('learning-choice-status-${answer.telugu}')),
+              )
+              .icon,
+          Icons.check_rounded,
+        );
+        final correctButton = tester.widget<OutlinedButton>(
+          find.byKey(ValueKey('learning-choice-${answer.telugu}')),
+        );
+        expect(correctButton.onPressed, isNull);
+        expect(
+          correctButton.style!.backgroundColor!.resolve({WidgetState.disabled}),
+          dark ? AppColors.darkSuccessBackground : AppColors.successBackground,
+        );
+        final feedback = tester.widget<Container>(
+          find.byKey(const ValueKey('learning-correct')),
+        );
+        expect(
+          (feedback.decoration! as BoxDecoration).color,
+          dark ? AppColors.darkSuccessBackground : AppColors.successBackground,
+        );
+        for (final choice in session.question.choices) {
+          expectChoiceContrast(choice);
+        }
+        expect(session.score, 1);
+        await _tap(tester, find.byKey(const ValueKey('learning-next')));
+        expect(session.index, 1);
+        expect(session.answerState, KidsAnswerState.ready);
+        expect(find.byKey(const ValueKey('learning-correct')), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
 
   testWidgets(
     'English Helper switches in Settings and updates the open activity',
@@ -116,7 +277,7 @@ void main() {
       await tester.pumpWidget(
         _host(KidsLearningScreen(onBack: () {}), settings),
       );
-      await _tap(tester, find.byTooltip('సెట్టింగ్స్'));
+      await _tap(tester, find.byTooltip('సెట్టింగ్స్ / Settings'));
       expect(find.byType(SettingsScreen), findsOneWidget);
       await _tap(tester, find.byKey(const ValueKey('english-helper-setting')));
       expect(settings.englishHelper, isTrue);
@@ -161,7 +322,7 @@ void main() {
       expect(find.text('అద్భుతం! ఆట పూర్తయింది.'), findsOneWidget);
       await _tap(tester, find.byKey(const ValueKey('learning-restart')));
       expect(find.text('ప్రశ్న 1 / 5'), findsOneWidget);
-      await _tap(tester, find.byTooltip('ఆటలకు వెళ్లు'));
+      await _tap(tester, find.byTooltip('ఆటలకు వెళ్లు / Return to activities'));
       expect(
         tester.widget<Text>(find.byKey(const ValueKey('kids-stars'))).data,
         '1',
@@ -236,7 +397,7 @@ void main() {
   testWidgets(
     'Home and bottom navigation retain category and activity progress',
     (tester) async {
-      await tester.pumpWidget(const TeluguPadakeliApp());
+      await pumpReturningUserApp(tester);
       await tester.pumpAndSettle();
       await _tap(tester, find.byKey(const ValueKey('nav-learn')));
       await _tap(tester, find.byKey(const ValueKey('kids-category-explorers')));
@@ -246,8 +407,8 @@ void main() {
       );
       await _tap(tester, find.byKey(const ValueKey('learning-choice-లం')));
       await _tap(tester, find.byKey(const ValueKey('learning-check')));
-      await _tap(tester, find.byTooltip('ఆటలకు వెళ్లు'));
-      await _tap(tester, find.byTooltip('హోమ్‌కు వెళ్లు'));
+      await _tap(tester, find.byTooltip('ఆటలకు వెళ్లు / Return to activities'));
+      await _tap(tester, find.byTooltip('హోమ్‌కు వెళ్లు / Back to Home'));
       expect(find.text('Classic Padakeli'), findsOneWidget);
       await _tap(tester, find.byKey(const ValueKey('nav-learn')));
       final chip = tester.widget<ChoiceChip>(
@@ -262,6 +423,53 @@ void main() {
       expect(find.text('కమలం'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets(
+    'all activity controls remain bilingual with English Helper off',
+    (tester) async {
+      final settings = AppSettingsController();
+      addTearDown(settings.dispose);
+      var nextActions = 0;
+      for (final type in KidsActivityType.values) {
+        final session = KidsActivitySession(
+          activities.firstWhere((activity) => activity.type == type),
+          () {},
+        );
+        await tester.pumpWidget(
+          _host(
+            KidsActivityScreen(session: session, onNext: () => nextActions++),
+            settings,
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(settings.englishHelper, isFalse);
+        expect(find.text('Return to activities'), findsOneWidget);
+        expect(find.text('ఆటలకు వెళ్లు'), findsOneWidget);
+        if (type != KidsActivityType.picture &&
+            type != KidsActivityType.letter) {
+          expect(find.text('Check answer'), findsOneWidget);
+        }
+        if (type == KidsActivityType.builder) {
+          expect(find.text('Undo last tile'), findsOneWidget);
+          expect(find.text('Reset attempt'), findsOneWidget);
+        }
+        if (type == KidsActivityType.picture) {
+          expect(find.text('What is this?'), findsNothing);
+          expect(find.text('Mango'), findsNothing);
+        }
+        _completeSession(session);
+        await tester.pumpAndSettle();
+        expect(find.text('Next level'), findsOneWidget);
+        expect(find.text('Play again'), findsOneWidget);
+        expect(find.text('Return to activities'), findsOneWidget);
+        await _tap(tester, find.text('Next level'));
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox.shrink());
+        session.dispose();
+      }
+      expect(nextActions, KidsActivityType.values.length);
     },
   );
 
@@ -323,26 +531,16 @@ void main() {
                     ),
                   );
             await _tap(tester, target);
+            if (type == KidsActivityType.builder) {
+              expect(session.selectedTiles, [0]);
+            } else {
+              expect(session.choice, session.question.choices.first.telugu);
+            }
             expect(tester.getSize(target).height, greaterThanOrEqualTo(48));
             expect(tester.getSize(target).width, greaterThanOrEqualTo(48));
             expect(tester.takeException(), isNull, reason: '$type controls');
             session.restart();
-            for (final question in session.activity.questions) {
-              if (type == KidsActivityType.builder) {
-                final unused = List.generate(question.tiles.length, (i) => i);
-                for (final akshara in TeluguAkshara.split(question.answer)) {
-                  final i = unused.firstWhere(
-                    (i) => question.tiles[i] == akshara,
-                  );
-                  unused.remove(i);
-                  session.selectTile(i);
-                }
-              } else {
-                session.selectChoice(question.answer);
-              }
-              session.check();
-              session.next();
-            }
+            _completeSession(session);
             await tester.pumpAndSettle();
             expect(
               tester.takeException(),

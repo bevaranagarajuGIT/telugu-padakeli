@@ -41,7 +41,7 @@ class PadakeliSplashScreen extends StatelessWidget {
                 tween: Tween(begin: reduced ? 1 : 0.85, end: 1),
                 duration: reduced || !animateEntrance
                     ? Duration.zero
-                    : const Duration(milliseconds: 350),
+                    : const Duration(milliseconds: 1200),
                 onEnd: animateEntrance ? onEntered : null,
                 builder: (context, opacity, child) =>
                     Opacity(opacity: opacity, child: child),

@@ -20,7 +20,10 @@ void main() {
     final artworkLicense = await rootBundle.loadString(
       'assets/artwork/opening/ATTRIBUTION.txt',
     );
-    yield LicenseEntryWithLineBreaks(['Opening illustrations'], artworkLicense);
+    yield LicenseEntryWithLineBreaks([
+      'Opening illustrations',
+      'App icon',
+    ], artworkLicense);
   });
   runApp(const TeluguPadakeliApp());
 }

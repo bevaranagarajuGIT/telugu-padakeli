@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:telugu_padakeli/app/theme/app_colors.dart';
 import 'package:telugu_padakeli/core/app_theme.dart';
 import 'package:telugu_padakeli/models/puzzle.dart';
 import 'package:telugu_padakeli/models/telugu_akshara.dart';
@@ -22,6 +23,50 @@ class _Repository implements PuzzleRepository {
 }
 
 late List<Puzzle> _puzzles;
+
+Puzzle _singleCellPuzzle(String level) => Puzzle(
+  id: 101 + Puzzle.levels.indexOf(level),
+  level: level,
+  gridSize: 1,
+  rows: const [
+    ['క'],
+  ],
+  acrossClues: const [
+    PuzzleClue(number: 1, clue: 'ఒక అక్షరం', answer: 'క', row: 0, column: 0),
+  ],
+  downClues: const [],
+);
+
+Puzzle _withBlockedMargins(Puzzle puzzle, int padding) {
+  PuzzleClue moveClue(PuzzleClue clue) => PuzzleClue(
+    number: clue.number,
+    clue: clue.clue,
+    hint: clue.hint,
+    answer: clue.answer,
+    row: clue.row + padding,
+    column: clue.column + padding,
+  );
+  return Puzzle(
+    id: puzzle.id,
+    level: puzzle.level,
+    gridSize: puzzle.gridSize + padding * 2,
+    rows: List.generate(
+      puzzle.gridSize + padding * 2,
+      (row) => List.generate(
+        puzzle.gridSize + padding * 2,
+        (column) =>
+            row >= padding &&
+                row < puzzle.gridSize + padding &&
+                column >= padding &&
+                column < puzzle.gridSize + padding
+            ? puzzle.rows[row - padding][column - padding]
+            : '#',
+      ),
+    ),
+    acrossClues: puzzle.acrossClues.map(moveClue).toList(),
+    downClues: puzzle.downClues.map(moveClue).toList(),
+  );
+}
 
 Future<void> _open(
   WidgetTester tester, {
@@ -105,53 +150,480 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     await _open(tester, navigationHeight: 88);
     expect(
-      find.text('1. ${_puzzles.first.acrossClues.first.clue}'),
+      find.text('1. ${_puzzles.first.acrossClues.first.clue} (2)'),
       findsOneWidget,
     );
-    for (final key in [
-      'classic-check',
-      'open-hints',
-      'classic-reset',
-      'classic-clear-cell',
-      'classic-backspace',
-      'classic-reset-word',
+    for (final (key, telugu, english) in [
+      ('classic-check', 'సరిచూడు', 'Check'),
+      ('open-hints', 'సహాయం', 'Hints'),
+      ('classic-reset', 'మళ్లీ ఆడు', 'Restart'),
+      ('classic-clear-cell', 'అక్షరం తీసేయి', 'Clear letter'),
+      ('classic-backspace', 'వెనక్కి', 'Backspace'),
+      ('classic-reset-word', 'పదం తీసేయి', 'Clear word'),
     ]) {
-      final rect = tester.getRect(find.byKey(ValueKey(key)));
+      final button = find.byKey(ValueKey(key));
+      expect(
+        find.descendant(of: button, matching: find.text(telugu)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: button, matching: find.text(english)),
+        findsOneWidget,
+      );
+      final rect = tester.getRect(button);
       expect(rect.top, greaterThanOrEqualTo(0));
       expect(rect.bottom, lessThanOrEqualTo(844 - 88));
+      expect(rect.height, greaterThanOrEqualTo(48));
     }
     expect(tester.takeException(), isNull);
   });
 
-  for (final (level, id) in [('Medium', 7), ('Hard', 9), ('Expert', 12)]) {
+  for (final dark in [false, true]) {
     testWidgets(
-      '$level expanded board fits a small phone and accepts all answers',
+      'whole words confirm automatically and crossing edits recompute dark=$dark',
       (tester) async {
-        tester.view.physicalSize = const Size(320, 568);
+        await _open(tester, dark: dark);
+        CrosswordGrid grid() =>
+            tester.widget<CrosswordGrid>(find.byType(CrosswordGrid));
+        expect(grid().correctCells, isEmpty);
+        await _tap(tester, find.byKey(const ValueKey('akshara-ఆ')));
+        expect(grid().correctCells, isEmpty);
+        await _tap(tester, find.byKey(const ValueKey('akshara-ఖం')));
+        expect(grid().correctCells, isEmpty);
+        expect(grid().incorrectCells, isEmpty);
+        await _tap(tester, find.byKey(const ValueKey('akshara-ట')));
+        expect(grid().correctCells, {0, 1});
+        final marker = find.byKey(const ValueKey('clue-correct-across-1'));
+        expect(marker, findsOneWidget);
+        expect(
+          tester.widget<Icon>(marker).semanticLabel,
+          contains('Correct answer'),
+        );
+        final background = dark
+            ? AppColors.darkSuccessBackground
+            : AppColors.successBackground;
+        final foreground = dark
+            ? AppColors.darkSuccessForeground
+            : AppColors.successForeground;
+        final decoration =
+            tester
+                    .widget<Container>(
+                      find.byKey(const ValueKey('selected-cell')),
+                    )
+                    .decoration!
+                as BoxDecoration;
+        expect(decoration.color, background);
+        final outline = (decoration.border! as Border).top.color;
+        expect(outline, dark ? AppColors.orange : AppColors.deepOrange);
+        final outlineLuminances = [
+          outline.computeLuminance(),
+          background.computeLuminance(),
+        ]..sort();
+        expect(
+          (outlineLuminances.last + 0.05) / (outlineLuminances.first + 0.05),
+          greaterThanOrEqualTo(3),
+        );
+        final text = tester.widget<Text>(
+          find.byKey(const ValueKey('crossword-cell-value-1')),
+        );
+        expect(text.style!.color, foreground);
+        expect(
+          (background.computeLuminance() + 0.05) /
+              (foreground.computeLuminance() + 0.05),
+          dark ? lessThanOrEqualTo(1 / 4.5) : greaterThanOrEqualTo(4.5),
+        );
+        expect(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is Semantics &&
+                (widget.properties.label?.contains('Correct word') ?? false),
+          ),
+          findsNWidgets(2),
+        );
+        for (final action in ['classic-clear-cell', 'classic-backspace']) {
+          await _tap(tester, find.byKey(ValueKey(action)));
+          expect(grid().correctCells, isEmpty);
+          expect(marker, findsNothing);
+          await _tap(tester, find.byKey(const ValueKey('akshara-ట')));
+          expect(grid().correctCells, {0, 1});
+        }
+        await _fill(tester, _puzzles.first);
+        expect(grid().correctCells, {0, 1, 3, 6, 7});
+        await tester.pump(const Duration(seconds: 2));
+        expect(find.byKey(const ValueKey('classic-puzzle-1')), findsOneWidget);
+        expect(grid().enabled, isTrue);
+        expect(find.text('అద్భుతం! సమాధానం సరైనది.'), findsNothing);
+        await _tap(tester, find.text('అడ్డం (Across)'));
+        await _tap(tester, find.byKey(const ValueKey('clue-across-1')));
+        await _tap(tester, find.byKey(const ValueKey('akshara-ఖం')));
+        expect(grid().correctCells, {6, 7});
+        expect(marker, findsNothing);
+        expect(
+          find.byKey(const ValueKey('clue-correct-across-2')),
+          findsOneWidget,
+        );
+        await _tap(tester, find.text('నిలువు (Down)'));
+        expect(find.byKey(const ValueKey('clue-correct-down-1')), findsNothing);
+        await _tap(tester, find.byKey(const ValueKey('akshara-ఆ')));
+        expect(grid().correctCells, {0, 1, 3, 6, 7});
+        expect(
+          find.byKey(const ValueKey('clue-correct-down-1')),
+          findsOneWidget,
+        );
+        await _tap(tester, find.byKey(const ValueKey('classic-reset-word')));
+        expect(grid().correctCells, isEmpty);
+        await _fill(tester, _puzzles.first);
+        await _tap(tester, find.byKey(const ValueKey('classic-reset')));
+        await tester.pumpAndSettle();
+        await _tap(tester, find.byKey(const ValueKey('classic-reset-confirm')));
+        expect(grid().correctCells, isEmpty);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'hint completion confirms grid and large-text answer preview dark=$dark',
+      (tester) async {
+        tester.view.physicalSize = const Size(390, 844);
         tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.resetPhysicalSize);
         addTearDown(tester.view.resetDevicePixelRatio);
-        final puzzle = _puzzles.firstWhere((p) => p.id == id);
-        await _open(tester, level: level, puzzles: [puzzle], systemScale: 1.5);
-        expect(tester.takeException(), isNull);
-        await _fill(tester, puzzle);
-        await _tap(tester, find.byKey(const ValueKey('classic-check')));
+        final puzzle = _puzzles.firstWhere((puzzle) => puzzle.id == 11);
+        final clue = puzzle.acrossClues.first;
+        final path = puzzle.cellsForClue(clue, PuzzleDirection.across);
+        await _open(
+          tester,
+          level: 'Expert',
+          puzzles: [puzzle],
+          dark: dark,
+          systemScale: 3.2,
+        );
+        for (final index in path.take(path.length - 1)) {
+          final answer = puzzle.answerAt(
+            index ~/ puzzle.gridSize,
+            index % puzzle.gridSize,
+          );
+          await _tap(tester, find.byKey(ValueKey('akshara-$answer')));
+        }
+        expect(
+          tester.widget<CrosswordGrid>(find.byType(CrosswordGrid)).correctCells,
+          isEmpty,
+        );
+        await _tap(tester, find.byKey(const ValueKey('open-hints')));
+        await _tap(tester, find.byKey(const ValueKey('hint-reveal-cell')));
         await tester.pumpAndSettle();
-        expect(find.text('అద్భుతం! సమాధానం సరైనది.'), findsOneWidget);
+        expect(
+          tester.widget<CrosswordGrid>(find.byType(CrosswordGrid)).correctCells,
+          path.toSet(),
+        );
+        expect(
+          find.byKey(ValueKey('clue-correct-across-${clue.number}')),
+          findsOneWidget,
+        );
+        for (final index in path) {
+          final button = tester.widget<OutlinedButton>(
+            find.byKey(ValueKey('classic-word-cell-$index')),
+          );
+          expect(button.onPressed, isNotNull);
+          for (final states in [
+            <WidgetState>{},
+            {WidgetState.disabled},
+          ]) {
+            expect(
+              button.style!.backgroundColor!.resolve(states),
+              dark
+                  ? AppColors.darkSuccessBackground
+                  : AppColors.successBackground,
+            );
+            expect(
+              button.style!.foregroundColor!.resolve(states),
+              dark
+                  ? AppColors.darkSuccessForeground
+                  : AppColors.successForeground,
+            );
+          }
+        }
+        final active = tester.widget<OutlinedButton>(
+          find.byKey(ValueKey('classic-word-cell-${path.last}')),
+        );
+        expect(
+          active.style!.side!.resolve({})!.color,
+          dark ? AppColors.orange : AppColors.deepOrange,
+        );
+        await _tap(
+          tester,
+          find.byKey(ValueKey('classic-word-cell-${path.first}')),
+        );
+        await _tap(tester, find.byKey(const ValueKey('classic-clear-cell')));
+        expect(
+          tester.widget<CrosswordGrid>(find.byType(CrosswordGrid)).correctCells,
+          isEmpty,
+        );
+        expect(
+          find.byKey(ValueKey('clue-correct-across-${clue.number}')),
+          findsNothing,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'flat edit toolbar retains contrast and locks on success dark=$dark',
+      (tester) async {
+        await _open(tester, dark: dark);
+        final toolbar = find.byKey(const ValueKey('classic-edit-toolbar'));
+        final material = tester.widget<Material>(toolbar);
+        expect(material.elevation, 0);
+        expect(
+          find.descendant(of: toolbar, matching: find.byType(TextButton)),
+          findsNWidgets(3),
+        );
+        expect(
+          tester.widget(find.byKey(const ValueKey('open-hints'))),
+          isA<OutlinedButton>(),
+        );
+        expect(
+          tester.widget(find.byKey(const ValueKey('classic-check'))),
+          isA<FilledButton>(),
+        );
+        expect(
+          tester.widget(find.byKey(const ValueKey('classic-reset'))),
+          isA<TextButton>(),
+        );
+        for (final key in [
+          'classic-clear-cell',
+          'classic-backspace',
+          'classic-reset-word',
+        ]) {
+          final finder = find.byKey(ValueKey(key));
+          final button = tester.widget<TextButton>(finder);
+          expect(button.style!.backgroundColor?.resolve({}), isNull);
+          final foreground = button.style!.foregroundColor!.resolve({})!;
+          final luminances = [
+            foreground.computeLuminance(),
+            material.color!.computeLuminance(),
+          ]..sort();
+          expect(
+            (luminances.last + 0.05) / (luminances.first + 0.05),
+            greaterThanOrEqualTo(4.5),
+          );
+          expect(tester.getSize(finder).width, greaterThanOrEqualTo(48));
+          expect(tester.getSize(finder).height, greaterThanOrEqualTo(48));
+        }
+        await _fill(tester, _puzzles.first);
+        await _tap(tester, find.byKey(const ValueKey('classic-check')));
+        for (final key in [
+          'classic-clear-cell',
+          'classic-backspace',
+          'classic-reset-word',
+        ]) {
+          expect(
+            tester.widget<TextButton>(find.byKey(ValueKey(key))).onPressed,
+            isNull,
+          );
+        }
+        await tester.pump(const Duration(milliseconds: 1100));
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'all Expert clues remain visible with tight padding dark=$dark',
+      (tester) async {
+        tester.view.physicalSize = const Size(390, 844);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final puzzle = _puzzles.firstWhere((puzzle) => puzzle.id == 11);
+        await _open(tester, level: 'Expert', puzzles: [puzzle], dark: dark);
+        var tilesHeight = 0.0;
+        for (final clue in puzzle.acrossClues) {
+          expect(
+            find.text('${clue.number}. ${clue.clue} (${clue.aksharaCount})'),
+            findsOneWidget,
+          );
+          final tile = find.byKey(ValueKey('clue-across-${clue.number}'));
+          final height = tester.getSize(tile).height;
+          expect(height, greaterThanOrEqualTo(48));
+          tilesHeight += height;
+        }
+        final list = find.byKey(const ValueKey('classic-clue-list'));
+        expect(tester.getSize(list).height, closeTo(tilesHeight + 8, 0.1));
         expect(tester.takeException(), isNull);
       },
     );
   }
 
-  for (final (level, id) in [('Hard', 9), ('Expert', 12)]) {
+  testWidgets('Across, Down and hints show the answer akshara count', (
+    tester,
+  ) async {
+    await _open(tester);
+    final puzzle = _puzzles.first;
+    for (final direction in PuzzleDirection.values) {
+      await _tap(
+        tester,
+        find.text(
+          direction == PuzzleDirection.across
+              ? 'అడ్డం (Across)'
+              : 'నిలువు (Down)',
+        ),
+      );
+      final clues = direction == PuzzleDirection.across
+          ? puzzle.acrossClues
+          : puzzle.downClues;
+      for (final clue in clues) {
+        final count = puzzle.cellsForClue(clue, direction).length;
+        expect(
+          find.text('${clue.number}. ${clue.clue} ($count)'),
+          findsOneWidget,
+        );
+      }
+      final clue = clues.first;
+      final count = puzzle.cellsForClue(clue, direction).length;
+      final label = '${clue.number}. ${clue.clue} ($count)';
+      await _tap(tester, find.byKey(const ValueKey('open-hints')));
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('classic-hints-scroll')),
+          matching: find.text(label),
+        ),
+        findsOneWidget,
+      );
+      await _tap(tester, find.byTooltip('Close hints'));
+      await tester.pumpAndSettle();
+    }
+    await _tap(tester, find.byKey(const ValueKey('akshara-ఆ')));
+    expect(find.text('1. మన పైన నీలంగా కనిపించేది (3)'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'all boards crop only empty margins and preserve logical indices',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 568);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      for (final puzzle in [
+        ..._puzzles,
+        _withBlockedMargins(_puzzles.last, 2),
+      ]) {
+        puzzle.validate();
+        final occupiedRows = [
+          for (var row = 0; row < puzzle.gridSize; row++)
+            if (puzzle.rows[row].any((cell) => cell != '#')) row,
+        ];
+        final occupiedColumns = [
+          for (var column = 0; column < puzzle.gridSize; column++)
+            if (puzzle.rows.any((row) => row[column] != '#')) column,
+        ];
+        final controllers = [
+          for (final row in puzzle.rows)
+            [for (final _ in row) TextEditingController()],
+        ];
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.light(1),
+            home: Scaffold(
+              body: Center(
+                child: SizedBox(
+                  width: 280,
+                  child: CrosswordGrid(
+                    puzzle: puzzle,
+                    controllers: controllers,
+                    selectedCellIndex: null,
+                    selectedCells: const [],
+                    onCellSelected: (_) {},
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        final visibleRows = occupiedRows.last - occupiedRows.first + 1;
+        final visibleColumns = occupiedColumns.last - occupiedColumns.first + 1;
+        final board = tester.getSize(
+          find.byKey(const ValueKey('crossword-visible-board')),
+        );
+        final cellExtent = board.width / visibleColumns;
+        expect(cellExtent, greaterThanOrEqualTo(48));
+        expect(board.height, closeTo(visibleRows * cellExtent, 0.01));
+        for (var row = 0; row < puzzle.gridSize; row++) {
+          for (var column = 0; column < puzzle.gridSize; column++) {
+            final index = row * puzzle.gridSize + column;
+            final blocked = puzzle.isBlocked(row, column);
+            final key = blocked
+                ? 'crossword-blocked-cell-$index'
+                : 'crossword-cell-$index';
+            final cropped =
+                row < occupiedRows.first ||
+                row > occupiedRows.last ||
+                column < occupiedColumns.first ||
+                column > occupiedColumns.last;
+            expect(
+              find.byKey(ValueKey(key)),
+              cropped ? findsNothing : findsOneWidget,
+            );
+            expect(
+              find.byKey(ValueKey('blocked-cell-motif-$index')),
+              blocked && !cropped ? findsOneWidget : findsNothing,
+            );
+          }
+        }
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox.shrink());
+        for (final controller in controllers.expand((row) => row)) {
+          controller.dispose();
+        }
+      }
+    },
+  );
+
+  for (final (level, id) in [
+    ('Medium', 7),
+    ('Medium', 8),
+    ('Hard', 9),
+    ('Hard', 10),
+    ('Expert', 11),
+    ('Expert', 12),
+  ]) {
+    testWidgets('$level board $id fits a small phone and accepts all answers', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(320, 568);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final puzzle = _puzzles.firstWhere((p) => p.id == id);
+      await _open(tester, level: level, puzzles: [puzzle], systemScale: 1.5);
+      expect(tester.takeException(), isNull);
+      await _fill(tester, puzzle);
+      await _tap(tester, find.byKey(const ValueKey('classic-check')));
+      await tester.pumpAndSettle();
+      expect(find.text('అద్భుతం! సమాధానం సరైనది.'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  for (final (level, id, padding) in [
+    ('Hard', 9, 0),
+    ('Expert', 12, 0),
+    ('Expert', 12, 2),
+  ]) {
     testWidgets(
-      '$level palette input keeps the active cell horizontally visible',
+      '$level palette input keeps the active cell visible with margin $padding',
       (tester) async {
         tester.view.physicalSize = const Size(320, 568);
         tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.resetPhysicalSize);
         addTearDown(tester.view.resetDevicePixelRatio);
-        final puzzle = _puzzles.firstWhere((p) => p.id == id);
+        final source = _puzzles.firstWhere((p) => p.id == id);
+        final puzzle = padding == 0
+            ? source
+            : _withBlockedMargins(source, padding);
+        puzzle.validate();
         await _open(tester, level: level, puzzles: [puzzle], systemScale: 1.5);
         final clue = puzzle.acrossClues.reduce(
           (a, b) =>
@@ -204,7 +676,7 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
       final puzzle = _puzzles.firstWhere((p) => p.id == 9);
       await _open(tester, level: 'Hard', puzzles: [puzzle]);
-      final clue = puzzle.acrossClues.firstWhere((c) => c.number == 3);
+      final clue = puzzle.acrossClues.firstWhere((c) => c.aksharaCount >= 4);
       final path = puzzle.cellsForClue(clue, PuzzleDirection.across);
       final answer = TeluguAkshara.split(clue.answer);
       await _tap(tester, find.byKey(ValueKey('clue-across-${clue.number}')));
@@ -241,14 +713,17 @@ void main() {
         tester,
         find.byKey(ValueKey('classic-word-cell-${path.first}')),
       );
-      await _tap(tester, find.byKey(const ValueKey('akshara-వా')));
+      final wrongAnswer = puzzle.rows
+          .expand((row) => row)
+          .firstWhere((value) => value != '#' && value != answer.first);
+      await _tap(tester, find.byKey(ValueKey('akshara-$wrongAnswer')));
       expect(
         tester
             .widget<Text>(
               find.byKey(ValueKey('classic-word-value-${path.first}')),
             )
             .data,
-        'వా',
+        wrongAnswer,
       );
       await _tap(
         tester,
@@ -346,6 +821,13 @@ void main() {
     await _tap(tester, find.byKey(const ValueKey('classic-backspace')));
     await _tap(tester, find.byKey(const ValueKey('classic-reset')));
     await tester.pumpAndSettle();
+    expect(find.text('మళ్లీ ఆడాలా?\nRestart this puzzle?'), findsOneWidget);
+    expect(
+      find.textContaining('Your answers and hint count will be cleared.'),
+      findsOneWidget,
+    );
+    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Restart'), findsNWidgets(2));
     await _tap(tester, find.byKey(const ValueKey('classic-reset-confirm')));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
@@ -381,7 +863,11 @@ void main() {
           expect(tester.takeException(), isNull);
           await tester.tap(find.byTooltip('Hints'));
           await tester.pumpAndSettle();
-          expect(find.text('సూచనలు (Hints)'), findsOneWidget);
+          expect(find.text('సహాయం (Hints)'), findsOneWidget);
+          expect(
+            find.textContaining('Reveal next missing letter'),
+            findsOneWidget,
+          );
           expect(find.byKey(const ValueKey('hint-basic')), findsOneWidget);
           expect(tester.takeException(), isNull);
           await _tap(tester, find.text('మొదటి అక్షరం చూపించు'));
@@ -425,59 +911,155 @@ void main() {
   }
 
   for (final dark in [false, true]) {
-    testWidgets('Rangoli cells stay decorative and non-playable dark=$dark', (
-      tester,
-    ) async {
-      final semantics = tester.ensureSemantics();
-      try {
-        await _open(tester, dark: dark);
-        final selected = tester.getTopLeft(
-          find.byKey(const ValueKey('selected-cell')),
-        );
-        final puzzle = _puzzles.first;
-        for (var row = 0; row < puzzle.gridSize; row++) {
-          for (var column = 0; column < puzzle.gridSize; column++) {
-            if (!puzzle.isBlocked(row, column)) continue;
-            final index = row * puzzle.gridSize + column;
-            final cell = find.byKey(ValueKey('crossword-blocked-cell-$index'));
-            final decoration =
-                tester.widget<Container>(cell).decoration! as BoxDecoration;
-            expect(
-              decoration.color,
-              dark ? const Color(0xFF24243D) : const Color(0xFFEDE8F7),
-            );
-            expect(
-              find.byKey(ValueKey('blocked-cell-motif-$index')),
-              findsOneWidget,
-            );
-            expect(
-              find.bySemanticsLabel(
-                RegExp('వరుస ${row + 1}, నిలువు ${column + 1}'),
-              ),
-              findsNothing,
-            );
-            await tester.tapAt(tester.getCenter(cell));
-            await tester.pump();
-            expect(
-              tester.getTopLeft(find.byKey(const ValueKey('selected-cell'))),
-              selected,
-            );
+    testWidgets(
+      'blocked cells have subtle decorative stars and remain non-playable dark=$dark',
+      (tester) async {
+        final semantics = tester.ensureSemantics();
+        try {
+          await _open(tester, dark: dark);
+          final selected = tester.getTopLeft(
+            find.byKey(const ValueKey('selected-cell')),
+          );
+          final puzzle = _puzzles.first;
+          for (var row = 0; row < puzzle.gridSize; row++) {
+            for (var column = 0; column < puzzle.gridSize; column++) {
+              if (!puzzle.isBlocked(row, column)) continue;
+              final index = row * puzzle.gridSize + column;
+              final cell = find.byKey(
+                ValueKey('crossword-blocked-cell-$index'),
+              );
+              if (column == 2) {
+                expect(cell, findsNothing);
+                continue;
+              }
+              final decoration =
+                  tester.widget<Container>(cell).decoration! as BoxDecoration;
+              expect(
+                decoration.color,
+                dark ? const Color(0xFF24243D) : const Color(0xFFEDE8F7),
+              );
+              final motif = find.byKey(ValueKey('blocked-cell-motif-$index'));
+              expect(motif, findsOneWidget);
+              final star = tester.widget<Icon>(motif);
+              expect(star.icon, Icons.star_rounded);
+              expect(star.size, lessThanOrEqualTo(24));
+              expect(star.color!.a, lessThanOrEqualTo(0.5));
+              expect(tester.getCenter(motif), tester.getCenter(cell));
+              expect(
+                tester.widget<Container>(cell).child,
+                isA<ExcludeSemantics>(),
+              );
+              expect(
+                find.bySemanticsLabel(
+                  RegExp('వరుస ${row + 1}, నిలువు ${column + 1}'),
+                ),
+                findsNothing,
+              );
+              await tester.tapAt(tester.getCenter(cell));
+              await tester.pump();
+              expect(
+                tester.getTopLeft(find.byKey(const ValueKey('selected-cell'))),
+                selected,
+              );
+            }
           }
+          expect(
+            tester
+                .widget<Text>(
+                  find.byKey(const ValueKey('crossword-cell-value-0')),
+                )
+                .data,
+            '',
+          );
+          expect(tester.takeException(), isNull);
+        } finally {
+          semantics.dispose();
         }
-        expect(
-          tester
-              .widget<Text>(
-                find.byKey(const ValueKey('crossword-cell-value-0')),
-              )
-              .data,
-          '',
-        );
-        expect(tester.takeException(), isNull);
-      } finally {
-        semantics.dispose();
-      }
-    });
+      },
+    );
   }
+
+  for (final (index, level) in Puzzle.levels.indexed) {
+    testWidgets(
+      '$level completion offers explicit next, replay and level choice',
+      (tester) async {
+        tester.view.physicalSize = const Size(320, 568);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final enlarged = level == 'medium';
+        final puzzles = Puzzle.levels.reversed.map(_singleCellPuzzle).toList();
+        await _open(
+          tester,
+          level: '${level[0].toUpperCase()}${level.substring(1)}',
+          puzzles: puzzles,
+          systemScale: enlarged ? 3.2 : 1,
+          appScale: enlarged ? 1.4 : 1,
+          dark: enlarged,
+        );
+        await _fill(tester, puzzles.firstWhere((p) => p.level == level));
+        await _tap(tester, find.text('Check'));
+        await tester.pump(const Duration(milliseconds: 1100));
+        await tester.pumpAndSettle();
+        await tester.pump(const Duration(seconds: 3));
+        expect(
+          find.byKey(const ValueKey('classic-level-complete')),
+          findsOneWidget,
+        );
+        expect(find.text('Play again'), findsOneWidget);
+        expect(find.text('Choose level'), findsOneWidget);
+        if (index + 1 < Puzzle.levels.length) {
+          expect(find.text('Next level'), findsOneWidget);
+          await _tap(tester, find.text('Next level'));
+          expect(
+            find.byKey(ValueKey('classic-puzzle-${102 + index}')),
+            findsOneWidget,
+          );
+          expect(find.textContaining('నింపిన గడులు: 0%'), findsOneWidget);
+          expect(find.textContaining('సూచనలు: 0'), findsOneWidget);
+        } else {
+          expect(
+            find.byKey(const ValueKey('classic-next-level')),
+            findsNothing,
+          );
+          await _tap(tester, find.text('Play again'));
+          expect(
+            find.byKey(const ValueKey('classic-puzzle-105')),
+            findsOneWidget,
+          );
+        }
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  testWidgets(
+    'completion skips unavailable levels and can return to level choice',
+    (tester) async {
+      final beginner = _singleCellPuzzle('beginner');
+      final expert = _singleCellPuzzle('expert');
+      await _open(tester, puzzles: [expert, beginner]);
+      await _fill(tester, beginner);
+      await _tap(tester, find.text('Check'));
+      await tester.pump(const Duration(milliseconds: 1100));
+      await tester.pumpAndSettle();
+      await _tap(tester, find.text('Next level'));
+      expect(find.byKey(const ValueKey('classic-puzzle-105')), findsOneWidget);
+      await _fill(tester, expert);
+      await _tap(tester, find.text('Check'));
+      await tester.pump(const Duration(milliseconds: 1100));
+      await tester.pumpAndSettle();
+      expect(find.text('Next level'), findsNothing);
+      await _tap(tester, find.text('Choose level'));
+      expect(find.byKey(const ValueKey('difficulty-Beginner')), findsOneWidget);
+      expect(find.byKey(const ValueKey('difficulty-Expert')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('classic-level-complete')),
+        findsNothing,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   for (final level in ['Beginner', 'Easy']) {
     testWidgets(
@@ -527,6 +1109,12 @@ void main() {
                   )
                   .data,
               '',
+            );
+            expect(
+              tester
+                  .widget<CrosswordGrid>(find.byType(CrosswordGrid))
+                  .correctCells,
+              isEmpty,
             );
             expect(find.text('అద్భుతం! సమాధానం సరైనది.'), findsNothing);
             await tester.pump(const Duration(seconds: 2));
@@ -621,6 +1209,14 @@ void main() {
       );
       await _open(tester, puzzles: [puzzle]);
       await _tap(tester, find.byKey(const ValueKey('akshara-కై')));
+      expect(
+        tester.widget<CrosswordGrid>(find.byType(CrosswordGrid)).correctCells,
+        {0},
+      );
+      expect(
+        find.byKey(const ValueKey('clue-correct-across-1')),
+        findsOneWidget,
+      );
       await _tap(tester, find.byKey(const ValueKey('open-hints')));
       await tester.pumpAndSettle();
       for (final key in [

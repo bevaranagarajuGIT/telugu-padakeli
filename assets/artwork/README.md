@@ -13,6 +13,33 @@ terms and distribution-review limits below also apply to this derived crop.
 More fruits, animals and everyday objects require original or licensed,
 human-reviewed illustrations before expanding the picture activity.
 
+## App icon
+
+`branding/app-icon.png` is the approved Family + Tirumala launcher artwork:
+a centered `(160, 0, 960, 960)` crop of `opening/telugu-family.webp`, resized
+to an opaque 1024x1024 PNG. It preserves the original family, temple and book
+without generating new people or architecture. The platform applies its own
+icon mask; rounded corners are not baked into the master.
+
+The `flutter_launcher_icons` configuration in `pubspec.yaml` generates Android
+legacy/adaptive icons, the iPhone/iPad/App Store catalog, and web/PWA icons.
+After replacing the approved master, regenerate with:
+
+```shell
+flutter pub get
+dart run tool/generate_app_icons.dart
+```
+
+Android adaptive foregrounds use a 16% inset and sky-blue background to keep
+the composition visible inside launcher masks. PWA maskable icons reserve a
+10% margin on each side so their central 80% content area survives masking.
+The wrapper also preserves unrelated Xcode asset-catalog settings that the
+upstream generator would otherwise overwrite. The master is a build-time
+input, not an additional runtime Flutter asset. The existing opening-artwork
+attribution is also exposed as **App icon** in the application's licenses.
+The source's CC BY-SA treatment, authenticity review and unresolved
+generation/distribution terms apply to these derived icons as well.
+
 ## Opening artwork
 
 The separate `opening/` directory contains `tirumala-temple.webp` and

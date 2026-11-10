@@ -12,6 +12,7 @@ import '../widgets/app_page.dart';
 import '../widgets/crossword_grid.dart';
 import '../widgets/classic_hints_sheet.dart';
 import '../widgets/difficulty_selection.dart';
+import '../widgets/kids_learning_text.dart';
 import '../widgets/premium_telugu_text.dart';
 
 class PadakeliScreen extends StatefulWidget {
@@ -481,20 +482,21 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
       context: context,
       builder: (context) => AlertDialog(
         scrollable: true,
-        title: const Text('పదకేళిని మళ్లీ ప్రారంభించాలా?'),
+        title: const Text('మళ్లీ ఆడాలా?\nRestart this puzzle?'),
         content: const Text(
-          'ఈ పదకేళిలో నింపిన అక్షరాలు, సూచనల లెక్క తొలగించబడతాయి.',
+          'మీ సమాధానాలు, వాడిన సూచనల లెక్క తీసివేయబడతాయి.\n\n'
+          'Your answers and hint count will be cleared.',
         ),
         actions: [
           TextButton(
             key: const ValueKey('classic-reset-cancel'),
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('వద్దు'),
+            child: _controlLabel('వద్దు', 'Cancel'),
           ),
           FilledButton(
             key: const ValueKey('classic-reset-confirm'),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('మళ్లీ ప్రారంభించు'),
+            child: _controlLabel('మళ్లీ ఆడు', 'Restart'),
           ),
         ],
       ),
@@ -652,6 +654,17 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
         .where((cell) => cell != '#')
         .length;
     final percentage = (filled * 100 / total).round();
+    final correctClues = <PuzzleClue>{};
+    final correctCells = <int>{};
+    for (final direction in PuzzleDirection.values) {
+      for (final clue in _cluesFor(puzzle, direction)) {
+        final cells = puzzle.cellsForClue(clue, direction);
+        if (cells.every(_isCorrectCell)) {
+          correctClues.add(clue);
+          correctCells.addAll(cells);
+        }
+      }
+    }
     final feedbackForeground = _wasCorrect == true
         ? scheme.onTertiaryContainer
         : _wasCorrect == false
@@ -703,6 +716,7 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
                 selectedCellIndex: _selectedCellIndex,
                 selectedCells: _selectedCells,
                 incorrectCells: _incorrectCells,
+                correctCells: correctCells,
                 onCellSelected: _selectCell,
                 enabled: !_isAdvancing,
               ),
@@ -738,12 +752,13 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
           direction: _selectedDirection,
           selectedClue: _selectedClue,
           selectedDirection: _selectedDirection,
+          correctClues: correctClues,
           onSelect: _selectClue,
           enabled: !_isAdvancing && _selectedCellIndex != null,
         ),
         const SizedBox(height: 8),
         if (puzzle.gridSize > 3 && _selectedCells.isNotEmpty) ...[
-          _answerEditor(puzzle),
+          _answerEditor(puzzle, correctCells),
           const SizedBox(height: 8),
         ],
         AksharaPalette(
@@ -751,76 +766,82 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
           onSelected: _enterAkshara,
           enabled: !_isAdvancing,
         ),
-        Wrap(
-          alignment: WrapAlignment.center,
-          spacing: 8,
-          runSpacing: 4,
-          children: [
-            for (final (key, label, icon, action) in [
-              (
-                'classic-clear-cell',
-                'గడి చెరుపు',
-                Icons.clear_rounded,
-                () => _clearCell(),
-              ),
-              (
-                'classic-backspace',
-                'వెనుకకు చెరుపు',
-                Icons.backspace_outlined,
-                () => _clearCell(backspace: true),
-              ),
-              (
-                'classic-reset-word',
-                'పదం చెరుపు',
-                Icons.restart_alt_rounded,
-                _resetWord,
-              ),
-            ])
-              TextButton.icon(
-                key: ValueKey(key),
-                onPressed: _isAdvancing || _selectedCellIndex == null
-                    ? null
-                    : action,
-                style: TextButton.styleFrom(
-                  minimumSize: const Size(48, 48),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 8,
-                  ),
-                ),
-                icon: Icon(icon),
-                label: Text(label),
-              ),
-          ],
-        ),
         const SizedBox(height: 4),
+        Material(
+          key: const ValueKey('classic-edit-toolbar'),
+          color: scheme.surfaceContainerLow,
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: scheme.outlineVariant),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(2),
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 4,
+              runSpacing: 4,
+              children: [
+                for (final (key, label, english, action) in [
+                  (
+                    'classic-clear-cell',
+                    'అక్షరం తీసేయి',
+                    'Clear letter',
+                    () => _clearCell(),
+                  ),
+                  (
+                    'classic-backspace',
+                    'వెనక్కి',
+                    'Backspace',
+                    () => _clearCell(backspace: true),
+                  ),
+                  (
+                    'classic-reset-word',
+                    'పదం తీసేయి',
+                    'Clear word',
+                    _resetWord,
+                  ),
+                ])
+                  TextButton(
+                    key: ValueKey(key),
+                    onPressed: _isAdvancing || _selectedCellIndex == null
+                        ? null
+                        : action,
+                    style: _actionStyle(null, scheme.onSurface),
+                    child: _controlLabel(label, english),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
         Wrap(
           alignment: WrapAlignment.center,
           spacing: 10,
           runSpacing: 10,
           children: [
-            FilledButton.icon(
+            OutlinedButton.icon(
               key: const ValueKey('open-hints'),
               onPressed: _selectedClue == null || _isAdvancing
                   ? null
                   : _showHints,
-              style: _actionStyle(AppColors.gold, AppColors.ink),
-              icon: const Icon(Icons.lightbulb_rounded),
-              label: const Text('సూచనలు'),
+              style: _actionStyle(null, scheme.onSurface),
+              icon: const Icon(Icons.lightbulb_outline_rounded),
+              label: _controlLabel('సహాయం', 'Hints'),
             ),
             FilledButton.icon(
               key: const ValueKey('classic-check'),
               onPressed: _isAdvancing ? null : _checkAnswer,
               style: _actionStyle(const Color(0xFF087F42), Colors.white),
               icon: const Icon(Icons.check_rounded),
-              label: const Text('సరిచూడు'),
+              label: _controlLabel('సరిచూడు', 'Check'),
             ),
-            FilledButton.icon(
+            TextButton.icon(
               key: const ValueKey('classic-reset'),
               onPressed: _confirmReset,
-              style: _actionStyle(const Color(0xFFFFCEBE), AppColors.ink),
+              style: _actionStyle(null, scheme.onSurface),
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('అన్నీ చెరుపు'),
+              label: _controlLabel('మళ్లీ ఆడు', 'Restart'),
             ),
           ],
         ),
@@ -867,9 +888,16 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
     );
   }
 
-  Widget _answerEditor(Puzzle puzzle) {
+  Widget _answerEditor(Puzzle puzzle, Set<int> correctCells) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final dark = theme.brightness == Brightness.dark;
+    final correctBackground = dark
+        ? AppColors.darkSuccessBackground
+        : AppColors.successBackground;
+    final correctForeground = dark
+        ? AppColors.darkSuccessForeground
+        : AppColors.successForeground;
     return Card(
       key: const ValueKey('classic-answer-editor'),
       child: Padding(
@@ -889,7 +917,8 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
                 for (final (position, index) in _selectedCells.indexed)
                   Semantics(
                     selected: index == _selectedCellIndex,
-                    label: 'పదంలో అక్షరం ${position + 1}',
+                    label:
+                        'పదంలో అక్షరం ${position + 1}${correctCells.contains(index) ? ', సరైన పదం / Correct word' : ''}',
                     child: OutlinedButton(
                       key: ValueKey('classic-word-cell-$index'),
                       onPressed: _isAdvancing
@@ -902,12 +931,32 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
                       style: OutlinedButton.styleFrom(
                         minimumSize: const Size(48, 48),
                         padding: const EdgeInsets.all(8),
-                        backgroundColor: index == _selectedCellIndex
+                        backgroundColor: correctCells.contains(index)
+                            ? correctBackground
+                            : index == _selectedCellIndex
                             ? AppColors.gold
                             : scheme.surface,
-                        foregroundColor: index == _selectedCellIndex
+                        foregroundColor: correctCells.contains(index)
+                            ? correctForeground
+                            : index == _selectedCellIndex
                             ? AppColors.ink
                             : scheme.onSurface,
+                        disabledBackgroundColor: correctCells.contains(index)
+                            ? correctBackground
+                            : null,
+                        disabledForegroundColor: correctCells.contains(index)
+                            ? correctForeground
+                            : null,
+                        side: correctCells.contains(index)
+                            ? BorderSide(
+                                color: index == _selectedCellIndex
+                                    ? dark
+                                          ? AppColors.orange
+                                          : AppColors.deepOrange
+                                    : correctForeground,
+                                width: index == _selectedCellIndex ? 2 : 1,
+                              )
+                            : null,
                       ),
                       child: Text(
                         _controllers[index ~/ puzzle.gridSize][index %
@@ -935,17 +984,25 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
     );
   }
 
-  ButtonStyle _actionStyle(Color background, Color foreground) =>
-      FilledButton.styleFrom(
+  Widget _controlLabel(String telugu, String english) =>
+      KidsLearningText.control(telugu, english: english, center: true);
+
+  ButtonStyle _actionStyle(Color? background, Color foreground) =>
+      TextButton.styleFrom(
         backgroundColor: background,
         foregroundColor: foreground,
-        minimumSize: const Size(0, 52),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+        minimumSize: const Size(48, 48),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       );
 
   Widget _completion() {
     final theme = Theme.of(context);
+    final availableLevels = _puzzles!.map((puzzle) => puzzle.level).toSet();
+    final nextLevel = Puzzle.levels
+        .skip(Puzzle.levels.indexOf(_selectedLevel!) + 1)
+        .where(availableLevels.contains)
+        .firstOrNull;
     return Card(
       key: const ValueKey('classic-level-complete'),
       child: Padding(
@@ -968,16 +1025,38 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
               style: theme.textTheme.bodyLarge,
             ),
             const SizedBox(height: 20),
-            FilledButton.icon(
+            if (nextLevel != null) ...[
+              FilledButton.icon(
+                key: const ValueKey('classic-next-level'),
+                onPressed: () => _loadPuzzle(nextLevel),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size(48, 56),
+                  padding: const EdgeInsets.all(12),
+                ),
+                icon: const Icon(Icons.arrow_forward_rounded),
+                label: _controlLabel('తరువాతి స్థాయి', 'Next level'),
+              ),
+              const SizedBox(height: 8),
+            ],
+            OutlinedButton.icon(
               key: const ValueKey('classic-replay'),
               onPressed: () => _loadPuzzle(_selectedLevel!),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(48, 56),
+                padding: const EdgeInsets.all(12),
+              ),
               icon: const Icon(Icons.replay_rounded),
-              label: const Text('మళ్లీ ఆడండి'),
+              label: _controlLabel('మళ్లీ ఆడు', 'Play again'),
             ),
             const SizedBox(height: 8),
             OutlinedButton(
+              key: const ValueKey('classic-choose-level'),
               onPressed: _showDifficulties,
-              child: const Text('స్థాయిని ఎంచుకోండి'),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(48, 56),
+                padding: const EdgeInsets.all(12),
+              ),
+              child: _controlLabel('స్థాయిని ఎంచుకోండి', 'Choose level'),
             ),
           ],
         ),
@@ -992,6 +1071,7 @@ class _ClueList extends StatelessWidget {
     required this.direction,
     required this.selectedClue,
     required this.selectedDirection,
+    required this.correctClues,
     required this.onSelect,
     required this.enabled,
   });
@@ -1000,14 +1080,25 @@ class _ClueList extends StatelessWidget {
   final PuzzleDirection direction;
   final PuzzleClue? selectedClue;
   final PuzzleDirection selectedDirection;
+  final Set<PuzzleClue> correctClues;
   final void Function(PuzzleClue clue, PuzzleDirection direction) onSelect;
   final bool enabled;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final dark = theme.brightness == Brightness.dark;
+    final correctBackground = dark
+        ? AppColors.darkSuccessBackground
+        : AppColors.successBackground;
+    final correctForeground = dark
+        ? AppColors.darkSuccessForeground
+        : AppColors.successForeground;
     return Card(
+      key: const ValueKey('classic-clue-list'),
+      margin: EdgeInsets.zero,
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1015,25 +1106,45 @@ class _ClueList extends StatelessWidget {
               ListTile(
                 key: ValueKey('clue-${direction.name}-${clue.number}'),
                 minTileHeight: 48,
-                minVerticalPadding: 6,
+                minVerticalPadding: 4,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 10),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                selectedTileColor: Theme.of(
-                  context,
-                ).colorScheme.secondaryContainer.withValues(alpha: 0.6),
+                tileColor: correctClues.contains(clue)
+                    ? correctBackground
+                    : null,
+                selectedTileColor: correctClues.contains(clue)
+                    ? correctBackground
+                    : theme.colorScheme.secondaryContainer.withValues(
+                        alpha: 0.6,
+                      ),
+                trailing: correctClues.contains(clue)
+                    ? Icon(
+                        Icons.check_circle_rounded,
+                        key: ValueKey(
+                          'clue-correct-${direction.name}-${clue.number}',
+                        ),
+                        color: correctForeground,
+                        size: 20,
+                        semanticLabel: 'సరైన సమాధానం / Correct answer',
+                      )
+                    : null,
                 enabled: enabled,
                 selected:
                     identical(selectedClue, clue) &&
                     selectedDirection == direction,
                 title: Text(
-                  '${clue.number}. ${clue.clue}',
+                  '${clue.number}. ${clue.clue} (${clue.aksharaCount})',
                   key:
                       identical(selectedClue, clue) &&
                           selectedDirection == direction
                       ? const ValueKey('selected-clue')
                       : null,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: correctClues.contains(clue)
+                        ? correctForeground
+                        : null,
                     fontFamily: PremiumTeluguText.fontFamily,
                     fontFamilyFallback: const ['Roboto'],
                     height: PremiumTeluguText.lineHeight,

@@ -101,6 +101,20 @@ void main() {
     column: column,
   );
 
+  test('clue lengths count Telugu aksharas rather than Unicode characters', () {
+    for (final entry in {
+      'ఆకాశం': 3,
+      'అమ్మ': 2,
+      'స్వాతంత్ర్యం': 3,
+      'పర్యావరణం': 5,
+      'క\u0c46\u0c56': 1,
+      'క్\u200dషి': 1,
+      'క్\u200cషి': 1,
+    }.entries) {
+      expect(clue(entry.key).aksharaCount, entry.value, reason: entry.key);
+    }
+  });
+
   test('canonical equivalent aksharas validate at an intersection', () {
     final p = puzzle(
       [

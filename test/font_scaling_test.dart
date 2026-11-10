@@ -108,7 +108,7 @@ void main() {
         tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.resetPhysicalSize);
         addTearDown(tester.view.resetDevicePixelRatio);
-        await tester.pumpWidget(const TeluguPadakeliApp());
+        await pumpReturningUserApp(tester);
         await tester.pumpAndSettle();
         if (dark) {
           await tester.tap(find.byTooltip('Settings'));

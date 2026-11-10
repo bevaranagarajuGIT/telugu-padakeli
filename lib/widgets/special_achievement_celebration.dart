@@ -7,14 +7,12 @@ import 'bal_hanuman_character.dart';
 import 'engagement_motion.dart';
 import 'kids_completion_scene.dart';
 import 'kids_learning_text.dart';
-import 'premium_telugu_text.dart';
 
 /// External artwork is injected only after a separate provenance review.
 /// The default character is original articulated Flutter vector geometry.
 class SpecialAchievementCelebration extends StatefulWidget {
   const SpecialAchievementCelebration({
     required this.completed,
-    required this.word,
     this.animate = true,
     this.earnedStar = false,
     this.totalStars,
@@ -28,7 +26,6 @@ class SpecialAchievementCelebration extends StatefulWidget {
        );
 
   final bool completed;
-  final String word;
   final bool animate;
   final bool earnedStar;
   final int? totalStars;
@@ -61,10 +58,10 @@ class _SpecialAchievementCelebrationState
   Widget build(BuildContext context) {
     if (!widget.completed) return const SizedBox.shrink();
     final theme = Theme.of(context);
+    final dark = theme.brightness == Brightness.dark;
     final character = widget.character;
     Widget hero(Animation<double> motion) => character == null
         ? KidsCompletionScene(
-            word: widget.word,
             animate: false,
             earnedStar: widget.earnedStar,
             totalStars: widget.totalStars,
@@ -89,130 +86,141 @@ class _SpecialAchievementCelebrationState
                   ),
                 ),
               ),
-              PremiumTeluguText(
-                widget.word,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.headlineSmall,
-              ),
             ],
           );
     return EngagementTimeline(
       duration: const Duration(milliseconds: 3500),
       animate: widget.animate && !_skipped,
-      builder: (context, motion) => Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          RepaintBoundary(
-            child: ClipRect(
-              child: AnimatedBuilder(
-                animation: motion,
-                child: hero(motion),
-                builder: (context, child) {
-                  final seconds = motion.value * 3.5;
-                  final entrance = Curves.easeOutBack.transform(
-                    (seconds / 0.6).clamp(0.0, 1.0),
-                  );
-                  final celebration = ((seconds - 0.6) / 1.0).clamp(0.0, 1.0);
-                  final sway = math.sin(celebration * math.pi * 2);
-                  final phase = switch (seconds) {
-                    < 0.6 => 'entrance',
-                    < 1.6 => 'celebration',
-                    < 2.6 => 'victory',
-                    _ => 'completion',
-                  };
-                  return Stack(
-                    children: [
-                      Positioned.fill(
-                        child: ExcludeSemantics(
-                          child: IgnorePointer(
-                            child: CustomPaint(
-                              key: ValueKey('special-phase-$phase'),
-                              painter: _MagicCelebrationPainter(motion),
+      builder: (context, motion) => Container(
+        key: const ValueKey('special-celebration-stage'),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Color.alphaBlend(
+            AppColors.gold.withValues(alpha: dark ? 0.08 : 0.14),
+            theme.colorScheme.surface,
+          ),
+          border: Border.all(
+            color: AppColors.gold.withValues(alpha: dark ? 0.3 : 0.65),
+          ),
+          borderRadius: BorderRadius.circular(28),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            RepaintBoundary(
+              child: ClipRect(
+                child: AnimatedBuilder(
+                  animation: motion,
+                  child: hero(motion),
+                  builder: (context, child) {
+                    final seconds = motion.value * 3.5;
+                    final entrance = Curves.easeOutBack.transform(
+                      (seconds / 0.6).clamp(0.0, 1.0),
+                    );
+                    final celebration = ((seconds - 0.6) / 1.0).clamp(0.0, 1.0);
+                    final sway = math.sin(celebration * math.pi * 2);
+                    final phase = switch (seconds) {
+                      < 0.6 => 'entrance',
+                      < 1.6 => 'celebration',
+                      < 2.6 => 'victory',
+                      _ => 'completion',
+                    };
+                    return Stack(
+                      children: [
+                        Positioned.fill(
+                          child: ExcludeSemantics(
+                            child: IgnorePointer(
+                              child: CustomPaint(
+                                key: ValueKey('special-phase-$phase'),
+                                painter: _MagicCelebrationPainter(motion),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      if (character == null)
-                        child!
-                      else
-                        Transform.translate(
-                          key: const ValueKey('special-character-motion'),
-                          offset: Offset(0, 14 * (1 - entrance) + 2 * sway),
-                          child: Transform.rotate(
-                            angle: -0.025 * (1 - entrance) + 0.012 * sway,
-                            child: Transform.scale(
-                              scale: 0.96 + 0.04 * entrance,
-                              child: child,
+                        if (character == null)
+                          child!
+                        else
+                          Transform.translate(
+                            key: const ValueKey('special-character-motion'),
+                            offset: Offset(0, 14 * (1 - entrance) + 2 * sway),
+                            child: Transform.rotate(
+                              angle: -0.025 * (1 - entrance) + 0.012 * sway,
+                              child: Transform.scale(
+                                scale: 0.96 + 0.04 * entrance,
+                                child: child,
+                              ),
                             ),
                           ),
-                        ),
-                    ],
-                  );
-                },
+                      ],
+                    );
+                  },
+                ),
               ),
             ),
-          ),
-          ExcludeSemantics(
-            child: IgnorePointer(
-              child: AnimatedBuilder(
-                animation: motion,
-                builder: (context, _) => SizedBox(
-                  height: 64,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      for (var i = 0; i < 3; i++)
-                        _VictoryStar(
-                          index: i,
-                          reveal: ((motion.value * 3.5 - 1.6 - i * 0.25) / 0.25)
-                              .clamp(0.0, 1.0),
-                        ),
-                    ],
+            ExcludeSemantics(
+              child: IgnorePointer(
+                child: AnimatedBuilder(
+                  animation: motion,
+                  builder: (context, _) => SizedBox(
+                    height: 52,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        for (var i = 0; i < 3; i++)
+                          _VictoryStar(
+                            index: i,
+                            reveal:
+                                ((motion.value * 3.5 - 1.6 - i * 0.25) / 0.25)
+                                    .clamp(0.0, 1.0),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-          Semantics(
-            liveRegion: true,
-            child: Column(
-              children: [
-                KidsLearningText(
-                  'శభాష్!',
-                  english: 'Well done!',
-                  center: true,
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
+            Semantics(
+              liveRegion: true,
+              child: Column(
+                children: [
+                  KidsLearningText(
+                    'శభాష్!',
+                    english: 'Well done!',
+                    center: true,
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      color: dark ? AppColors.gold : AppColors.purple,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
-                KidsLearningText(
-                  'చాలా బాగా చేశావు!',
-                  english: 'You did very well!',
-                  center: true,
-                  style: theme.textTheme.titleLarge,
-                ),
-              ],
+                  KidsLearningText(
+                    'చాలా బాగా చేశావు!',
+                    english: 'You did very well!',
+                    center: true,
+                    style: theme.textTheme.bodyLarge,
+                  ),
+                ],
+              ),
             ),
-          ),
-          Align(
-            alignment: Alignment.centerRight,
-            child: AnimatedBuilder(
-              animation: motion,
-              builder: (context, _) => TextButton.icon(
-                key: const ValueKey('special-celebration-skip'),
-                onPressed: motion.value < 1 ? _skip : null,
-                style: TextButton.styleFrom(
-                  minimumSize: const Size(48, 48),
-                ).copyWith(animationDuration: Duration.zero),
-                icon: const Icon(Icons.skip_next_rounded),
-                label: const KidsLearningText(
-                  'దాటవేయి',
-                  english: 'Skip animation',
+            Align(
+              alignment: Alignment.centerRight,
+              child: AnimatedBuilder(
+                animation: motion,
+                builder: (context, _) => TextButton.icon(
+                  key: const ValueKey('special-celebration-skip'),
+                  onPressed: motion.value < 1 ? _skip : null,
+                  style: TextButton.styleFrom(
+                    minimumSize: const Size(48, 48),
+                  ).copyWith(animationDuration: Duration.zero),
+                  icon: const Icon(Icons.skip_next_rounded),
+                  label: const KidsLearningText.control(
+                    'దాటవేయి',
+                    english: 'Skip animation',
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -256,10 +264,6 @@ class _MagicCelebrationPainter extends CustomPainter {
     );
     final center = Offset(size.width / 2, size.height * 0.42);
     final radius = math.min(size.width * 0.48, size.height * 0.4);
-    canvas.drawRect(
-      Offset.zero & size,
-      Paint()..color = AppColors.ink.withValues(alpha: 0.035 * entrance),
-    );
     canvas.drawCircle(
       center,
       radius,

@@ -46,7 +46,7 @@ class ClassicHintsSheet extends StatelessWidget {
                   child: Semantics(
                     header: true,
                     child: PremiumTeluguText(
-                      'సూచనలు (Hints)',
+                      'సహాయం (Hints)',
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w800,
                       ),
@@ -62,14 +62,15 @@ class ClassicHintsSheet extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             PremiumTeluguText(
-              '${clue.number}. ${clue.clue}',
+              '${clue.number}. ${clue.clue} (${clue.aksharaCount})',
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 12),
-            for (final (key, title, subtitle, icon, tint, action) in [
+            for (final (key, title, english, subtitle, icon, tint, action) in [
               (
                 'hint-basic',
-                'సులభమైన సూచన',
+                'ఇంకో సూచన',
+                'Simpler clue',
                 onShowSimple == null
                     ? 'ఈ పదానికి అదనపు సూచన అందుబాటులో లేదు'
                     : 'రచయిత ఇచ్చిన మరో సూచన చూడండి',
@@ -80,6 +81,7 @@ class ClassicHintsSheet extends StatelessWidget {
               (
                 'hint-reveal-first',
                 'మొదటి అక్షరం చూపించు',
+                'Reveal next missing letter',
                 'ఎంచుకున్న పదంలో మొదటి నింపని లేదా తప్పు అక్షరం',
                 Icons.looks_one_rounded,
                 const Color(0xFFEBD8FF),
@@ -88,7 +90,8 @@ class ClassicHintsSheet extends StatelessWidget {
               (
                 'hint-reveal-cell',
                 'ఒక అక్షరం చూపించు',
-                'ఎంచుకున్న గడి లేదా పదంలోని ఒక గడి',
+                'Reveal one letter',
+                'ఎంచుకున్న చోట లేదా పదంలో ఒక అక్షరం',
                 Icons.visibility_rounded,
                 const Color(0xFFD8EFFF),
                 onRevealCell,
@@ -116,11 +119,17 @@ class ClassicHintsSheet extends StatelessWidget {
                           : AppColors.navy,
                       size: 28,
                     ),
-                    title: PremiumTeluguText(
-                      title,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                    title: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        PremiumTeluguText(
+                          title,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        Text(english, style: theme.textTheme.labelMedium),
+                      ],
                     ),
                     subtitle: PremiumTeluguText(
                       subtitle,

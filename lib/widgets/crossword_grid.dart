@@ -16,6 +16,7 @@ class CrosswordGrid extends StatefulWidget {
     required this.onCellSelected,
     this.enabled = true,
     this.incorrectCells = const {},
+    this.correctCells = const {},
     super.key,
   });
 
@@ -26,6 +27,7 @@ class CrosswordGrid extends StatefulWidget {
   final ValueChanged<int> onCellSelected;
   final bool enabled;
   final Set<int> incorrectCells;
+  final Set<int> correctCells;
 
   @override
   State<CrosswordGrid> createState() => _CrosswordGridState();
@@ -40,7 +42,7 @@ class _CrosswordGridState extends State<CrosswordGrid> {
     super.dispose();
   }
 
-  void _keepSelectionVisible(double cellExtent) {
+  void _keepSelectionVisible(double cellExtent, int firstColumn) {
     final puzzle = widget.puzzle;
     final index = widget.selectedCellIndex;
     if (index == null) return;
@@ -53,7 +55,7 @@ class _CrosswordGridState extends State<CrosswordGrid> {
       }
       final position = _horizontalScrollController.position;
       if (!position.hasContentDimensions) return;
-      final left = (index % puzzle.gridSize) * cellExtent;
+      final left = (index % puzzle.gridSize - firstColumn) * cellExtent;
       final right = left + cellExtent;
       final offset = position.pixels;
       final target = left < offset
@@ -73,6 +75,12 @@ class _CrosswordGridState extends State<CrosswordGrid> {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final dark = theme.brightness == Brightness.dark;
+    final correctBackground = dark
+        ? AppColors.darkSuccessBackground
+        : AppColors.successBackground;
+    final correctForeground = dark
+        ? AppColors.darkSuccessForeground
+        : AppColors.successForeground;
     final puzzle = widget.puzzle;
     final controllers = widget.controllers;
     final selectedCellIndex = widget.selectedCellIndex;
@@ -80,6 +88,21 @@ class _CrosswordGridState extends State<CrosswordGrid> {
     final onCellSelected = widget.onCellSelected;
     final enabled = widget.enabled;
     final incorrectCells = widget.incorrectCells;
+    var firstRow = puzzle.gridSize;
+    var lastRow = 0;
+    var firstColumn = puzzle.gridSize;
+    var lastColumn = 0;
+    for (var row = 0; row < puzzle.gridSize; row++) {
+      for (var column = 0; column < puzzle.gridSize; column++) {
+        if (puzzle.isBlocked(row, column)) continue;
+        firstRow = math.min(firstRow, row);
+        lastRow = math.max(lastRow, row);
+        firstColumn = math.min(firstColumn, column);
+        lastColumn = math.max(lastColumn, column);
+      }
+    }
+    final visibleRows = lastRow - firstRow + 1;
+    final visibleColumns = lastColumn - firstColumn + 1;
     final clueNumbers = <int, int>{};
     for (final clue in [...puzzle.acrossClues, ...puzzle.downClues]) {
       clueNumbers.putIfAbsent(
@@ -106,11 +129,12 @@ class _CrosswordGridState extends State<CrosswordGrid> {
     );
     return LayoutBuilder(
       builder: (context, constraints) {
-        final width = math.max(
-          constraints.maxWidth,
-          puzzle.gridSize * minimumCell,
+        final cellExtent = math.max(
+          constraints.maxWidth / puzzle.gridSize,
+          minimumCell,
         );
-        _keepSelectionVisible(width / puzzle.gridSize);
+        final width = visibleColumns * cellExtent;
+        _keepSelectionVisible(cellExtent, firstColumn);
         return Scrollbar(
           controller: _horizontalScrollController,
           thumbVisibility: width > constraints.maxWidth,
@@ -121,16 +145,18 @@ class _CrosswordGridState extends State<CrosswordGrid> {
             child: SizedBox(
               width: width,
               child: AspectRatio(
-                aspectRatio: 1,
+                key: const ValueKey('crossword-visible-board'),
+                aspectRatio: visibleColumns / visibleRows,
                 child: GridView.count(
                   primary: false,
                   physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: puzzle.gridSize,
-                  children: List.generate(puzzle.gridSize * puzzle.gridSize, (
-                    index,
+                  crossAxisCount: visibleColumns,
+                  children: List.generate(visibleRows * visibleColumns, (
+                    position,
                   ) {
-                    final row = index ~/ puzzle.gridSize;
-                    final column = index % puzzle.gridSize;
+                    final row = firstRow + position ~/ visibleColumns;
+                    final column = firstColumn + position % visibleColumns;
+                    final index = row * puzzle.gridSize + column;
                     if (puzzle.isBlocked(row, column)) {
                       return Container(
                         key: ValueKey('crossword-blocked-cell-$index'),
@@ -139,24 +165,18 @@ class _CrosswordGridState extends State<CrosswordGrid> {
                               ? const Color(0xFF24243D)
                               : const Color(0xFFEDE8F7),
                           border: Border.all(
-                            color: dark
-                                ? scheme.outlineVariant
-                                : AppColors.deepBlue,
+                            color: scheme.outlineVariant,
                             width: 0.5,
                           ),
                         ),
                         child: ExcludeSemantics(
                           child: Center(
-                            child: FractionallySizedBox(
-                              widthFactor: 0.46,
-                              heightFactor: 0.46,
-                              child: CustomPaint(
-                                key: ValueKey('blocked-cell-motif-$index'),
-                                painter: _RangoliPainter(
-                                  color: dark
-                                      ? const Color(0xFF9DAED6)
-                                      : const Color(0xFF788BB7),
-                                ),
+                            child: Icon(
+                              Icons.star_rounded,
+                              key: ValueKey('blocked-cell-motif-$index'),
+                              size: math.min(24, cellExtent * 0.38),
+                              color: scheme.onSurfaceVariant.withValues(
+                                alpha: dark ? 0.5 : 0.35,
                               ),
                             ),
                           ),
@@ -167,13 +187,21 @@ class _CrosswordGridState extends State<CrosswordGrid> {
                     final clueNumber = clueNumbers[index];
                     final isSelected = selectedCellIndex == index;
                     final incorrect = incorrectCells.contains(index);
+                    final correct = widget.correctCells.contains(index);
                     final isInSelectedWord = selectedCells.contains(index);
+                    final foreground = correct
+                        ? correctForeground
+                        : isSelected
+                        ? AppColors.ink
+                        : scheme.onSurface;
                     return Container(
                       key: isSelected
                           ? const ValueKey('selected-cell')
                           : ValueKey('crossword-cell-container-$index'),
                       decoration: BoxDecoration(
-                        color: isSelected
+                        color: correct
+                            ? correctBackground
+                            : isSelected
                             ? AppColors.gold
                             : isInSelectedWord
                             ? dark
@@ -182,9 +210,13 @@ class _CrosswordGridState extends State<CrosswordGrid> {
                             : scheme.surface,
                         border: Border.all(
                           color: isSelected
-                              ? AppColors.orange
+                              ? correct && !dark
+                                    ? AppColors.deepOrange
+                                    : AppColors.orange
                               : incorrect
                               ? scheme.error
+                              : correct
+                              ? correctForeground
                               : dark
                               ? scheme.outlineVariant
                               : AppColors.deepBlue,
@@ -196,7 +228,7 @@ class _CrosswordGridState extends State<CrosswordGrid> {
                         enabled: enabled,
                         selected: isSelected,
                         label:
-                            'వరుస ${row + 1}, నిలువు ${column + 1}${clueNumber == null ? '' : ', సూచన $clueNumber'}${incorrect ? ', తప్పు అక్షరం' : ''}',
+                            'వరుస ${row + 1}, నిలువు ${column + 1}${clueNumber == null ? '' : ', సూచన $clueNumber'}${incorrect ? ', తప్పు అక్షరం' : ''}${correct ? ', సరైన పదం / Correct word' : ''}',
                         value: controllers[row][column].text.isEmpty
                             ? 'ఖాళీ'
                             : controllers[row][column].text,
@@ -220,9 +252,7 @@ class _CrosswordGridState extends State<CrosswordGrid> {
                                         ),
                                         textAlign: TextAlign.center,
                                         style: letterStyle.copyWith(
-                                          color: isSelected
-                                              ? AppColors.ink
-                                              : scheme.onSurface,
+                                          color: foreground,
                                         ),
                                       ),
                                     ),
@@ -237,9 +267,7 @@ class _CrosswordGridState extends State<CrosswordGrid> {
                                     child: Text(
                                       '$clueNumber',
                                       style: numberStyle.copyWith(
-                                        color: isSelected
-                                            ? AppColors.ink
-                                            : scheme.onSurface,
+                                        color: foreground,
                                       ),
                                     ),
                                   ),
@@ -273,47 +301,6 @@ class _CrosswordGridState extends State<CrosswordGrid> {
       },
     );
   }
-}
-
-class _RangoliPainter extends CustomPainter {
-  const _RangoliPainter({required this.color});
-
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    canvas.save();
-    canvas.translate(size.width / 2, size.height / 2);
-    canvas.scale(size.shortestSide / 100);
-    final petal = Path()
-      ..moveTo(0, -46)
-      ..cubicTo(-6, -38, -22, -29, -16, -19)
-      ..cubicTo(-12, -12, -6, -10, 0, -7)
-      ..cubicTo(6, -10, 12, -12, 16, -19)
-      ..cubicTo(22, -29, 6, -38, 0, -46)
-      ..close();
-    final outline = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4.8
-      ..strokeJoin = StrokeJoin.round;
-    for (var i = 0; i < 4; i++) {
-      canvas.drawPath(petal, outline);
-      canvas.rotate(math.pi / 2);
-    }
-    final center = Path()
-      ..moveTo(0, -4)
-      ..lineTo(4, 0)
-      ..lineTo(0, 4)
-      ..lineTo(-4, 0)
-      ..close();
-    canvas.drawPath(center, Paint()..color = color);
-    canvas.restore();
-  }
-
-  @override
-  bool shouldRepaint(covariant _RangoliPainter oldDelegate) =>
-      color != oldDelegate.color;
 }
 
 class AksharaPalette extends StatelessWidget {

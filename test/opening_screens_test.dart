@@ -43,8 +43,7 @@ Future<void> _frameReady() async {}
 TeluguPadakeliApp _testApp(OnboardingStore store) =>
     TeluguPadakeliApp(onboardingStore: store, waitForFirstFrame: _frameReady);
 
-Future<void> _launch(WidgetTester tester, OnboardingStore store) async {
-  await tester.pumpWidget(_testApp(store));
+Future<void> _primeOpeningArtwork(WidgetTester tester) async {
   await tester.runAsync(() async {
     final context = tester.element(find.byType(TeluguPadakeliApp));
     await Future.wait([
@@ -66,6 +65,11 @@ Future<void> _launch(WidgetTester tester, OnboardingStore store) async {
       ),
     ]);
   });
+}
+
+Future<void> _launch(WidgetTester tester, OnboardingStore store) async {
+  await tester.pumpWidget(_testApp(store));
+  await _primeOpeningArtwork(tester);
   await tester.pumpAndSettle();
 }
 
@@ -146,6 +150,7 @@ void main() {
     (tester) async {
       final store = _Store()..reading = Completer<bool>();
       await tester.pumpWidget(_testApp(store));
+      await _primeOpeningArtwork(tester);
       expect(find.byType(PadakeliSplashScreen), findsOneWidget);
       await tester.pump(const Duration(seconds: 5));
       expect(find.byType(PadakeliSplashScreen), findsOneWidget);
@@ -158,7 +163,7 @@ void main() {
   );
 
   testWidgets(
-    'Ready launch waits for a rendered frame and short Splash entrance',
+    'Returning launch displays decoded Tirumala for its full entrance',
     (tester) async {
       final store = _Store()..completed = true;
       final firstFrame = Completer<void>();
@@ -168,13 +173,28 @@ void main() {
           waitForFirstFrame: () => firstFrame.future,
         ),
       );
+      await _primeOpeningArtwork(tester);
       await tester.pump(const Duration(seconds: 1));
       expect(store.reads, 0);
       firstFrame.complete();
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 1199));
       expect(find.byType(PadakeliSplashScreen), findsOneWidget);
       expect(find.text('Classic Padakeli'), findsNothing);
+      final temple = find.descendant(
+        of: find.byKey(const ValueKey('opening-temple-art')),
+        matching: find.byType(RawImage),
+      );
+      expect(tester.widget<RawImage>(temple).image, isNotNull);
+      expect(
+        tester
+            .widget<TweenAnimationBuilder<double>>(
+              find.byType(TweenAnimationBuilder<double>),
+            )
+            .duration,
+        const Duration(milliseconds: 1200),
+      );
       await tester.pumpAndSettle();
       expect(find.text('Classic Padakeli'), findsOneWidget);
       await tester.pumpWidget(const SizedBox.shrink());
@@ -187,8 +207,9 @@ void main() {
     tester.platformDispatcher.accessibilityFeaturesTestValue =
         FakeAccessibilityFeatures(disableAnimations: true);
     addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
-    final before = tester.binding.clock.now();
     await tester.pumpWidget(_testApp(_Store()..completed = true));
+    await _primeOpeningArtwork(tester);
+    final before = tester.binding.clock.now();
     await tester.pumpAndSettle(const Duration(milliseconds: 1));
     expect(
       tester.binding.clock.now().difference(before),
@@ -196,6 +217,36 @@ void main() {
     );
     expect(find.text('Classic Padakeli'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('Warm resume preserves Home without replaying the opening', (
+    tester,
+  ) async {
+    final store = _Store()..completed = true;
+    await _launch(tester, store);
+    final home = tester.element(find.text('Classic Padakeli'));
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+    expect(tester.element(find.text('Classic Padakeli')), same(home));
+    expect(find.byType(PadakeliSplashScreen), findsNothing);
+    expect(find.byType(PadakeliOnboardingScreen), findsNothing);
+    expect(store.reads, 1);
+    expect(store.writes, 0);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('Disposal during the splash entrance cancels its animation', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_testApp(_Store()..completed = true));
+    await _primeOpeningArtwork(tester);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.byType(PadakeliSplashScreen), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(seconds: 2));
+    expect(tester.takeException(), isNull);
   });
 
   for (final action in ['onboarding-skip', 'onboarding-start']) {

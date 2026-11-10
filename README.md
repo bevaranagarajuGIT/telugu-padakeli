@@ -6,8 +6,9 @@ and older adults. Android and iOS platform projects are included.
 ## What Works
 
 - Tirumala-inspired illustrated splash and a Telugu family welcome screen.
+- Matching Family + Tirumala app icons for Android, iOS and web.
 - First-launch onboarding with Skip and Start actions; completion is saved locally
-  so returning users open Home directly.
+  so returning users see Tirumala and then Home without repeating Welcome.
 - Responsive home screen with the Telugu title, Classic Padakeli, Kids Learning
   Games, Daily Puzzle, and My Progress cards.
 - Classic connected Telugu sample crosswords with clues, answer checking, and reset.
@@ -49,7 +50,7 @@ puzzle opens a level-complete screen with Replay and level-selection actions.
 Reset, changing difficulty, and disposal cancel pending progression.
 The compact blue-framed board uses yellow active cells and Across/Down clue tabs,
 with each clue shown once and the normal-phone actions above bottom navigation. Its
-blocked cells use lavender tiles with locally drawn four-petal rangoli motifs;
+remaining blocked cells use quiet lavender separators with small, muted stars;
 they remain non-interactive and excluded from accessibility navigation. The
 colourful, scrollable Hints sheet offers authored simpler clues, first-unsolved
 akshara reveal, and one-cell reveal without adding coins or paid hints. Large-font boards can
@@ -108,6 +109,10 @@ approved Splash, Welcome, Home and Kids implementations are unchanged.
   selected word. Clear removes the active cell; Backspace removes it or moves
   back and clears the preceding cell when it is already empty. Selected-word
   reset also clears its shared intersections.
+- Each Across/Down clue and the hints sheet show the answer's Telugu akshara
+  count in parentheses, for example `మన పైన నీలంగా కనిపించేది (3)`.
+  Counts use the same orthographic-syllable splitter as the grid, so vowel
+  signs and conjuncts are not counted as separate letters.
 - The displayed percentage is **filled cells**, not a claim that answers are
   correct. Check validates the whole puzzle; wrong filled cells receive an error
   icon, border and Telugu accessibility announcement. Editing clears the edited
@@ -121,6 +126,28 @@ approved Splash, Welcome, Home and Kids implementations are unchanged.
 - Full reset requires confirmation. Opening its dialog pauses pending automatic
   progression; cancelling resumes it, and confirming cancels it and clears the
   current board. No timer can advance the board behind the reset dialog.
+- Completing a Classic difficulty offers Next level, Play again and Choose
+  level in Telugu and English. Next level opens the next available difficulty
+  in Beginner-to-Expert order only when tapped; it is omitted after the last
+  available level.
+- Classic action buttons always pair simple Telugu with English: సహాయం / Hints,
+  సరిచూడు / Check and మళ్లీ ఆడు / Restart. Letter/word editing and reset
+  confirmation are bilingual too. These control labels do not change the
+  optional English Helper setting for learning content.
+  Clear letter, Backspace and Clear word share a flat editing toolbar.
+  Check is the primary green action; Hints is outlined and Restart is a text
+  action. Bilingual labels, accessible contrast and minimum 48-pixel touch
+  targets are retained in both themes. All clues remain visible, with tighter
+  list padding instead of a collapsed or selected-clue-only view.
+  A fully correct word automatically gains a soft green background in the grid
+  and answer preview, plus a checkmark beside its clue. Partial or incorrect
+  words are not confirmed. Solved cells remain editable; feedback is recomputed
+  for both crossing words after entry, hints, clearing and reset. The active
+  solved cell keeps an amber outline, and Check still controls puzzle progression.
+- Children's navigation and action controls are also always bilingual,
+  including Return to activities, Check answer, Next question, Play again,
+  undo/reset and the activity/path selectors. English Helper still controls
+  translations of questions, answers, hints and explanations, not controls.
 - Only validated, bundled levels are enabled. All five cards are data-driven;
   Beginner/Easy retain their six introductory boards. Medium, Hard and Expert
   now each have two boards, with 5, 7 and 10 clues per board respectively.
@@ -131,6 +158,15 @@ approved Splash, Welcome, Home and Kids implementations are unchanged.
   overflow. Larger boards also show an editable selected-word preview next to
   the letter palette: tap a position to correct it, with the same shared
   crossing values as the main grid. Other game content scrolls vertically.
+  Fully blocked outer rows and columns are omitted from rendering without
+  changing logical cell indices or crossings. The six larger puzzles also use
+  rebuilt word sets that reduce internal blocked cells by at least 40%, rather
+  than merely changing their decoration. Their visible bounds are at most 6x6,
+  at least 55% of visible cells are playable, and no empty rectangle exceeds
+  six cells. Clue counts remain 5/7/10 for Medium/Hard/Expert.
+  Necessary interior blocked cells remain as quiet separators with centered,
+  decorative stars. Stars appear only in blocked cells, scale to fit, and are
+  non-interactive and excluded from screen-reader navigation in both themes.
   No new dependencies or online services were introduced.
 
 ### Content audit and release review
@@ -149,9 +185,9 @@ that wording and its hint still require Telugu editorial review.
 | 4 | Beginner | ఇల్లు, ఇనుము |
 | 5 | Easy | తామర, తాళం |
 | 6 | Easy | పరుగు, పలక |
-| 7-8 | Medium | 5 clues each; 5x5 and 6x6 grids |
-| 9-10 | Hard | 7 clues each; 6x6 and 7x7 grids |
-| 11-12 | Expert | 10 clues each; 8x8 and 11x11 grids |
+| 7-8 | Medium | 5 clues each; visible bounds of 3 rows x 5/6 columns |
+| 9-10 | Hard | 7 clues each; visible bounds of 4/3 rows x 6 columns |
+| 11-12 | Expert | 10 clues each; visible bounds of 5/6 rows x 6 columns |
 
 A fluent Andhra Pradesh/Telangana Telugu editor should review spelling,
 orthographic cell boundaries, natural clue wording, meanings, regional
@@ -180,7 +216,12 @@ introduced. Twelve activity packs contain 74 question entries across five game
 types. Packs shared between age paths are counted once. Short five-question
 starters keep early rounds approachable; only older paths grow to seven or ten.
 The dashboard numbers rounds within the selected path. Picture/letter choices give
-immediate feedback; other games use an explicit Check action. Correct responses
+immediate feedback; other games use an explicit Check action. The activity screen
+uses a purple progress panel, a warm gold picture stage, and bold answer rows
+with visible selection, retry and correct-answer symbols. Correct answers and
+feedback use matching green surfaces; text remains readable in both themes and
+with large text. Existing English Helper behavior and gameplay are unchanged.
+Correct responses
 lock to prevent duplicate scoring; Next keeps feedback visible until the child
 is ready. Incorrect responses can be retried without losing points.
 
@@ -224,7 +265,9 @@ Motion is presentation-only: no delayed input, score changes or extra rewards.
 Animations stop under reduced motion, hidden tabs, covered routes or backgrounding.
 
 Kids completion now uses an original code-only blue/gold achievement medallion
-and complete Telugu-akshara tiles for the final learned word. Its bounded 800ms
+without repeating the last question's answer or akshara tiles. The same applies
+to original-practice completion; question content remains in the learning flow.
+Its bounded 800ms
 sequence reveals the star, flies a newly earned reward to the actual session
 total, and settles. Replay celebrates completion without another reward flight.
 Original seven-level practice shares the scene without claiming learning stars.
@@ -261,6 +304,11 @@ Hidden/background/reduced-motion states snap to the static result, with no stale
 replay. The character uses separately transformed vector parts, not a flattened
 image. No external character image, animation pack or sound is bundled.
 The parrot remains the everyday mascot; Bal Hanuman appears only on completion.
+Completion opens at the top rather than keeping the last question's scroll
+position, so Hanuman remains visible after finishing or replaying a scrolled
+activity. The compact gold celebration stage keeps the character and decorative
+stars after the animation, alongside a green result panel and gold/purple
+bilingual actions. The last answer's tiles remain excluded.
 
 The current integration is Kids activity completion and the final original
 seven-level practice completion, not unfinished questions. Kids Next Level opens
@@ -326,8 +374,9 @@ configured macOS build service; Flutter tests do not establish iPhone behavior.
 
 ## Splash and Welcome
 
-The launch gate displays the branded splash while reading the local onboarding
-flag and, for new users, preparing the bundled opening illustrations. There is
+The launch gate displays the Tirumala splash on every fresh app launch while
+reading the local onboarding flag and preparing the bundled temple illustration.
+The family illustration and Welcome are prepared only for first-time users. There is
 no artificial loading timer. One approved welcome page has one honest page
 indicator. Both **Skip** and **ప్రారంభిద్దాం** save
 `onboarding_completed_v1` using `shared_preferences` before opening the existing
@@ -346,10 +395,12 @@ The short entrance fade and loading indicators respect reduced motion. Android's
 native launch bridge uses royal blue and the puzzle mark, including Android 12+
 system splash support. Android 12+ removes its launch overlay as soon as Flutter
 is ready instead of fading over the illustrated Flutter splash. Startup waits
-for an actually rasterized engine frame before starting image preparation and
-the 350 ms entrance fade, rather than consuming the animation behind Android's
-launch overlay. There is no separate loading timer. Reduced motion removes the
-animation wait.
+for an actually rasterized engine frame and decoded temple artwork before
+starting the 1.2-second entrance fade, including for returning users. The
+entrance is not consumed behind Android's launch overlay or before the temple
+image loads. There is no separate loading timer. Reduced motion removes the
+animation wait. Returning to an already-running app preserves the current
+screen and does not replay the opening or reset game progress.
 iOS uses the same launch background before Flutter paints.
 iOS build/runtime verification still requires macOS and Xcode.
 

@@ -43,7 +43,6 @@ Widget _scene({
     padding: const EdgeInsets.all(20),
     child: SpecialAchievementCelebration(
       completed: completed,
-      word: 'కలం',
       earnedStar: true,
       totalStars: 1,
       onSkip: onSkip,

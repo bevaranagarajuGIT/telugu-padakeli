@@ -203,7 +203,7 @@ void main() {
   testWidgets('settings update the real app and licenses are reachable', (
     tester,
   ) async {
-    await tester.pumpWidget(const TeluguPadakeliApp());
+    await pumpReturningUserApp(tester);
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Settings'));
     await tester.pumpAndSettle();

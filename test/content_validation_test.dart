@@ -66,6 +66,63 @@ void main() {
   }
 
   test(
+    'larger crosswords reduce internal empty areas, not just decoration',
+    () async {
+      final puzzles = await const LocalPuzzleRepository().getPuzzles();
+      const previousBlockedCells = {
+        7: 14,
+        8: 16,
+        9: 17,
+        10: 29,
+        11: 26,
+        12: 45,
+      };
+      for (final puzzle in puzzles.where((puzzle) => puzzle.id >= 7)) {
+        final occupiedRows = [
+          for (var row = 0; row < puzzle.gridSize; row++)
+            if (puzzle.rows[row].any((cell) => cell != '#')) row,
+        ];
+        final occupiedColumns = [
+          for (var column = 0; column < puzzle.gridSize; column++)
+            if (puzzle.rows.any((row) => row[column] != '#')) column,
+        ];
+        final height = occupiedRows.last - occupiedRows.first + 1;
+        final width = occupiedColumns.last - occupiedColumns.first + 1;
+        final playable = puzzle.rows
+            .expand((row) => row)
+            .where((cell) => cell != '#')
+            .length;
+        final area = height * width;
+        final reason = 'Board ${puzzle.id} must not regain large empty areas';
+        expect(width, lessThanOrEqualTo(6), reason: reason);
+        expect(height, lessThanOrEqualTo(6), reason: reason);
+        expect(playable / area, greaterThanOrEqualTo(0.55), reason: reason);
+        expect(
+          area - playable,
+          lessThanOrEqualTo((previousBlockedCells[puzzle.id]! * 0.6).floor()),
+          reason: 'Board ${puzzle.id} needs at least 40% fewer blocked cells',
+        );
+        var largestGap = 0;
+        for (var top = occupiedRows.first; top <= occupiedRows.last; top++) {
+          final counts = List.filled(width, 0);
+          for (var bottom = top; bottom <= occupiedRows.last; bottom++) {
+            var run = 0;
+            for (var column = 0; column < width; column++) {
+              if (!puzzle.isBlocked(bottom, occupiedColumns.first + column)) {
+                counts[column]++;
+              }
+              run = counts[column] == 0 ? run + 1 : 0;
+              final gap = run * (bottom - top + 1);
+              if (gap > largestGap) largestGap = gap;
+            }
+          }
+        }
+        expect(largestGap, lessThanOrEqualTo(6), reason: reason);
+      }
+    },
+  );
+
+  test(
     'sample content remains pending human review without duplicate answers',
     () async {
       final raw =
@@ -261,6 +318,21 @@ void main() {
       }
     }
     expect(find.text('మొత్తం స్కోరు: 54 / 54'), findsOneWidget);
+    final completionScroll = tester.state<ScrollableState>(
+      find.descendant(
+        of: find.byKey(const ValueKey('kids-completion-scroll')),
+        matching: find.byType(Scrollable),
+      ),
+    );
+    expect(completionScroll.position.pixels, 0);
+    final viewport = tester.getRect(
+      find.byKey(const ValueKey('kids-completion-scroll')),
+    );
+    final hanuman = tester.getRect(
+      find.byKey(const ValueKey('bal-hanuman-character')),
+    );
+    expect(hanuman.top, greaterThanOrEqualTo(viewport.top));
+    expect(hanuman.bottom, lessThanOrEqualTo(viewport.bottom));
     expect(
       find.text('అభినందనలు! అన్ని 7 స్థాయిలను పూర్తి చేశారు.'),
       findsOneWidget,
@@ -269,6 +341,10 @@ void main() {
     await tester.ensureVisible(find.text('మళ్లీ ఆడండి'));
     await tester.tap(find.text('మళ్లీ ఆడండి'));
     await tester.pumpAndSettle();
+    expect(
+      tester.state<ScrollableState>(find.byType(Scrollable)).position.pixels,
+      0,
+    );
     expect(
       find.descendant(
         of: find.byKey(const ValueKey('kids-score')),

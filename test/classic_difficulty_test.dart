@@ -25,7 +25,7 @@ void main() {
     await tester.pump();
     expect(
       tester.widget<Text>(find.byKey(const ValueKey('selected-clue'))).data,
-      '1. జరిగిన లేదా ఊహించిన సంఘటనల వర్ణన',
+      '1. జరిగిన లేదా ఊహించిన సంఘటనల వర్ణన (2)',
     );
 
     for (final entry in {0: 'క', 1: 'థ', 3: 'లం'}.entries) {
@@ -115,7 +115,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(
       tester.widget<Text>(find.byKey(const ValueKey('selected-clue'))).data,
-      '1. మన పైన నీలంగా కనిపించేది',
+      '1. మన పైన నీలంగా కనిపించేది (3)',
     );
     expect(
       tester
@@ -133,7 +133,7 @@ void main() {
     await tester.pump();
     expect(
       tester.widget<Text>(find.byKey(const ValueKey('selected-clue'))).data,
-      '2. ఊదితే శబ్దం చేసే సముద్రపు గుల్ల',
+      '2. ఊదితే శబ్దం చేసే సముద్రపు గుల్ల (2)',
     );
     expect(
       find.byKey(const ValueKey('crossword-cell-container-7')),

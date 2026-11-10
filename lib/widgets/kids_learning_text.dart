@@ -11,17 +11,29 @@ class KidsLearningText extends StatelessWidget {
     this.style,
     this.center = false,
     super.key,
-  });
+  }) : _isControl = false;
+
+  const KidsLearningText.control(
+    this.telugu, {
+    required String this.english,
+    this.style,
+    this.center = false,
+    super.key,
+  }) : _isControl = true;
+
   final String telugu;
   final String? english;
   final TextStyle? style;
   final bool center;
+  final bool _isControl;
 
   @override
   Widget build(BuildContext context) {
-    final showEnglish = context.select<AppSettingsController, bool>(
-      (settings) => settings.englishHelper,
-    );
+    final showEnglish =
+        _isControl ||
+        context.select<AppSettingsController, bool>(
+          (settings) => settings.englishHelper,
+        );
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: center

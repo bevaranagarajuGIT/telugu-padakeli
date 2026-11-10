@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:telugu_padakeli/app/theme/app_colors.dart';
 import 'package:telugu_padakeli/core/app_settings_controller.dart';
 import 'package:telugu_padakeli/core/app_theme.dart';
 import 'package:telugu_padakeli/core/kids_learning_controller.dart';
@@ -39,7 +40,6 @@ Widget _scene({bool earned = true, bool animate = true}) => Scaffold(
   body: SingleChildScrollView(
     padding: const EdgeInsets.all(20),
     child: KidsCompletionScene(
-      word: 'స్త్రీ',
       totalStars: 1,
       earnedStar: earned,
       animate: animate,
@@ -96,8 +96,7 @@ void main() {
       await tester.pumpWidget(_host(_scene(), settings));
       expect(find.text('1'), findsOneWidget);
       expect(find.bySemanticsLabel('ఈ సెషన్‌లో 1 నక్షత్రాలు'), findsOneWidget);
-      expect(find.bySemanticsLabel('స్త్రీ'), findsOneWidget);
-      expect(find.text('స్త్రీ'), findsOneWidget);
+      expect(find.byKey(const ValueKey('completion-word')), findsNothing);
       expect(find.byType(Image), findsNothing);
       expect(
         find.byKey(const ValueKey('completion-star-flight')),
@@ -232,10 +231,13 @@ void main() {
     await tester.pumpWidget(
       _host(KidsActivityScreen(session: session, learning: learning), settings),
     );
+    expect(find.text(session.question.answer), findsOneWidget);
     _finish(session);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 350));
     expect(find.text('ఒక నక్షత్రం సంపాదించావు!'), findsOneWidget);
+    expect(find.byKey(const ValueKey('completion-word')), findsNothing);
+    expect(find.text(session.question.answer), findsNothing);
     expect(
       find.byKey(const ValueKey('special-phase-entrance')),
       findsOneWidget,
@@ -252,11 +254,14 @@ void main() {
     expect(learning.stars, 1);
     session.restart();
     await tester.pump();
+    expect(find.text(session.question.answer), findsOneWidget);
     _finish(session);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 350));
     expect(find.byKey(const ValueKey('completion-star-flight')), findsNothing);
     expect(find.text('You earned one star!'), findsNothing);
+    expect(find.byKey(const ValueKey('completion-word')), findsNothing);
+    expect(find.text(session.question.answer), findsNothing);
     expect(learning.stars, 1);
     expect(
       tester
@@ -283,6 +288,100 @@ void main() {
     expect(tester.binding.transientCallbackCount, 0);
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  for (final dark in [false, true]) {
+    testWidgets('scrolled finish and replay open at Hanuman, dark=$dark', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(320, 568);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final settings = AppSettingsController()..setEnglishHelper(true);
+      final learning = KidsLearningController();
+      addTearDown(settings.dispose);
+      addTearDown(learning.dispose);
+      final session = learning.sessionFor(_activity());
+      await tester.pumpWidget(
+        _host(
+          KidsActivityScreen(session: session, learning: learning),
+          settings,
+          dark: dark,
+        ),
+      );
+      for (var attempt = 0; attempt < 2; attempt++) {
+        session.selectChoice(session.question.answer);
+        expect(session.check(), isTrue);
+        await tester.pumpAndSettle();
+        final finish = find.byKey(const ValueKey('learning-next'));
+        await Scrollable.ensureVisible(tester.element(finish), alignment: 0.5);
+        await tester.pumpAndSettle();
+        final quizScroll = tester.state<ScrollableState>(
+          find.byType(Scrollable),
+        );
+        expect(quizScroll.position.pixels, greaterThan(0));
+        await tester.tap(finish);
+        await tester.pump();
+        final completionScroll = tester.state<ScrollableState>(
+          find.byType(Scrollable),
+        );
+        expect(completionScroll, isNot(same(quizScroll)));
+        expect(completionScroll.position.pixels, 0);
+        final viewport = tester.getRect(
+          find.byKey(const ValueKey('kids-activity-completion-scroll')),
+        );
+        final hanuman = tester.getRect(
+          find.byKey(const ValueKey('bal-hanuman-character')),
+        );
+        expect(hanuman.top, greaterThanOrEqualTo(viewport.top));
+        expect(hanuman.bottom, lessThanOrEqualTo(viewport.bottom));
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(const ValueKey('bal-hanuman-character')),
+          findsOneWidget,
+        );
+        expect(find.byKey(const ValueKey('completion-word')), findsNothing);
+        expect(find.text(session.question.answer), findsNothing);
+        expect(learning.stars, 1);
+        final stage = tester.widget<Container>(
+          find.byKey(const ValueKey('special-celebration-stage')),
+        );
+        final stageColor = (stage.decoration! as BoxDecoration).color!;
+        final praise = tester.widget<Text>(find.text('శభాష్!'));
+        final praiseLuminance = praise.style!.color!.computeLuminance();
+        final stageLuminance = stageColor.computeLuminance();
+        expect(
+          (praiseLuminance > stageLuminance
+              ? (praiseLuminance + 0.05) / (stageLuminance + 0.05)
+              : (stageLuminance + 0.05) / (praiseLuminance + 0.05)),
+          greaterThanOrEqualTo(3),
+        );
+        final result = tester.widget<Container>(
+          find.byKey(const ValueKey('learning-completion-result')),
+        );
+        expect(
+          (result.decoration! as BoxDecoration).color,
+          dark ? AppColors.darkSuccessBackground : AppColors.successBackground,
+        );
+        final replay = find.byKey(const ValueKey('learning-restart'));
+        await Scrollable.ensureVisible(tester.element(replay), alignment: 0.5);
+        await tester.pumpAndSettle();
+        expect(completionScroll.position.pixels, greaterThan(0));
+        await tester.tap(replay);
+        await tester.pumpAndSettle();
+        expect(session.complete, isFalse);
+        expect(
+          tester
+              .state<ScrollableState>(find.byType(Scrollable))
+              .position
+              .pixels,
+          0,
+        );
+        expect(tester.takeException(), isNull);
+      }
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  }
 
   testWidgets('return remains usable while the celebration is playing', (
     tester,

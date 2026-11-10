@@ -42,7 +42,7 @@ void main() {
   });
 
   testWidgets('home screen shows primary actions', (tester) async {
-    await tester.pumpWidget(const TeluguPadakeliApp());
+    await pumpReturningUserApp(tester);
     await tester.pumpAndSettle();
 
     expect(find.text('Telugu Padakeli'), findsOneWidget);
@@ -57,7 +57,7 @@ void main() {
   testWidgets('correct answer shows feedback, advances, and unlocks easy', (
     tester,
   ) async {
-    await tester.pumpWidget(const TeluguPadakeliApp());
+    await pumpReturningUserApp(tester);
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Play & Learn'));
     await tester.tap(find.text('Play & Learn'));
@@ -122,7 +122,7 @@ void main() {
   testWidgets('wrong answers allow retries and next question earns a point', (
     tester,
   ) async {
-    await tester.pumpWidget(const TeluguPadakeliApp());
+    await pumpReturningUserApp(tester);
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Play & Learn'));
     await tester.tap(find.text('Play & Learn'));
@@ -161,7 +161,7 @@ void main() {
   testWidgets('progress card opens an honest coming-soon screen', (
     tester,
   ) async {
-    await tester.pumpWidget(const TeluguPadakeliApp());
+    await pumpReturningUserApp(tester);
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('My Progress'));
     await tester.tap(find.text('My Progress'));
@@ -313,7 +313,7 @@ void main() {
   testWidgets('settings action opens font and dark-mode controls', (
     tester,
   ) async {
-    await tester.pumpWidget(const TeluguPadakeliApp());
+    await pumpReturningUserApp(tester);
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Settings'));
     await tester.pumpAndSettle();
@@ -328,7 +328,7 @@ void main() {
   testWidgets('classic puzzle input survives tab navigation and resume', (
     tester,
   ) async {
-    await tester.pumpWidget(const TeluguPadakeliApp());
+    await pumpReturningUserApp(tester);
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Classic Padakeli'));
     await tester.tap(find.text('Classic Padakeli'));
@@ -373,7 +373,7 @@ void main() {
   testWidgets('font selector exposes normal large and extra-large sizes', (
     tester,
   ) async {
-    await tester.pumpWidget(const TeluguPadakeliApp());
+    await pumpReturningUserApp(tester);
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Settings'));
     await tester.pumpAndSettle();
@@ -387,7 +387,7 @@ void main() {
   });
 
   testWidgets('home daily action is explicitly coming soon', (tester) async {
-    await tester.pumpWidget(const TeluguPadakeliApp());
+    await pumpReturningUserApp(tester);
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Daily Puzzle'));
     await tester.tap(find.text('Daily Puzzle'));

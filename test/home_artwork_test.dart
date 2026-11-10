@@ -237,7 +237,7 @@ void main() {
     testWidgets('hidden Home cancels idle timer and bob on $tab tab', (
       tester,
     ) async {
-      await tester.pumpWidget(const TeluguPadakeliApp());
+      await pumpReturningUserApp(tester);
       await tester.pumpAndSettle();
       await startBob(tester);
 
@@ -264,7 +264,7 @@ void main() {
   testWidgets('settings route suspends Home motion until popped', (
     tester,
   ) async {
-    await tester.pumpWidget(const TeluguPadakeliApp());
+    await pumpReturningUserApp(tester);
     await tester.pumpAndSettle();
     await startBob(tester);
     await tester.tap(find.byTooltip('Settings'));
@@ -281,7 +281,7 @@ void main() {
   testWidgets('background lifecycle cancels and resumes Home idle motion', (
     tester,
   ) async {
-    await tester.pumpWidget(const TeluguPadakeliApp());
+    await pumpReturningUserApp(tester);
     await tester.pumpAndSettle();
     await startBob(tester);
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);

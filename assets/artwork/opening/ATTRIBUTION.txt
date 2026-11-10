@@ -29,6 +29,16 @@ Technical changes to the generated illustrations: original 1448x1086 PNGs were
 resized with Pillow LANCZOS to 1280x960 and encoded as WebP at quality 92/method 6.
 These notices describe prior changes; the Phase C+ review did not change images.
 
+Launcher icon adaptation:
+The approved family-and-Tirumala icon is a centered (160, 0, 960, 960) square
+crop of telugu-family.webp, resized to an opaque 1024x1024 PNG. No new faces,
+architecture or lettering were generated. Android, iOS and web icon sizes
+derive from that master; Android adaptive icons add safe foreground insets
+and a sky-blue background; PWA maskable icons add sky-blue safety margins.
+The icon artwork retains the same CC BY-SA 4.0
+treatment and source/distribution-review limitations as the opening artwork.
+These icon adaptations do not imply photographer or TTD endorsement.
+
 Original illustration generation was explicitly authorized by the user and
 performed through Copilot's image-generation tool on 2026-11-05.
 Generation IDs:
