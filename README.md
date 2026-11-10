@@ -140,7 +140,7 @@ boards. At midnight or foreground resume, an open old board is labelled as a sav
 past date. It remains playable; return Home to open today's board. Completing it
 qualifies the actual day of learning, not an unplayed date.
 
-## Content, artwork and unavailable audio
+## Content, artwork and pronunciation pilot
 
 `assets/data/content_review.json` is the editable review inventory for every
 Kids, original-practice and Classic clue. It includes stable ID, category/
@@ -172,13 +172,53 @@ The existing Hanuman remains original Flutter vector art, not finished 3D art;
 its style is not identical to the new storybook vocabulary set. Final human
 art/cultural/rights review remains necessary.
 
-**No approved offline audio is available.** The existing audio manager is silent,
-with navigation/background/preference cancellation ready for a reviewed backend.
-Pronunciation actions stay hidden when files are absent. The saved reward-sound
-preference explicitly says playback is unavailable. The content inventory supplies
-recording scripts and null file references. Native-speaker recordings, consent,
-licenses, pronunciation and levels must be approved before adding real playback;
-there is no speech-recognition or audio-dependency substitute.
+**No approved recordings have been supplied yet.** The pronunciation pilot now
+uses the owner-approved `audioplayers` dependency for bundled WAV playback.
+`assets/data/pronunciation_pack.json` lists five letters/syllables
+(అ, ఆ, ఇ, క, చి) and six familiar words
+(అరటి, ఆవు, ఇల్లు, కలం, చిలుక, మామిడి). All 11 entries are
+`pending-recording`; they are not fabricated recordings or completed human review.
+The existing full content inventory retains null audio references until assets
+are actually approved.
+
+An approved entry requires `status: "reviewed"`, `nativeSpeakerReviewed: true`,
+`distributionPermission: true`, nonempty `license` terms and a matching bundled
+WAV file. The loader rejects incomplete approval, invalid/duplicate metadata and
+missing/malformed approved files with a visible Settings error. Settings'
+Retry recordings button retries a failed load without restarting the app.
+Approval metadata does not prove someone listened; an adult native speaker
+must review every final clip. Recording instructions and activation steps are in
+`assets/audio/pronunciation/RECORDING-GUIDE.txt`.
+
+Listen/Replay appears only for available reviewed items: the displayed letter in
+letter activities, and the complete word/answer **after a correct answer**.
+Picture/missing-letter/builder answers are not spoken in advance. Pending clips
+do not expose dead buttons. Playback is tap-only, never autoplay, and separate
+from the reward-sound preference. Requests replace earlier playback, including
+pending starts; leaving a question/route/tab, restarting, backgrounding and
+disposing stop it. Returning/rebuilding does not replay it. Playback errors are
+visible and retryable; listening does not modify scores, stars or saved progress.
+No microphone, online TTS, cloud API or speech recognition is used.
+
+The existing engagement/reward backend remains silent; its saved preference still
+explicitly says no reward sounds are bundled. This pronunciation integration
+does not enable reward audio or claim that real native pronunciation is ready.
+
+Pilot preparation was checked with clean Flutter analysis, all 481 tests,
+Android debug/release builds and a web build. The 34 new tests include synthetic
+WAV validation, real backend method-channel cancellation/error handling, retry,
+answer concealment and visible audio/Next controls at 320/390px widths with
+normal/extra-large app text, both themes, English Helper and reduced motion.
+Synthetic fixtures and mocked native channels do not prove audible playback.
+
+On the Android 16/API36 QA emulator, the debug update retained all nine existing
+rewards. The installed release opened offline with no default network and showed
+the honest pending-recordings status. No app crash, missing-plugin exception or
+asset-load error appeared in those smoke-test logs. The QA emulator initially
+showed a System UI ANR; lowering its rendering resolution and disabling Bluetooth
+allowed the check to proceed. The original emulator and its data were untouched.
+Real speech quality, installed-device playback/cancellation, iOS and physical
+device audio remain unverified until reviewed recordings are available.
 
 ## Official reference comparison
 

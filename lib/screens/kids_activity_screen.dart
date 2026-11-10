@@ -5,10 +5,12 @@ import '../app/theme/app_colors.dart';
 import '../core/kids_learning_controller.dart';
 import '../models/kids_learning.dart';
 import '../services/engagement_audio_manager.dart';
+import '../services/pronunciation_audio_manager.dart';
 import '../widgets/engagement_motion.dart';
 import '../widgets/special_achievement_celebration.dart';
 import '../widgets/kids_learning_text.dart';
 import '../widgets/learning_action_footer.dart';
+import '../widgets/pronunciation_button.dart';
 
 class KidsActivityScreen extends StatefulWidget {
   const KidsActivityScreen({
@@ -28,6 +30,7 @@ class KidsActivityScreen extends StatefulWidget {
 class _KidsActivityScreenState extends State<KidsActivityScreen> {
   KidsActivitySession get session => widget.session;
   EngagementAudioManager? _audio;
+  PronunciationAudioManager? _pronunciation;
   late KidsAnswerState _previousAnswer;
   late bool _previousComplete;
   int _feedbackRevision = 0;
@@ -56,6 +59,7 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _audio = context.read<EngagementAudioManager?>();
+    _pronunciation = context.read<PronunciationAudioManager?>();
   }
 
   @override
@@ -63,7 +67,7 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.session == session) return;
     oldWidget.session.removeListener(_sessionChanged);
-    _audio?.stop();
+    _stopAudio();
     _previousIndex = session.index;
     _previousAnswer = session.answerState;
     _previousComplete = session.complete;
@@ -81,14 +85,20 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
         (ModalRoute.isCurrentOf(context) ?? true),
   );
 
+  void _stopAudio() {
+    _audio?.stop();
+    _pronunciation?.stop();
+  }
+
   void _leaveCompletion(VoidCallback action) {
     if (!session.complete || _leavingCompletion) return;
     setState(() => _leavingCompletion = true);
-    _audio?.stop();
+    _stopAudio();
     action();
   }
 
   void _sessionChanged() {
+    _pronunciation?.stop();
     if (session.complete != _previousComplete ||
         session.index != _previousIndex) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -125,7 +135,7 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
   @override
   void dispose() {
     session.removeListener(_sessionChanged);
-    _audio?.stop();
+    _stopAudio();
     _scroll.dispose();
     _completionFocus.dispose();
     super.dispose();
@@ -417,6 +427,12 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
               english: session.question.englishExplanation,
               center: true,
               style: theme.textTheme.bodyLarge,
+            ),
+          if (session.activity.type == KidsActivityType.letter)
+            PronunciationButton(text: session.question.display!),
+          if (session.answerState == KidsAnswerState.correct)
+            PronunciationButton(
+              text: session.question.completedWord ?? session.question.answer,
             ),
         ],
       ),

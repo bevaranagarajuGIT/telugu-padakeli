@@ -1,0 +1,33 @@
+TELUGU PRONUNCIATION PILOT - RECORDINGS REQUIRED
+
+No human recordings have been supplied or reviewed. All 11 manifest entries
+are pending. No pronunciation button is enabled for pending recordings.
+
+Record one item per file, matching assets/data/pronunciation_pack.json.
+Say only the Telugu item, not its English translation or a carrier sentence.
+Use a natural, clear teaching pace, without exaggerated extra vowels.
+Preserve short/long vowel distinctions and complete compound consonants.
+For letter-chi, say the displayed syllable, not the bare consonant cha.
+
+Deliver uncompressed PCM WAV, preferably mono 44.1 kHz or 48 kHz, 16-bit.
+Keep a small quiet lead-in/tail; avoid long silence, clipping, background
+music, filters and audible room noise. Use a consistent voice and level.
+Do not record children for this pilot. Only use recordings with permission
+to redistribute in this app; do not copy clips from another Telugu app.
+
+An adult native Telugu speaker must listen to EACH final exported file and
+confirm it matches the written item and is suitable for young learners.
+Do not mark AI output or unreviewed recordings as human-reviewed.
+
+Activation checklist for each supplied file:
+1. Match the filename and exact Telugu text in the manifest.
+2. Verify pronunciation, clarity and actual offline playback.
+3. Confirm distribution permission and document the license/permission terms.
+4. Change status to "reviewed", add nativeSpeakerReviewed: true,
+   distributionPermission: true, and a nonempty license string.
+5. Run the pronunciation tests, full suite and Android build.
+6. Play the installed APK in airplane mode, replay rapidly, leave the question
+   and background the app. Confirm stopping and no reward/progress changes.
+
+The app validates approval metadata and WAV availability, not whether a human
+actually reviewed a recording. Human sign-off remains mandatory.

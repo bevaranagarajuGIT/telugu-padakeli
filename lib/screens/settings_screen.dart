@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../core/app_settings_controller.dart';
 import '../core/learning_progress.dart';
+import '../services/pronunciation_audio_manager.dart';
 import '../widgets/app_page.dart';
 import '../widgets/section_title.dart';
 
@@ -13,6 +14,7 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final settings = context.watch<AppSettingsController>();
     final progress = context.watch<LearningProgress?>();
+    final pronunciation = context.watch<PronunciationAudioManager?>();
     return AppPage(
       title: 'సెట్టింగ్స్',
       child: Column(
@@ -149,9 +151,34 @@ class SettingsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'మానవ సమీక్ష చేసిన ఉచ్చారణ రికార్డింగులు ఇంకా లేవు.\n'
-            'Pronunciation is unavailable. Reward sound is a saved preference, '
-            'not working playback; no approved audio files are bundled yet.',
+            pronunciation?.error ??
+                (pronunciation?.loading == true
+                    ? 'ఉచ్చారణ / Pronunciation: checking offline recordings.'
+                    : pronunciation != null &&
+                          pronunciation.pack.clips.isNotEmpty
+                    ? 'ఉచ్చారణ / Pronunciation: '
+                          '${pronunciation.pack.clips.length} reviewed offline '
+                          'recordings. Tap Listen or Replay in Kids activities. '
+                          'Listening is manual and separate from reward sounds.'
+                    : 'మానవ సమీక్ష చేసిన ఉచ్చారణ రికార్డింగులు ఇంకా లేవు.\n'
+                          'Pronunciation is unavailable. Native-speaker '
+                          'recordings are pending; no approved audio files '
+                          'are bundled yet.'),
+            key: const ValueKey('pronunciation-status'),
+            style: Theme.of(context).textTheme.bodyLarge,
+          ),
+          if (pronunciation?.loadFailed == true)
+            TextButton.icon(
+              key: const ValueKey('pronunciation-retry'),
+              onPressed: pronunciation!.load,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('మళ్లీ ప్రయత్నించండి / Retry recordings'),
+            ),
+          const SizedBox(height: 8),
+          Text(
+            'Reward sound is a saved preference, not working playback. '
+            'Pronunciation never plays automatically and needs no microphone '
+            'or network.',
             style: Theme.of(context).textTheme.bodyLarge,
           ),
         ],

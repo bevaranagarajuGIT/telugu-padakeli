@@ -12,6 +12,7 @@ import 'core/learning_progress.dart';
 import 'services/learning_store.dart';
 import 'services/onboarding_store.dart';
 import 'services/engagement_audio_manager.dart';
+import 'services/pronunciation_audio_manager.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -71,6 +72,9 @@ class TeluguPadakeliApp extends StatelessWidget {
               EngagementAudioManager(context.read<AppSettingsController>()),
           dispose: (_, audio) => audio.dispose(),
         ),
+        ChangeNotifierProvider(
+          create: (_) => PronunciationAudioManager()..load(),
+        ),
       ],
       child: _PersistenceLifecycle(
         child: Consumer<AppSettingsController>(
@@ -80,6 +84,7 @@ class TeluguPadakeliApp extends StatelessWidget {
               debugShowCheckedModeBanner: false,
               navigatorObservers: [
                 context.read<EngagementAudioManager>().navigationObserver,
+                context.read<PronunciationAudioManager>().navigationObserver,
               ],
               theme: AppTheme.light(settings.fontScale),
               darkTheme: AppTheme.dark(settings.fontScale),

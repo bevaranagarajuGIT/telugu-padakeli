@@ -8,6 +8,7 @@ import '../../screens/progress_screen.dart';
 import '../../screens/settings_screen.dart';
 import '../../core/learning_progress.dart';
 import '../../services/engagement_audio_manager.dart';
+import '../../services/pronunciation_audio_manager.dart';
 import '../../shared/widgets/bottom_navigation.dart';
 
 class AppShell extends StatefulWidget {
@@ -68,6 +69,7 @@ class _AppShellState extends State<AppShell> {
   void _select(int index) {
     if (_selectedIndex != index) {
       context.read<EngagementAudioManager?>()?.stop();
+      context.read<PronunciationAudioManager?>()?.stop();
       FocusScope.of(context).unfocus();
     }
     setState(() {

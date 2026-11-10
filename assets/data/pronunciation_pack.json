@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "language": "te-IN",
+  "clips": [
+    {"id": "letter-a", "text": "అ", "asset": "assets/audio/pronunciation/letter-a.wav", "status": "pending-recording"},
+    {"id": "letter-aa", "text": "ఆ", "asset": "assets/audio/pronunciation/letter-aa.wav", "status": "pending-recording"},
+    {"id": "letter-i", "text": "ఇ", "asset": "assets/audio/pronunciation/letter-i.wav", "status": "pending-recording"},
+    {"id": "letter-ka", "text": "క", "asset": "assets/audio/pronunciation/letter-ka.wav", "status": "pending-recording"},
+    {"id": "letter-chi", "text": "చి", "asset": "assets/audio/pronunciation/letter-chi.wav", "status": "pending-recording"},
+    {"id": "word-arati", "text": "అరటి", "asset": "assets/audio/pronunciation/word-arati.wav", "status": "pending-recording"},
+    {"id": "word-aavu", "text": "ఆవు", "asset": "assets/audio/pronunciation/word-aavu.wav", "status": "pending-recording"},
+    {"id": "word-illu", "text": "ఇల్లు", "asset": "assets/audio/pronunciation/word-illu.wav", "status": "pending-recording"},
+    {"id": "word-kalam", "text": "కలం", "asset": "assets/audio/pronunciation/word-kalam.wav", "status": "pending-recording"},
+    {"id": "word-chiluka", "text": "చిలుక", "asset": "assets/audio/pronunciation/word-chiluka.wav", "status": "pending-recording"},
+    {"id": "word-maamidi", "text": "మామిడి", "asset": "assets/audio/pronunciation/word-maamidi.wav", "status": "pending-recording"}
+  ]
+}
