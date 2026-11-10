@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'telugu_akshara.dart';
 
 enum LearningCategory {
@@ -54,6 +55,20 @@ class KidsLearningQuestion {
   final String reviewStatus;
   // A future player must use a reviewed bundled recording, never online speech.
   final String? audioAsset;
+
+  String get progressSignature => jsonEncode([
+    id,
+    prompt,
+    englishPrompt,
+    answer,
+    explanation,
+    englishExplanation,
+    display,
+    completedWord,
+    imageAsset,
+    tiles,
+    choices.map((choice) => [choice.telugu, choice.english]).toList(),
+  ]);
 
   void validate(KidsActivityType type) {
     if (id.trim().isEmpty ||

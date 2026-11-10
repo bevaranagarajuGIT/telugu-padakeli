@@ -95,7 +95,7 @@ void main() {
     try {
       await tester.pumpWidget(_host(_scene(), settings));
       expect(find.text('1'), findsOneWidget);
-      expect(find.bySemanticsLabel('ఈ సెషన్‌లో 1 నక్షత్రాలు'), findsOneWidget);
+      expect(find.bySemanticsLabel('సంపాదించిన నక్షత్రాలు: 1'), findsOneWidget);
       expect(find.byKey(const ValueKey('completion-word')), findsNothing);
       expect(find.byType(Image), findsNothing);
       expect(
@@ -317,13 +317,24 @@ void main() {
         await Scrollable.ensureVisible(tester.element(finish), alignment: 0.5);
         await tester.pumpAndSettle();
         final quizScroll = tester.state<ScrollableState>(
-          find.byType(Scrollable),
+          find.descendant(
+            of: find.byKey(const ValueKey('kids-activity-scroll')),
+            matching: find.byType(Scrollable),
+          ),
         );
+        await tester.drag(
+          find.byKey(const ValueKey('kids-activity-scroll')),
+          const Offset(0, -180),
+        );
+        await tester.pumpAndSettle();
         expect(quizScroll.position.pixels, greaterThan(0));
         await tester.tap(finish);
         await tester.pump();
         final completionScroll = tester.state<ScrollableState>(
-          find.byType(Scrollable),
+          find.descendant(
+            of: find.byKey(const ValueKey('kids-activity-completion-scroll')),
+            matching: find.byType(Scrollable),
+          ),
         );
         expect(completionScroll, isNot(same(quizScroll)));
         expect(completionScroll.position.pixels, 0);
@@ -372,7 +383,12 @@ void main() {
         expect(session.complete, isFalse);
         expect(
           tester
-              .state<ScrollableState>(find.byType(Scrollable))
+              .state<ScrollableState>(
+                find.descendant(
+                  of: find.byKey(const ValueKey('kids-activity-scroll')),
+                  matching: find.byType(Scrollable),
+                ),
+              )
               .position
               .pixels,
           0,

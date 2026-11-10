@@ -298,7 +298,7 @@ void main() {
         ),
       );
       expect(find.bySemanticsLabel('Test illustration'), findsOneWidget);
-      expect(find.text('ఈ సెషన్‌లో 1 నక్షత్రాలు'), findsOneWidget);
+      expect(find.text('సంపాదించిన నక్షత్రాలు: 1'), findsOneWidget);
       final first = tester
           .widget<Transform>(
             find.byKey(const ValueKey('special-character-motion')),

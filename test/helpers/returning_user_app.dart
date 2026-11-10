@@ -6,6 +6,7 @@ import 'package:telugu_padakeli/services/onboarding_store.dart';
 import 'package:telugu_padakeli/shared/widgets/opening_artwork.dart';
 
 Future<void> pumpReturningUserApp(WidgetTester tester) async {
+  addTearDown(() => tester.pumpWidget(const SizedBox.shrink()));
   await tester.pumpWidget(const TeluguPadakeliApp());
   await tester.runAsync(() async {
     await precacheImage(

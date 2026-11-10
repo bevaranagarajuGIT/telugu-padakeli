@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../app/theme/app_colors.dart';
+import '../core/learning_progress.dart';
 import '../models/kids_question.dart';
 import '../models/telugu_akshara.dart';
 import '../services/kids_question_service.dart';
@@ -40,12 +41,77 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
   bool _levelCelebration = false;
   int _feedbackRevision = 0;
   EngagementAudioManager? _audio;
+  LearningProgress? _storage;
+  bool _restored = false;
+  bool _freshCompletion = false;
+  String get _questionId =>
+      'practice:${_currentLevel.name}:${_currentQuestion.prompt}';
+  String get _signature => contentSignature([
+    for (final level in _levels)
+      [
+        level.name,
+        for (final question in level.questions)
+          [
+            question.prompt,
+            question.answer,
+            question.options,
+            question.hint,
+            question.englishHint,
+          ],
+      ],
+  ]);
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _audio = context.read<EngagementAudioManager?>();
+    _storage = context.read<LearningProgress?>();
+    if (!_restored) {
+      _restored = true;
+      final saved = _storage?.practice ?? {};
+      if (saved['signature'] == _signature) {
+        final level = _levels.indexWhere((item) => item.name == saved['level']);
+        if (level >= 0) {
+          _levelIndex = level;
+          final index = _currentLevel.questions.indexWhere(
+            (item) => item.prompt == saved['question'],
+          );
+          if (index >= 0) _index = index;
+          final score = saved['score'];
+          final maximum = _levels.fold<int>(
+            0,
+            (sum, item) => sum + item.questions.length,
+          );
+          _score = score is int && score >= 0 && score <= maximum ? score : 0;
+          final choice = saved['choice'];
+          if (choice is String && _currentQuestion.options.contains(choice)) {
+            _selectedAnswer = choice;
+          }
+          _hasScored =
+              saved['scored'] == true &&
+              _selectedAnswer != null &&
+              TeluguAkshara.equivalent(
+                _selectedAnswer!,
+                _currentQuestion.answer,
+              );
+          _isComplete = saved['complete'] == true && _score == maximum;
+        }
+      } else if (saved.isNotEmpty) {
+        _message =
+            'Practice content changed. A fresh attempt starts; your earned rewards are kept.';
+      }
+    }
   }
+
+  void _save() => _storage?.savePractice({
+    'signature': _signature,
+    'level': _currentLevel.name,
+    'question': _currentQuestion.prompt,
+    'score': _score,
+    'choice': _selectedAnswer,
+    'scored': _hasScored,
+    'complete': _isComplete,
+  });
 
   void _play(EngagementCue cue) => _audio?.play(
     cue,
@@ -95,6 +161,12 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
       _selectedAnswer!,
       _currentQuestion.answer,
     );
+    if (!_hasScored) {
+      _storage?.recordAnswer(
+        '$_questionId:${contentSignature([_currentQuestion.answer, _currentQuestion.options, _currentQuestion.hint, _currentQuestion.englishHint])}',
+        isCorrect,
+      );
+    }
     setState(() {
       _feedbackRevision++;
       _levelCelebration = false;
@@ -111,6 +183,7 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
       }
     });
     _play(isCorrect ? EngagementCue.correct : EngagementCue.retry);
+    _save();
 
     if (isCorrect) {
       _advanceTimer = Timer(const Duration(milliseconds: 1100), _advance);
@@ -131,10 +204,12 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
         _message = null;
         _wasCorrect = null;
       });
+      _save();
       return;
     }
 
     if (_levelIndex + 1 < _levels.length) {
+      _storage?.completeActivity('practice:${_currentLevel.name}');
       setState(() {
         _feedbackRevision++;
         _levelCelebration = true;
@@ -146,6 +221,7 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
         _message = 'కొత్త స్థాయి: ${_levels[_levelIndex].title}';
         _wasCorrect = true;
       });
+      _save();
       _play(EngagementCue.completion);
       _clearFeedbackTimer = Timer(const Duration(milliseconds: 1800), () {
         if (mounted) {
@@ -162,7 +238,10 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
       _levelCelebration = false;
       _isComplete = true;
       _isAdvancing = false;
+      _freshCompletion = true;
     });
+    _storage?.completeActivity('practice:${_currentLevel.name}');
+    _save();
     _play(EngagementCue.completion);
   }
 
@@ -178,10 +257,12 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
       _hasScored = false;
       _isAdvancing = false;
       _isComplete = false;
+      _freshCompletion = false;
       _selectedAnswer = null;
       _message = null;
       _wasCorrect = null;
     });
+    _save();
   }
 
   @override
@@ -494,7 +575,10 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
                         key: ValueKey('kids-answer-$option'),
                         onPressed: _isAdvancing
                             ? null
-                            : () => setState(() => _selectedAnswer = option),
+                            : () {
+                                setState(() => _selectedAnswer = option);
+                                _save();
+                              },
                         style:
                             OutlinedButton.styleFrom(
                               minimumSize: const Size(0, 64),
@@ -731,6 +815,7 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
         SpecialAchievementCelebration(
           key: const ValueKey('legacy-completion-motion'),
           completed: _isComplete,
+          animate: _freshCompletion,
           onSkip: () => _audio?.stop(),
         ),
         const SizedBox(height: 16),

@@ -9,7 +9,6 @@ import 'helpers/returning_user_app.dart';
 import 'package:telugu_padakeli/screens/home_screen.dart';
 import 'package:telugu_padakeli/shared/widgets/app_buttons.dart';
 import 'package:telugu_padakeli/shared/widgets/bottom_navigation.dart';
-import 'package:telugu_padakeli/shared/widgets/feature_card.dart';
 import 'package:telugu_padakeli/services/kids_question_service.dart';
 
 Finder _score(int value) => find.descendant(
@@ -158,7 +157,7 @@ void main() {
     expect(_score(2), findsOneWidget);
   });
 
-  testWidgets('progress card opens an honest coming-soon screen', (
+  testWidgets('progress card opens a truthful empty saved-data dashboard', (
     tester,
   ) async {
     await pumpReturningUserApp(tester);
@@ -167,7 +166,8 @@ void main() {
     await tester.tap(find.text('My Progress'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Progress tracking is coming soon.'), findsOneWidget);
+    expect(find.byKey(const ValueKey('progress-daily-goal')), findsOneWidget);
+    expect(find.textContaining('No recorded learning yet.'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('nav-home')));
     await tester.pumpAndSettle();
     expect(find.text('Classic Padakeli'), findsOneWidget);
@@ -192,66 +192,62 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final entrance = tester.widget<TweenAnimationBuilder<double>>(
-      find.byKey(const ValueKey('dashboard-entrance')),
-    );
-    expect(entrance.duration, Duration.zero);
+    expect(tester.binding.transientCallbackCount, 0);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('feature cards have matching heights within each normal row', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: HomeScreen(
-          onClassic: () {},
-          onLearn: () {},
-          onProgress: () {},
-          onSettings: () {},
+  testWidgets(
+    'Home prioritizes primary games above compact daily and progress actions',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HomeScreen(
+            onClassic: () {},
+            onLearn: () {},
+            onProgress: () {},
+            onSettings: () {},
+          ),
         ),
-      ),
-    );
+      );
 
-    final heights = [
-      for (var index = 0; index < 4; index++)
-        tester.getSize(find.byType(FeatureCard).at(index)).height,
-    ];
-    expect(heights[0], heights[1]);
-    expect(heights[2], heights[3]);
-  });
+      final daily = tester.getRect(find.byKey(const ValueKey('home-daily')));
+      final progress = tester.getRect(
+        find.byKey(const ValueKey('home-progress')),
+      );
+      final classic = tester.getRect(find.text('Classic Padakeli'));
+      expect(daily.top, greaterThan(classic.bottom));
+      expect(progress.top, greaterThanOrEqualTo(daily.bottom));
+      expect(daily.height, lessThan(172));
+    },
+  );
 
-  testWidgets('coming-soon status is included in feature-card semantics', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(context).copyWith(disableAnimations: true),
-          child: child!,
+  testWidgets(
+    'working secondary actions expose honest labels without coming-soon',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(disableAnimations: true),
+            child: child!,
+          ),
+          home: HomeScreen(
+            onClassic: () {},
+            onLearn: () {},
+            onProgress: () {},
+            onSettings: () {},
+          ),
         ),
-        home: HomeScreen(
-          onClassic: () {},
-          onLearn: () {},
-          onProgress: () {},
-          onSettings: () {},
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    final semantics = tester.ensureSemantics();
-    await tester.pump();
+      );
+      await tester.pumpAndSettle();
+      final semantics = tester.ensureSemantics();
+      await tester.pump();
 
-    expect(
-      find.bySemanticsLabel('నేటి పదకేళి, Daily Puzzle, Coming Soon'),
-      findsOneWidget,
-    );
-    expect(
-      find.bySemanticsLabel('నా పురోగతి, My Progress, Coming Soon'),
-      findsOneWidget,
-    );
-    semantics.dispose();
-  });
+      expect(find.byKey(const ValueKey('home-daily')), findsOneWidget);
+      expect(find.byKey(const ValueKey('home-progress')), findsOneWidget);
+      expect(find.text('Coming Soon'), findsNothing);
+      semantics.dispose();
+    },
+  );
 
   testWidgets('dimensional button exposes button semantics and keyboard keys', (
     tester,
@@ -349,8 +345,8 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey('nav-home')));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Resume Classic'));
-    await tester.tap(find.text('Resume Classic'));
+    await tester.ensureVisible(find.byKey(const ValueKey('home-resume')));
+    await tester.tap(find.byKey(const ValueKey('home-resume')));
     await tester.pumpAndSettle();
 
     expect(
@@ -386,12 +382,21 @@ void main() {
     expect(find.byType(RadioListTile<TeluguFontSize>), findsNWidgets(3));
   });
 
-  testWidgets('home daily action is explicitly coming soon', (tester) async {
+  testWidgets('home daily action opens an actual offline Classic board', (
+    tester,
+  ) async {
     await pumpReturningUserApp(tester);
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Daily Puzzle'));
-    await tester.tap(find.text('Daily Puzzle'));
-    await tester.pump();
-    expect(find.text('Daily Puzzle త్వరలో వస్తుంది'), findsOneWidget);
+    // Do not reuse a bundle Future tied to an earlier test's fake async zone.
+    rootBundle.evict('assets/data/sample_puzzles.json');
+    await tester.runAsync(() async {
+      await rootBundle.loadString('assets/data/sample_puzzles.json');
+      await tester.tap(find.text('Daily Puzzle'));
+      await tester.pump();
+    });
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('daily-puzzle-label')), findsOneWidget);
+    expect(find.byKey(const ValueKey('classic-game-scroll')), findsOneWidget);
   });
 }

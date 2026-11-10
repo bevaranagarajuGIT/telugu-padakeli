@@ -254,7 +254,7 @@ void main() {
       if (tab == 'classic') {
         expect(
           tester.widget<HomeScenery>(find.byType(HomeScenery)).celebrating,
-          isTrue,
+          isFalse,
         );
       }
       await tester.pumpWidget(const SizedBox.shrink());

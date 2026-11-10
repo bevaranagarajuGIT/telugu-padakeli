@@ -8,6 +8,7 @@ import '../services/engagement_audio_manager.dart';
 import '../widgets/engagement_motion.dart';
 import '../widgets/special_achievement_celebration.dart';
 import '../widgets/kids_learning_text.dart';
+import '../widgets/learning_action_footer.dart';
 
 class KidsActivityScreen extends StatefulWidget {
   const KidsActivityScreen({
@@ -33,12 +34,16 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
   bool _freshFeedback = false;
   bool _freshCompletion = false;
   bool _leavingCompletion = false;
+  final _scroll = ScrollController();
+  final _completionFocus = FocusNode(debugLabel: 'Activity completion heading');
+  late int _previousIndex;
 
   @override
   void initState() {
     super.initState();
     _previousAnswer = session.answerState;
     _previousComplete = session.complete;
+    _previousIndex = session.index;
     session.addListener(_sessionChanged);
   }
 
@@ -78,6 +83,14 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
   }
 
   void _sessionChanged() {
+    if (session.complete != _previousComplete ||
+        session.index != _previousIndex) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (_scroll.hasClients) _scroll.jumpTo(0);
+        if (session.complete) _completionFocus.requestFocus();
+      });
+    }
     if (session.complete && !_previousComplete) {
       _freshCompletion = true;
       _play(
@@ -100,12 +113,15 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
     }
     _previousAnswer = session.answerState;
     _previousComplete = session.complete;
+    _previousIndex = session.index;
   }
 
   @override
   void dispose() {
     session.removeListener(_sessionChanged);
     _audio?.stop();
+    _scroll.dispose();
+    _completionFocus.dispose();
     super.dispose();
   }
 
@@ -116,6 +132,11 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
     return ListenableBuilder(
       listenable: session,
       builder: (context, _) => Scaffold(
+        bottomNavigationBar: session.complete
+            ? LearningActionFooter(child: _completionPrimary(context))
+            : session.answerState == KidsAnswerState.correct
+            ? LearningActionFooter(child: _nextControl(context))
+            : null,
         appBar: AppBar(
           backgroundColor: AppColors.purple,
           foregroundColor: Colors.white,
@@ -147,6 +168,7 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
         body: SafeArea(
           top: false,
           child: SingleChildScrollView(
+            controller: _scroll,
             key: ValueKey(
               session.complete
                   ? 'kids-activity-completion-scroll'
@@ -211,37 +233,8 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
                             _feedback(context),
                             const SizedBox(height: 16),
                           ],
-                          if (session.answerState == KidsAnswerState.correct)
-                            TapFeedback(
-                              child: FilledButton(
-                                key: const ValueKey('learning-next'),
-                                onPressed: session.next,
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: AppColors.purple,
-                                  foregroundColor: Colors.white,
-                                  minimumSize: const Size(48, 64),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(18),
-                                  ),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(12),
-                                  child: KidsLearningText.control(
-                                    session.index + 1 ==
-                                            session.activity.questions.length
-                                        ? 'ఆట ముగించు'
-                                        : 'తరువాతి ప్రశ్న',
-                                    english:
-                                        session.index + 1 ==
-                                            session.activity.questions.length
-                                        ? 'Finish activity'
-                                        : 'Next question',
-                                    center: true,
-                                  ),
-                                ),
-                              ),
-                            )
-                          else if (session.activity.type !=
+                          if (session.answerState != KidsAnswerState.correct &&
+                              session.activity.type !=
                                   KidsActivityType.picture &&
                               session.activity.type != KidsActivityType.letter)
                             TapFeedback(
@@ -669,6 +662,24 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        Focus(
+          focusNode: _completionFocus,
+          autofocus: true,
+          child: Semantics(
+            header: true,
+            liveRegion: true,
+            child: KidsLearningText(
+              'ఆట పూర్తయింది!',
+              key: const ValueKey('learning-completion-heading'),
+              english: 'Activity completed.',
+              center: true,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
         SpecialAchievementCelebration(
           key: const ValueKey('learning-completion-motion'),
           completed: session.complete,
@@ -676,17 +687,12 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
           earnedStar: session.earnedStarOnCompletion,
           totalStars: widget.learning?.stars,
           onSkip: () => _audio?.stop(),
-        ),
-        const SizedBox(height: 16),
-        KidsLearningText(
-          'అద్భుతం! ఆట పూర్తయింది.',
-          english: 'Wonderful! Activity completed.',
-          center: true,
-          style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.w700,
+          sceneHeight: (MediaQuery.sizeOf(context).height - 480).clamp(
+            110,
+            264,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         Container(
           key: const ValueKey('learning-completion-result'),
           padding: const EdgeInsets.all(16),
@@ -726,51 +732,15 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
         ),
         const SizedBox(height: 12),
         KidsLearningText(
-          'ఈ ఆటకు ఈ సెషన్‌లో ఒక నక్షత్రం. మళ్లీ ఆడినా అదనపు నక్షత్రాలు రావు.',
-          english: 'One star per activity in this session. Replay anytime.',
+          'ఒక్కో ఆటకు ఒక నక్షత్రం. మీ పురోగతి ఈ పరికరంలో ఉంటుంది.',
+          english:
+              'One saved star per activity. Replays never add duplicate stars.',
           center: true,
           style: theme.textTheme.bodySmall?.copyWith(
             color: scheme.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: 20),
-        TapFeedback(
-          child: FilledButton.icon(
-            key: ValueKey(
-              widget.onNext == null
-                  ? 'learning-return'
-                  : 'learning-next-activity',
-            ),
-            onPressed: _leavingCompletion
-                ? null
-                : () => _leaveCompletion(
-                    widget.onNext ?? () => Navigator.of(context).pop(),
-                  ),
-            icon: const Icon(Icons.arrow_forward_rounded),
-            iconAlignment: IconAlignment.end,
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.gold,
-              foregroundColor: AppColors.ink,
-              minimumSize: const Size(48, 64),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
-              ),
-            ),
-            label: KidsLearningText.control(
-              widget.onNext == null ? 'ఆటలకు వెళ్లు' : 'తరువాతి స్థాయి',
-              english: widget.onNext == null
-                  ? 'Return to activities'
-                  : 'Next level',
-              center: true,
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: AppColors.ink,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
         TapFeedback(
           child: OutlinedButton.icon(
             key: const ValueKey('learning-restart'),
@@ -815,4 +785,49 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
       ],
     );
   }
+
+  Widget _nextControl(BuildContext context) {
+    final finish = session.index + 1 == session.activity.questions.length;
+    return TapFeedback(
+      child: FilledButton(
+        key: const ValueKey('learning-next'),
+        onPressed: session.next,
+        style: FilledButton.styleFrom(
+          minimumSize: const Size(48, 64),
+          padding: const EdgeInsets.all(12),
+        ),
+        child: KidsLearningText.control(
+          finish ? 'ఆట ముగించు' : 'తరువాతి ప్రశ్న',
+          english: finish ? 'Finish activity' : 'Next question',
+          center: true,
+        ),
+      ),
+    );
+  }
+
+  Widget _completionPrimary(BuildContext context) => FilledButton.icon(
+    key: ValueKey(
+      widget.onNext == null ? 'learning-return' : 'learning-next-activity',
+    ),
+    onPressed: _leavingCompletion
+        ? null
+        : () => _leaveCompletion(
+            widget.onNext ?? () => Navigator.of(context).pop(),
+          ),
+    icon: const Icon(Icons.arrow_forward_rounded),
+    style: FilledButton.styleFrom(
+      backgroundColor: AppColors.gold,
+      foregroundColor: AppColors.ink,
+      minimumSize: const Size(48, 64),
+      padding: const EdgeInsets.all(12),
+    ),
+    label: KidsLearningText.control(
+      widget.onNext == null ? 'ఆటలకు వెళ్లు' : 'తరువాతి స్థాయి',
+      english: widget.onNext == null ? 'Return to activities' : 'Next level',
+      center: true,
+      style: Theme.of(
+        context,
+      ).textTheme.titleMedium?.copyWith(color: AppColors.ink),
+    ),
+  );
 }

@@ -1,552 +1,213 @@
 # Telugu Padakeli
 
-A Flutter starter app for Telugu word games and learning, designed for children
-and older adults. Android and iOS platform projects are included.
+An offline, Telugu-first Flutter learning and crossword app for children,
+families, students and older adults. No account, analytics, ads, live AI,
+speech recognition, runtime font download or backend is required.
 
-## What Works
+## Current features
 
-- Tirumala-inspired illustrated splash and a Telugu family welcome screen.
-- Matching Family + Tirumala app icons for Android, iOS and web.
-- First-launch onboarding with Skip and Start actions; completion is saved locally
-  so returning users see Tirumala and then Home without repeating Welcome.
-- Responsive home screen with the Telugu title, Classic Padakeli, Kids Learning
-  Games, Daily Puzzle, and My Progress cards.
-- Classic connected Telugu sample crosswords with clues, answer checking, and reset.
-- Kids missing-letter game with retries and one point per correctly answered
-  question.
-- Telugu-first Kids dashboard with three freely selectable learning paths,
-  five activity types, optional English Helper and session-only completion stars.
-- Font-size and dark-mode settings through the home screen's settings button.
-- A gentle home entrance animation that respects system reduced-motion settings.
-- Locally bundled Telugu and Latin fonts. No runtime font downloads, account,
-  analytics, advertising, or backend service is needed.
+- Tirumala opening on every fresh launch; family Welcome appears once. Warm
+  resume preserves the current screen. Existing illustration credits remain.
+- Home prioritizes Classic, Kids and a real saved Resume action. Daily Puzzle
+  and My Progress are compact secondary destinations, not placeholders.
+- Classic has a validated local pack across all five difficulties. Complete
+  Telugu aksharas occupy cells; crossings, numbering, coverage and connectivity
+  are checked before play. Across/Down clue selection, a letter palette, selected
+  word editing, authored hints, one-cell reveals and confirmed reset remain.
+  Correct checks advance within a level after 1.1 seconds; changing level is
+  explicit. Filled-cell percentage is not an accuracy claim.
+- Kids offers three freely selectable Telugu-first learning paths: చిన్నారులు,
+  బాల మిత్రులు and పద వీరులు. Picture, letter, missing-akshara, word-builder and
+  meaning games retain retries and explicit continuation. Original practice is
+  also available, with its original questions and automatic progression intact.
+  These suggested paths are not verified age assessments.
+- A correct answer exposes Next/Finish in a separate adaptive SafeArea footer.
+  Scrolling answers/explanations never sits underneath it. Completion resets
+  scroll position, focuses and announces its heading, keeps Hanuman visible,
+  pins the main continuation, and leaves Replay/Return in the scrollable result.
+- English Helper adds translations beneath Telugu. Navigation/action controls
+  remain bilingual regardless of Helper. Normal, large and extra-large app fonts
+  compose with independent system text scaling. Light/dark themes, keyboard
+  controls, accessible labels and reduced motion are preserved.
+- Brief press/correct/retry feedback and the original articulated Flutter
+  Hanuman celebration are presentation only. Inputs are immediately usable;
+  animation stops when covered, hidden or backgrounded. Restored results are
+  static, with no stale reward flight or sound.
 
-Daily Puzzle and My Progress are explicitly marked as coming soon. This starter
-does not yet persist settings or scores, track streaks, or provide online content.
+## Saved data and recovery
 
-## UI V2: Phase A
+`LearningProgress` owns versioned local state through the injectable
+`LearningStore` interface. Production uses the existing `shared_preferences`
+dependency; tests use an in-memory implementation. No dependency was added.
 
-Phase A uses the approved written blue/purple/orange/teal/pink direction; no
-separate reference image was supplied. The Home artwork milestone now replaces
-the code-drawn header/feature art with bundled original PNG illustrations.
-No network images or fonts are required.
+The `padakeli.learning.v1` record contains settings (font, theme, Helper, sound,
+daily goal), Kids category/current attempts/solved IDs, original-practice state,
+Classic and date-specific Daily boards, answer records, completions, rewards and
+achievements. Classic restores puzzle/difficulty, cells, selected direction/clue/
+cell, hints and completion. Writes debounce for 250ms, serialize snapshots in
+order, and flush when the app becomes inactive/backgrounded.
 
-The four home actions are Classic Padakeli, Play & Learn, Daily Puzzle, and My
-Progress. Bottom navigation offers Home, Classic, Learn, and Progress. Android
-Back returns from a destination to Home. Classic includes Beginner and Easy puzzles, clue selection, an akshara palette,
-and hints. Kids mode includes five levels with three multiple-choice questions
-each. Puzzle data is validated on loading, with a Retry action if loading fails.
+Stable IDs plus exact content signatures prevent old answers from being applied
+to changed content. Kids keeps unchanged solved questions and returns to the
+first changed/unsolved question. A changed Classic board starts fresh while other
+progress is retained. A changed original-practice pack restarts that attempt;
+historical rewards/records remain. Reopening never grants another reward.
 
-The Classic selector follows the colourful level-card reference: a blue backdrop,
-Telugu-first labels, and locally drawn sprout/star/mountain/crown emblems. Beginner
-and Easy open the existing puzzles; Medium, Hard, and Expert remain visibly locked
-and marked Coming Soon. Cards expand and scroll for larger font settings, support
-keyboard selection and dark mode, and provide a Back to Home action.
+Missing saves start clean. Unreadable JSON/schema sections are preserved once at
+`padakeli.learning.v1.recovery`, with a visible notice. Unsupported versions and
+failed reads block writes rather than overwriting unknown data. Write failure
+keeps play responsive and exposes Retry saving in Settings. Read failure asks
+for an app restart. Reset requires an explicit confirmation, clears learning
+state/rewards/Daily boards and removes stale screens, but preserves preferences
+and the separate completed-Welcome flag.
 
-Classic includes three puzzles each for Beginner and Easy. Check Answer validates
-the entire grid; a correct solution shows feedback for 1.1 seconds, then opens the
-next puzzle in the same difficulty with a fresh grid and clue selection. The last
-puzzle opens a level-complete screen with Replay and level-selection actions.
-Reset, changing difficulty, and disposal cancel pending progression.
-The compact blue-framed board uses yellow active cells and Across/Down clue tabs,
-with each clue shown once and the normal-phone actions above bottom navigation. Its
-remaining blocked cells use quiet lavender separators with small, muted stars;
-they remain non-interactive and excluded from accessibility navigation. The
-colourful, scrollable Hints sheet offers authored simpler clues, first-unsolved
-akshara reveal, and one-cell reveal without adding coins or paid hints. Large-font boards can
-scroll horizontally rather than shrinking text or tap targets.
+This is device-local convenience storage, **not** encrypted storage, a cloud
+backup or a guaranteed transactional database. Abrupt process termination before
+a pending write completes can lose the most recent change. Uninstalling or
+clearing application data removes progress.
 
-Play & Learn uses a Template B-inspired purple/lavender layout, rounded answer
-tiles, question progress, and a hint scene with the bundled original learning
-cards and parrot. It preserves all five levels, retry/scoring rules, and automatic
-advance; the reference's hearts do not introduce a lives mechanic. The Back
-action returns Home without discarding in-session answers. Enlarged text uses a
-scrollable single-column layout, and dark mode preserves the same controls.
+## My Progress: metric definitions
 
-Continue Playing retains the current classic puzzle while switching tabs within
-the same app session. It does not claim saved progress after closing the app.
-The daily feature is explicitly Coming Soon, with a working sample-puzzle action.
-My Progress remains the existing honest placeholder until Phase E.
+The dashboard uses saved events, never sample numbers or online rankings.
 
-Typography offers normal (1x), large (1.2x), and extra-large (1.4x) app sizes,
-on top of the system's accessibility scaling. Navigation labels adapt to icon
-destinations with accessible labels/tooltips at extreme text sizes.
-Material text geometry is resolved before applying the app preset, including
-navigation and primary text roles. The system `TextScaler` remains independent,
-including nonlinear scaling. Settings-to-Home regressions check actual rendered
-font sizes, text growth, large-preset single-column cards, and return to normal
-rows in light and dark mode.
+| Metric | Definition |
+|---|---|
+| Daily goal | Configurable 1–10 distinct correctly answered Kids/practice question versions per local day; default 3 |
+| Today | Distinct correct question versions and completed activity IDs that day; repeats do not multiply them |
+| Completed activities | Distinct Kids or original-practice level IDs ever completed |
+| Classic puzzles | Distinct Classic content IDs completed, including those played in Daily |
+| Earned stars | One per activity ID, one per Classic puzzle ID, and one per Daily date; replay is not another star |
+| First-check correctness | First-ever submitted check for each unchanged Kids/practice question; a later retry cannot repair its first result |
+| Submitted checks | Actual nonempty submitted attempts, not taps, impressions or unique vocabulary |
+| Eventually correct | Question versions with a correct check, separately from first-check correctness |
+| Path completion | Currently saved, completed packs whose solved-question signatures still match current content |
+| Current/best streak | Consecutive local calendar days with a correct answer or activity/crossword completion; today may be empty if yesterday continues the run |
 
-Phase A code:
+Achievements are First activity, First crossword, 10 first-check correct
+questions and 3 consecutive learning days. Each is stored once. No answered word
+is labelled mastered. Empty states avoid estimated accuracy and division by zero.
+Resume reopens the most recently saved activity/practice/Classic/Daily attempt;
+Explore allows revisiting all freely available activities.
 
-- `lib/app/theme/app_colors.dart`: centralized brand palette and contrast-safe ink.
-- `lib/core/app_theme.dart`: light/dark Material themes and typography roles.
-- `lib/app/navigation/app_shell.dart`: lazy tabs and in-session game preservation.
-- `lib/shared/widgets/`: header, feature card, buttons, and bottom navigation.
-- `lib/screens/home_screen.dart`: responsive home and honest future-feature states.
-- `test/phase_a_theme_test.dart`: contrast, font presets, and navigation scaling.
+Calendar arithmetic uses the ordinal of local year/month/day, not elapsed
+24-hour periods. A forward jump can break a streak; backward-clock future
+records are retained but excluded until their date returns. There is no trusted
+online clock: changing device date/time zone can change which local date applies,
+but cannot award the same stored reward key twice.
 
-Persistent progress/settings, achievements, sound, new kids games, and the
-remaining reusable components are not part of Phase A.
+## Honest offline Daily Puzzle
 
-## Classic: Phase B
+Daily reuses the Classic solver. For a new date it sorts bundled IDs and selects
+`daysFrom2026Jan01 mod packLength`, then stores that date and ID. Reordering the
+pack does not replace a saved choice; missing saved content shows a retryable load
+error rather than silently switching puzzles. Each date has its own saved cells
+and completion, and its completion reward is once per date.
 
-The existing offline repository, Classic screen, numbered board, rangoli blocks,
-palette, clue tabs, difficulty cards and automatic progression are reused. The
-approved Splash, Welcome, Home and Kids implementations are unchanged.
+The finite local pack repeats. The UI discloses its rotating size and labels dates
+outside the first cycle **Practice repeat**; it does not promise unlimited unique
+boards. At midnight or foreground resume, an open old board is labelled as a saved
+past date. It remains playable; return Home to open today's board. Completing it
+qualifies the actual day of learning, not an unplayed date.
 
-- Cells contain complete Telugu orthographic syllables, not code points or
-  generic grapheme clusters. Guninthalu, virama-linked consonant clusters,
-  anusvara/visarga and conjunct rendering joiners are handled explicitly.
-- Telugu's canonically decomposable AI vowel sign is normalized for comparison;
-  ZWJ/ZWNJ rendering variants of valid conjuncts compare equally. This is a
-  Telugu-specific comparison, not a general-purpose Unicode normalizer.
-- Validation checks individual aksharas, answer-to-cell boundaries, crossing
-  agreement, numbering, coverage of every multi-cell word, grid connectivity,
-  supported difficulty and unique puzzle IDs.
-- Tap a word's clue to select it. Tap the active crossing cell again to switch
-  Across/Down without changing the active cell. Palette input advances along the
-  selected word. Clear removes the active cell; Backspace removes it or moves
-  back and clears the preceding cell when it is already empty. Selected-word
-  reset also clears its shared intersections.
-- Each Across/Down clue and the hints sheet show the answer's Telugu akshara
-  count in parentheses, for example `మన పైన నీలంగా కనిపించేది (3)`.
-  Counts use the same orthographic-syllable splitter as the grid, so vowel
-  signs and conjuncts are not counted as separate letters.
-- The displayed percentage is **filled cells**, not a claim that answers are
-  correct. Check validates the whole puzzle; wrong filled cells receive an error
-  icon, border and Telugu accessibility announcement. Editing clears the edited
-  cell's stale error. Correct grids retain the approved 1.1-second feedback and
-  automatic progression, with a static celebration that requires no motion.
-- Hints reveal the first unsolved cell in reading order, reveal one unsolved
-  active cell (or the next unsolved cell in the selected word), or display a
-  manually authored simpler clue when available. They never overwrite correct
-  cells or reveal an entire word at once. Successful hint actions are counted
-  per puzzle attempt; a full confirmed reset clears that count.
-- Full reset requires confirmation. Opening its dialog pauses pending automatic
-  progression; cancelling resumes it, and confirming cancels it and clears the
-  current board. No timer can advance the board behind the reset dialog.
-- Completing a Classic difficulty offers Next level, Play again and Choose
-  level in Telugu and English. Next level opens the next available difficulty
-  in Beginner-to-Expert order only when tapped; it is omitted after the last
-  available level.
-- Classic action buttons always pair simple Telugu with English: సహాయం / Hints,
-  సరిచూడు / Check and మళ్లీ ఆడు / Restart. Letter/word editing and reset
-  confirmation are bilingual too. These control labels do not change the
-  optional English Helper setting for learning content.
-  Clear letter, Backspace and Clear word share a flat editing toolbar.
-  Check is the primary green action; Hints is outlined and Restart is a text
-  action. Bilingual labels, accessible contrast and minimum 48-pixel touch
-  targets are retained in both themes. All clues remain visible, with tighter
-  list padding instead of a collapsed or selected-clue-only view.
-  A fully correct word automatically gains a soft green background in the grid
-  and answer preview, plus a checkmark beside its clue. Partial or incorrect
-  words are not confirmed. Solved cells remain editable; feedback is recomputed
-  for both crossing words after entry, hints, clearing and reset. The active
-  solved cell keeps an amber outline, and Check still controls puzzle progression.
-- Children's navigation and action controls are also always bilingual,
-  including Return to activities, Check answer, Next question, Play again,
-  undo/reset and the activity/path selectors. English Helper still controls
-  translations of questions, answers, hints and explanations, not controls.
-- Only validated, bundled levels are enabled. All five cards are data-driven;
-  Beginner/Easy retain their six introductory boards. Medium, Hard and Expert
-  now each have two boards, with 5, 7 and 10 clues per board respectively.
-- Larger grids and large-font boards can be scrolled horizontally without
-  reducing akshara size or 48-pixel cell targets. Boards larger than 3x3 use the
-  available content width, and horizontal scrolling follows the active cell
-  after selection, entry, hints and backspace. A visible scrollbar exposes
-  overflow. Larger boards also show an editable selected-word preview next to
-  the letter palette: tap a position to correct it, with the same shared
-  crossing values as the main grid. Other game content scrolls vertically.
-  Fully blocked outer rows and columns are omitted from rendering without
-  changing logical cell indices or crossings. The six larger puzzles also use
-  rebuilt word sets that reduce internal blocked cells by at least 40%, rather
-  than merely changing their decoration. Their visible bounds are at most 6x6,
-  at least 55% of visible cells are playable, and no empty rectangle exceeds
-  six cells. Clue counts remain 5/7/10 for Medium/Hard/Expert.
-  Necessary interior blocked cells remain as quiet separators with centered,
-  decorative stars. Stars appear only in blocked cells, scale to fit, and are
-  non-interactive and excluded from screen-reader navigation in both themes.
-  No new dependencies or online services were introduced.
+## Content, artwork and unavailable audio
 
-### Content audit and release review
+`assets/data/content_review.json` is the editable review inventory for every
+Kids, original-practice and Classic clue. It includes stable ID, category/
+difficulty, prompt, answer, distractors, explanation, English, picture/audio
+references, exact recording script, status and reviewer notes. Repeated vocabulary
+is grouped explicitly; shared practice is not new unique-word growth.
 
-All twelve bundled puzzles, including the six unchanged introductory boards, are explicitly marked
-`pending-human-review` in JSON. Technical validation is not linguistic approval.
-The 57 answers have no duplicate normalized spellings. The tautological Easy
-clue that repeated its answer was replaced with an original candidate wording;
-that wording and its hint still require Telugu editorial review.
+Regenerate after source edits:
 
-| Puzzle ID | Level | Answers requiring review |
+```powershell
+dart run tool\export_content_review.dart
+```
+
+Reviewer notes survive by ID. Approval status survives only if the exact content
+is unchanged. Automated structural/akshara/answer checks are **not** Telugu
+educator approval. All current entries remain `pending-human-review`; a fluent
+Telugu educator must review natural wording, translations, plausible distractors,
+regional inclusivity and difficulty. No filler questions were added.
+
+The user-approved original nine-object illustration sheet supplies consistently
+padded PNG vocabulary assets; standalone mango and parrot replace the card crop
+and mixed-scene picture. Other objects are prepared artwork, not extra exercises.
+Images use `BoxFit.contain` and accurate text descriptions. No Telugu lettering
+is baked into images. See `assets/artwork/kids/ATTRIBUTION.txt` and
+`assets/artwork/README.md` for provenance, generation and distribution limits.
+The existing Hanuman remains original Flutter vector art, not finished 3D art;
+its style is not identical to the new storybook vocabulary set. Final human
+art/cultural/rights review remains necessary.
+
+**No approved offline audio is available.** The existing audio manager is silent,
+with navigation/background/preference cancellation ready for a reviewed backend.
+Pronunciation actions stay hidden when files are absent. The saved reward-sound
+preference explicitly says playback is unavailable. The content inventory supplies
+recording scripts and null file references. Native-speaker recordings, consent,
+licenses, pronunciation and levels must be approved before adding real playback;
+there is no speech-recognition or audio-dependency substitute.
+
+## Official reference comparison
+
+Sources retrieved 2026-11-10. These are verified product/store descriptions, not
+hands-on app/animation observations or independent proof of learning outcomes.
+The final column is this project's interpretation, not a quoted source feature.
+
+| Official source | Verified description | Application here |
 |---|---|---|
-| 1 | Beginner | ఆట, శంఖం, ఆకాశం |
-| 2 | Easy | కథ, కలం |
-| 3 | Beginner | అమ్మ, అరటి |
-| 4 | Beginner | ఇల్లు, ఇనుము |
-| 5 | Easy | తామర, తాళం |
-| 6 | Easy | పరుగు, పలక |
-| 7-8 | Medium | 5 clues each; visible bounds of 3 rows x 5/6 columns |
-| 9-10 | Hard | 7 clues each; visible bounds of 4/3 rows x 6 columns |
-| 11-12 | Expert | 10 clues each; visible bounds of 5/6 rows x 6 columns |
+| [Learn Telugu Language Offline](https://play.google.com/store/apps/details?id=com.eduven.ld.lang.telugu&hl=en-GB) | Image/audio/phonetic vocabulary, named categories, saved learning and revision games | Recognizable isolated pictures, descriptive Telugu paths and an editable recording manifest; no unapproved audio |
+| [Shoonya Telugu](https://www.shoonyadigital.com/telugu) | Foundational game-based language learning and heritage/cultural context | Preserve Telugu identity and varied child-sized rounds; no curriculum-approval claim |
+| [Ling Telugu](https://ling-app.com/learn-language/telugu/) | Native-audio, vocabulary and conversation lessons with game-based challenges | Short, varied activities with Telugu-first instructions; not copied exercises or promised native audio |
+| [Google Read Along](https://readalong.google/) | Reading encouragement through stars/badges, offline-capable mobile use and Classroom progress insights | Modest once-earned encouragement and clearly defined local progress; no microphone, AI or teacher-service integration |
+| [Telugu Words Game – PadaKeli](https://play.google.com/store/apps/details?id=tech.ttalks.TeluguWordsGame&hl=en) | Telugu word puzzles, multiple levels and simple controls | Calm controls and distinct difficulty; its listing did **not** verify clue-based crosswords or resumable play, so those are our own requirements |
 
-A fluent Andhra Pradesh/Telangana Telugu editor should review spelling,
-orthographic cell boundaries, natural clue wording, meanings, regional
-inclusivity and difficulty. New clues and hints are authored for this project,
-not copied from newspapers or textbooks. Static boards are checked with the
-actual `Puzzle.validate()` rules: connected cells, complete across/down runs,
-consistent numbering and intact Telugu aksharas. Technical validation does not
-make these puzzles a finished, editorially approved content pack.
-Game state and hint counts remain in-session only; durable resume is future work.
+No competitor illustrations, logos, wording, scores, purchase locks or wholesale
+layouts were copied. Meowdoku was a personality reference only, not a feature,
+dependency or surveyed animation source.
 
-## Kids Learning: Phase C
+## Develop and validate
 
-The Learn tab now opens a Telugu-first activity dashboard, extending the approved
-Template B purple/gold design with the existing local cards and parrot. Classic,
-Splash, Welcome, Home artwork and crossword parsing remain unchanged.
-
-| Learning path | Suggested ages | Available activities |
-| --- | --- | --- |
-| చిన్నారులు | 3-5 | 4 rounds: 5 / 5 / 5 / 5 questions |
-| బాల మిత్రులు | 6-8 | 5 rounds: 5 / 5 / 5 / 5 / 7 questions |
-| పద వీరులు | 9-12 | 6 rounds: 5 / 5 / 7 / 7 / 10 / 10 questions |
-
-These are freely selectable educational paths, not verified ages. No name,
-birthday, account, advertising, analytics, network service or new dependency is
-introduced. Twelve activity packs contain 74 question entries across five game
-types. Packs shared between age paths are counted once. Short five-question
-starters keep early rounds approachable; only older paths grow to seven or ten.
-The dashboard numbers rounds within the selected path. Picture/letter choices give
-immediate feedback; other games use an explicit Check action. The activity screen
-uses a purple progress panel, a warm gold picture stage, and bold answer rows
-with visible selection, retry and correct-answer symbols. Correct answers and
-feedback use matching green surfaces; text remains readable in both themes and
-with large text. Existing English Helper behavior and gameplay are unchanged.
-Correct responses
-lock to prevent duplicate scoring; Next keeps feedback visible until the child
-is ready. Incorrect responses can be retried without losing points.
-
-The four missing-akshara activities adapt Beginner, Easy, Medium and Master questions from
-`KidsQuestionService`, rather than replacing the original content. The dashboard's
-**మునుపటి అక్షరాభ్యాసం** action preserves the original fifteen questions at the
-start of their original five levels and adds two levels. Its seven rounds contain
-5 / 5 / 7 / 7 / 10 / 10 / 10 questions (54 total), each with an optional authored
-English hint. Complete-akshara/choice validation rejects broken content before
-play. Automatic advancement and in-session answer behavior are unchanged.
-Activity sessions, selected category and the
-original practice survive switching Home/Learn tabs. Leaving an unfinished
-activity and reopening it resumes the same in-session attempt.
-
-Word builder uses the Phase B `TeluguAkshara` parser and canonical equivalence.
-Tiles have individual identities, including repeated aksharas in కలకల.
-Selected tiles can be removed individually, undone or cleared. Partial answers
-and incorrect orders cannot succeed. Restart clears only that activity attempt.
-
-One completed activity earns one star per app session, not one star per answer
-or replay. Shared activities retain their reward when switching age categories;
-replaying cannot inflate the total. The dashboard displays actual completed
-questions, and completion provides Replay/Return actions without a lives system.
-Phase C+ adds bounded native star/particle feedback; reduced motion retains
-instant static feedback and never blocks gameplay.
-
-**ఇంగ్లీష్ సహాయం — English Helper** is OFF by default. The existing Provider
-settings controller updates local translations immediately. English instructions,
-choice translations and explanations are smaller and below Telugu; they never
-replace it. Meaning explanations appear only after a correct answer. The setting,
-category, attempts and stars are **in-session only**, like the existing font/dark
-settings; restarting the app resets them. Onboarding persistence is unchanged.
-
-### Safe engagement: Phase C+
-
-Correct answers pulse a native star; retries retain encouraging Telugu text
-without punitive shaking. Activity completion and original-practice level
-transitions use 16 deterministic Canvas particles, once per visible event.
-Material answer/tile/check/next/replay buttons gain gentle press feedback.
-Motion is presentation-only: no delayed input, score changes or extra rewards.
-Animations stop under reduced motion, hidden tabs, covered routes or backgrounding.
-
-Kids completion now uses an original code-only blue/gold achievement medallion
-without repeating the last question's answer or akshara tiles. The same applies
-to original-practice completion; question content remains in the learning flow.
-Its bounded 800ms
-sequence reveals the star, flies a newly earned reward to the actual session
-total, and settles. Replay celebrates completion without another reward flight.
-Original seven-level practice shares the scene without claiming learning stars.
-Return to activities is the gold primary action; replay remains available.
-The lifecycle gates are shared with existing feedback through `EngagementTimeline`;
-all results/actions are available immediately, including with reduced motion.
-No completion-scene illustration, character rig, sound or dependency is added.
-
-Sound is OFF by default and session-only. The settings control explicitly says
-there are currently no sounds. `EngagementAudioManager` uses a silent backend:
-no audio dependencies, platform playback calls, downloads or files are added.
-It gates future approved audio by preference/foreground state and cancels pending
-cues on navigation, backgrounding, disabling sound or disposal. It never queues
-sounds to replay on resume. A future reviewed backend can be injected without
-changing answer/reward rules.
-
-`assets/artwork/README.md` records dated rights evidence and unresolved questions.
-Existing images are unchanged; new effects do not use them as animation inputs.
-The Tirumala photo's CC BY-SA rights are verified, but generated-illustration
-commercial clearance is still pending. Settings and Welcome expose license
-credits. No new parrot derivatives, characters or audio are approved by this work.
-
-### Special achievement / Bal Hanuman framework
-
-`SpecialAchievementCelebration` adds a skippable 3.5-second sequence: entrance
-light/bounce (0-0.6s), an original Flutter-drawn Bal Hanuman raising his hand,
-gently waving, nodding, blinking and moving his tail/gada (0.6-1.6s), three
-decorative stars/confetti (1.6-2.6s), and a static
-completion state (2.6-3.5s). The three effects are not three awarded stars.
-Actual rewards remain controller-owned and visible immediately. Native Telugu
-praise retains English Helper. Skip stops presentation/audio without advancing
-gameplay; Play Again and continuation work before the sequence finishes.
-Hidden/background/reduced-motion states snap to the static result, with no stale
-replay. The character uses separately transformed vector parts, not a flattened
-image. No external character image, animation pack or sound is bundled.
-The parrot remains the everyday mascot; Bal Hanuman appears only on completion.
-Completion opens at the top rather than keeping the last question's scroll
-position, so Hanuman remains visible after finishing or replaying a scrolled
-activity. The compact gold celebration stage keeps the character and decorative
-stars after the animation, alongside a green result panel and gold/purple
-bilingual actions. The last answer's tiles remain excluded.
-
-The current integration is Kids activity completion and the final original
-seven-level practice completion, not unfinished questions. Kids Next Level opens
-the next authored activity in the selected learning path; at the end of that path
-or original practice, Return to Activities replaces an unavailable next level.
-The previous practice's intermediate-level behavior and answer logic are intact.
-See the artwork manifest for the original code provenance, pending commercial
-release review and optional illustrated-character/audio replacement requirements.
-
-### Files and content review
-
-- `lib/models/kids_learning.dart`: typed activities/questions, categories,
-  bilingual choices, difficulty/review status, picture descriptions and validation.
-- `lib/services/kids_learning_service.dart`: twelve activity packs covering
-  five types, 74 original/adapted questions and authored offline English helpers.
-- `lib/core/kids_learning_controller.dart`: testable attempts, tile identity,
-  answer locks, progression and duplicate-safe session rewards.
-- `lib/screens/kids_learning_screen.dart` and `kids_activity_screen.dart`:
-  responsive dashboard/gameplay, settings access and session navigation.
-- `lib/widgets/kids_learning_text.dart`: Telugu-primary/optional-English rendering.
-- Existing settings, AppShell and original Kids screen integrate these surfaces.
-  `pubspec.yaml` adds only a local asset directory; dependencies are unchanged.
-- `test/kids_learning_test.dart` and `kids_learning_ui_test.dart`: content,
-  settings, gameplay, rewards, bundled pictures, navigation and real-font layouts.
-  Existing Kids/integration tests retain their original gameplay assertions with
-  updated dashboard entry and Telugu labels.
-
-**All 74 activity questions remain `pending-human-review`; all 54 original-practice
-entries also await linguistic review.** Runtime validation checks
-unique IDs, valid choices, answer/tile agreement, complete akshara boundaries and
-required fields; it cannot approve spelling, English accuracy, age suitability or
-distractor/image alignment. A Telugu educator should review:
-
-| Pack | Content awaiting review |
-| --- | --- |
-| Pictures (5) | Original two identification prompts plus colour/classification using the same two images |
-| Letters (15) | Three five-question packs; displayed full aksharas, vocabulary and distractors |
-| Word completion (27) | Four canonical practice levels, bilingual hints and difficulty |
-| Builder (12) | Original five plus seven new words; authored clues and intact tiles |
-| Meanings (15) | Synonyms/antonyms, bilingual explanations and distractors |
-
-No artwork, audio, animation, dependency or third-party exercise is added by this
-content expansion. Picture matching is intentionally limited to two genuine bundled illustrations:
-the existing parrot and a mango-only crop of approved original `home/learn.png`.
-See `assets/artwork/README.md` for provenance and distribution-review limits.
-No downloaded stock images or disguised placeholder artwork is used. A larger
-reviewed pack needs original/licensed fruit, animal and familiar-object pictures;
-broader letters, guninthalu, vegetables, colors, geography and culture need
-additional reviewed content, not automatically generated filler.
-
-### Offline pronunciation extension
-
-`KidsLearningQuestion.audioAsset` is an optional extension point and currently
-null for every question. No audio button or pronunciation claim is displayed.
-Future work must bundle educator-reviewed Telugu recordings, add an offline
-player and visual alternatives, and expose controls only for playable recordings.
-There is no online speech API or synthesized Telugu pronunciation.
-
-Phase D should prioritize educator/content review, physical Android/iOS testing,
-reviewed illustration/audio packs and durable local preferences/resume before
-adding more levels. Native iOS signing/testing still requires macOS/Xcode or a
-configured macOS build service; Flutter tests do not establish iPhone behavior.
-
-## Splash and Welcome
-
-The launch gate displays the Tirumala splash on every fresh app launch while
-reading the local onboarding flag and preparing the bundled temple illustration.
-The family illustration and Welcome are prepared only for first-time users. There is
-no artificial loading timer. One approved welcome page has one honest page
-indicator. Both **Skip** and **ప్రారంభిద్దాం** save
-`onboarding_completed_v1` using `shared_preferences` before opening the existing
-Home/navigation shell. Save failures keep Welcome open with a retryable message;
-initialization failures expose Retry rather than silently bypassing onboarding.
-Uninstalling or clearing this app's data resets completion. Settings, scores,
-and game progress remain in-memory; this does not add authentication or Firebase.
-
-Telugu copy is real bundled-font text, not baked into images. Artwork keeps its
-aspect ratio; content scrolls on small screens and at large accessibility sizes.
-The reference-led composition blends the temple artwork into a continuous blue
-sky, with mango/marigold garlands and a curved cream-and-gold splash footer.
-Welcome enlarges the family scene above a compact cream panel, floral divider
-and golden action, without the previous large gap between the copy and button.
-The short entrance fade and loading indicators respect reduced motion. Android's
-native launch bridge uses royal blue and the puzzle mark, including Android 12+
-system splash support. Android 12+ removes its launch overlay as soon as Flutter
-is ready instead of fading over the illustrated Flutter splash. Startup waits
-for an actually rasterized engine frame and decoded temple artwork before
-starting the 1.2-second entrance fade, including for returning users. The
-entrance is not consumed behind Android's launch overlay or before the temple
-image loads. There is no separate loading timer. Reduced motion removes the
-animation wait. Returning to an already-running app preserves the current
-screen and does not replay the opening or reset game progress.
-iOS uses the same launch background before Flutter paints.
-iOS build/runtime verification still requires macOS and Xcode.
-
-The temple and fictional multigenerational family are newly generated stylized
-illustrations based on a licensed Tirumala architectural photo. Attribution,
-CC BY-SA 4.0 adaptation terms, provenance, and release-review caveats are bundled
-in `assets/artwork/opening/ATTRIBUTION.txt` and available through Welcome's artwork
-credits action. **Human Tirumala architectural/authenticity review and generation
-service-terms review are required before release.** These images are not an
-official TTD endorsement or architectural certification.
-
-## Original Home artwork milestone
-
-Home includes an illustrated orchard/lotus scene, two consistent original parrot
-poses, and matching Classic, Play & Learn, Daily, and Progress illustrations.
-Equal-height feature rows at normal sizes, content-driven large-text layouts,
-Continue Playing, keyboard/semantic activation, local typography, and existing
-gameplay are preserved. Daily and Progress remain Coming Soon.
-
-The parrot's restrained movement is a bob of static raster artwork, not
-expressive character animation. Repeating motion is explicitly gated by the
-selected Home tab, Settings visibility, app lifecycle, and reduced motion.
-See [the artwork manifest](assets/artwork/README.md) for generation briefs,
-source/provenance, transparency requirements, and unresolved license-term review.
-The named external reference screenshots were not supplied to this checkout.
-
-GitHub Actions uses Flutter 3.44.2 and runs formatting, analysis, tests (including
-asset decoding/alpha and hidden-screen motion regressions), and an
-offline-resource web build on PRs.
-Its `web-preview` artifact can be served locally for actual runtime review;
-it is a runnable app build, not a generated UI mockup. Native-device review is
-still required before release.
-
-## Open in VS Code
-
-Select **File > Open Folder** and choose `C:\Projects\telugu_padakeli`.
-The Flutter and Dart extensions are installed. This workspace's
-`.vscode/settings.json` points to `Q:\tools\flutter`.
-
-Open a PowerShell terminal:
+Use the existing Flutter/Dart installation and platform tooling:
 
 ```powershell
-Set-Location C:\Projects\telugu_padakeli
-flutter doctor
 flutter pub get
-flutter analyze
-flutter test
-```
-
-## Run on Android
-
-Start the configured emulator if it is not already running:
-
-```powershell
-flutter emulators --launch TeluguPadakeli_API36
-flutter devices
-```
-
-Once an Android device appears, run:
-
-```powershell
+dart format --output=none --set-exit-if-changed lib test tool
+flutter analyze --no-pub
+flutter test --no-pub
+flutter build web --no-pub --no-web-resources-cdn
+flutter build apk --debug --no-pub
 flutter run -d emulator-5554
 ```
 
-Use the actual device ID from `flutter devices` if it differs. Alternatively,
-select the Android device in VS Code's status bar and press **F5**.
+`test/kids_visibility_test.dart` checks actual rectangles/hit testing at 320/390
+widths, 480/568 heights, normal/extra-large app text, both themes, reduced motion
+on/off and English Helper on. It taps Next/Finish without scrolling, checks the
+heading/whole character inside completion's viewport, scrolls explanations above
+the footer, verifies heading focus and reaches Replay/Return. Existing suites
+also cover extreme system text, gameplay, aksharas, accessibility and motion.
+Saved-game tests recreate screens with reloaded storage, including Classic hints/
+selection, original-practice score, Daily replay/rollover and reset confirmation.
 
-In the terminal, `r` hot reloads, `R` hot restarts, and `q` stops the app. A cold
-emulator boot and the first Gradle build can take several minutes.
-
-The emulator uses Windows Hypervisor Platform, which was already available.
-Flutter uses Android Studio's bundled JDK; no separate Java installation or
-permanent `JAVA_HOME`, Android PATH, or virtualization change was needed.
-The first Android build also downloaded CMake 3.22.1 into the Android SDK as a
-native build dependency. Existing Flutter, Dart, Git, Java, and Android Studio
-installations were reused rather than reinstalled.
-
-## Browser Preview
-
-The web target runs the same shared Flutter app without an Android emulator.
-For interactive development:
+For release-web preview, serve `build\web` locally; all resources stay local:
 
 ```powershell
-Set-Location C:\Projects\telugu_padakeli
-flutter run -d chrome
-```
-
-For a local release preview with the renderer and fonts served locally:
-
-```powershell
-flutter build web --no-pub --no-web-resources-cdn
 python -m http.server 52642 --bind 127.0.0.1 --directory build\web
 ```
 
-Open `http://127.0.0.1:52642`. Rebuild after Dart changes when using the release
-preview. Browser checks do not replace testing native keyboards, Android Back,
-or real Android/iOS device behavior.
+Windows cannot build/sign iOS or run VoiceOver. Android emulator results do not
+replace real-device/TalkBack testing. The development application identifiers
+and debug signing are not store-ready. Existing emulator native access-violation
+crashes remain an environment limitation, not a proven permanent app fix.
 
-## iOS on macOS
+## Code map
 
-Windows can edit the shared Dart code and generate the iOS project, but cannot
-run Xcode, the iOS simulator, or sign/build an iOS application.
-
-On a Mac with Xcode and the required Apple tooling:
-
-```sh
-flutter doctor
-flutter pub get
-flutter devices
-flutter run -d <ios-device-id>
-```
-
-Follow `flutter doctor` for any missing Apple dependencies. Configure the signing
-team and a unique bundle identifier in Xcode before publishing.
-
-## Code Map
-
-- `lib/main.dart`: app startup, license registration, and settings provider.
-- `lib/core/`: Material themes and in-memory settings.
-- `lib/screens/home_screen.dart`: responsive dashboard and accessible card actions.
-- `lib/screens/`: classic game, kids game, settings, and progress placeholder.
-- `lib/widgets/premium_telugu_text.dart`: wrapping, system-scaled Telugu text.
-- `assets/data/`: local sample crossword.
-- `assets/fonts/`: Noto Sans Telugu and Roboto at weights 400, 500, and 700, with
-  their original SIL OFL and Apache 2.0 licenses.
-- `test/`: navigation, scoring, real-font asset, and accessible text-scale tests.
-
-Cards have content-driven heights, large touch targets, and scroll when text
-grows. Telugu layout tests cover 320–1280 logical-pixel widths, light/dark themes,
-and up to 3.2x system scaling with the largest app font setting. Do not put
-`PremiumTeluguText` in a fixed-height or clipping parent.
-
-## Before Publishing
-
-The Android application ID and iOS bundle identifier currently use the
-development placeholder `com.example.telugu_padakeli`. Choose your own identifiers
-and configure production signing. The Android release template currently uses
-development signing and is not store-ready.
-
-Validate on real Android and iOS hardware, including large-text accessibility and
-screen readers. Replace and validate the sample puzzle content before release.
-No iOS build or App Store readiness is implied by generating the iOS folder.
-
-## Current game content
-
-Classic has two connected 3x3 samples. Each cell contains a complete Telugu
-akshara and belongs to a clue. Medium, Hard, and Expert Classic puzzles remain
-coming soon. Kids mode has 15 questions across five levels, a final score, and
-a restart action. Settings, scores, and puzzle progress remain in memory only.
+- `lib/core/learning_progress.dart`: versioned saved state, metrics and writes.
+- `lib/services/learning_store.dart`: production/test storage implementations.
+- `lib/core/kids_learning_controller.dart`: signature-aware Kids attempts/rewards.
+- `lib/services/daily_puzzle_service.dart`: deterministic, saved Daily choice.
+- `lib/screens/`: Home, Classic/Daily, Kids, Progress and Settings.
+- `lib/widgets/`: grid, footer, Telugu text, motion and character.
+- `assets/data/`: offline puzzles and editable review inventory.
+- `assets/artwork/`: original illustrations and required attribution.
+- `assets/fonts/`: locally bundled Noto Sans Telugu (SIL OFL) and Roboto (Apache 2).
+- `tool/`: content-review export, image preparation and existing icon tooling.

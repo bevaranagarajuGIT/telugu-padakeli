@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'learning_progress.dart';
 
 enum TeluguFontSize {
   normal,
@@ -29,6 +30,19 @@ enum TeluguFontSize {
 }
 
 class AppSettingsController extends ChangeNotifier {
+  AppSettingsController({this.progress}) {
+    final saved = progress?.settings ?? {};
+    _fontSize =
+        TeluguFontSize.values
+            .where((size) => size.name == saved['fontSize'])
+            .firstOrNull ??
+        TeluguFontSize.normal;
+    _darkMode = saved['darkMode'] == true;
+    _englishHelper = saved['englishHelper'] == true;
+    _soundEnabled = saved['soundEnabled'] == true;
+  }
+
+  final LearningProgress? progress;
   TeluguFontSize _fontSize = TeluguFontSize.normal;
   bool _darkMode = false;
   bool _englishHelper = false;
@@ -45,6 +59,7 @@ class AppSettingsController extends ChangeNotifier {
       return;
     }
     _fontSize = value;
+    progress?.setSetting('fontSize', value.name);
     notifyListeners();
   }
 
@@ -53,18 +68,21 @@ class AppSettingsController extends ChangeNotifier {
       return;
     }
     _darkMode = value;
+    progress?.setSetting('darkMode', value);
     notifyListeners();
   }
 
   void setEnglishHelper(bool value) {
     if (_englishHelper == value) return;
     _englishHelper = value;
+    progress?.setSetting('englishHelper', value);
     notifyListeners();
   }
 
   void setSoundEnabled(bool value) {
     if (_soundEnabled == value) return;
     _soundEnabled = value;
+    progress?.setSetting('soundEnabled', value);
     notifyListeners();
   }
 }

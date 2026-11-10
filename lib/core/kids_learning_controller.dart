@@ -2,13 +2,18 @@ import 'package:flutter/foundation.dart';
 
 import '../models/kids_learning.dart';
 import '../models/telugu_akshara.dart';
+import 'learning_progress.dart';
 
 enum KidsAnswerState { ready, incorrect, correct }
 
 class KidsActivitySession extends ChangeNotifier {
-  KidsActivitySession(this.activity, this.onCompleted);
+  KidsActivitySession(this.activity, this.onCompleted, {this.storage}) {
+    _restore(savedMap(storage?.sessions[activity.id]));
+  }
   final KidsLearningActivity activity;
   final VoidCallback onCompleted;
+  final LearningProgress? storage;
+  final _solved = <String, String>{};
   int _index = 0;
   int _score = 0;
   String? _choice;
@@ -27,6 +32,72 @@ class KidsActivitySession extends ChangeNotifier {
   bool get earnedStarOnCompletion => _earnedStarOnCompletion;
   bool get locked => _complete || _answerState == KidsAnswerState.correct;
   double get progress => _complete ? 1 : _score / activity.questions.length;
+
+  static bool hasSavedCompletion(
+    KidsLearningActivity activity,
+    Map<String, dynamic> saved,
+  ) {
+    final solved = savedMap(saved['solved']);
+    return saved['complete'] == true &&
+        activity.questions.every(
+          (item) => solved[item.id] == item.progressSignature,
+        );
+  }
+
+  void _restore(Map<String, dynamic> saved) {
+    final solved = savedMap(saved['solved']);
+    for (final item in activity.questions) {
+      if (solved[item.id] == item.progressSignature) {
+        _solved[item.id] = item.progressSignature;
+      }
+    }
+    _score = _solved.length;
+    final position = activity.questions.indexWhere(
+      (item) => item.id == saved['questionId'],
+    );
+    final firstUnsolved = activity.questions.indexWhere(
+      (item) => !_solved.containsKey(item.id),
+    );
+    _index = firstUnsolved >= 0 && position > firstUnsolved
+        ? firstUnsolved
+        : position >= 0
+        ? position
+        : firstUnsolved >= 0
+        ? firstUnsolved
+        : 0;
+    _complete = hasSavedCompletion(activity, saved);
+    if (saved['signature'] == question.progressSignature) {
+      final choice = saved['choice'];
+      if (choice is String &&
+          question.choices.any((item) => item.telugu == choice)) {
+        _choice = choice;
+      }
+      final tiles = saved['tiles'];
+      if (tiles is List &&
+          tiles.every(
+            (item) => item is int && item >= 0 && item < question.tiles.length,
+          ) &&
+          tiles.toSet().length == tiles.length) {
+        _tiles.addAll(tiles.cast<int>());
+      }
+      if (saved['answerState'] == KidsAnswerState.incorrect.name) {
+        _answerState = KidsAnswerState.incorrect;
+      }
+    }
+    if (_solved.containsKey(question.id)) {
+      _answerState = KidsAnswerState.correct;
+    }
+  }
+
+  Map<String, dynamic> snapshot() => {
+    'questionId': question.id,
+    'signature': question.progressSignature,
+    'solved': Map<String, String>.of(_solved),
+    'choice': _choice,
+    'tiles': List<int>.of(_tiles),
+    'answerState': _answerState.name,
+    'complete': _complete,
+  };
 
   void selectChoice(String value) {
     if (locked || !question.choices.any((choice) => choice.telugu == value)) {
@@ -83,7 +154,16 @@ class KidsActivitySession extends ChangeNotifier {
     _answerState = correct
         ? KidsAnswerState.correct
         : KidsAnswerState.incorrect;
-    if (correct) _score++;
+    if (input != null && (!building || _tiles.isNotEmpty)) {
+      storage?.recordAnswer(
+        'kids:${activity.id}:${question.id}:${question.progressSignature}',
+        correct,
+      );
+    }
+    if (correct) {
+      _solved[question.id] = question.progressSignature;
+      _score = _solved.length;
+    }
     notifyListeners();
     return correct;
   }
@@ -98,13 +178,16 @@ class KidsActivitySession extends ChangeNotifier {
       _index++;
       _choice = null;
       _tiles.clear();
-      _answerState = KidsAnswerState.ready;
+      _answerState = _solved.containsKey(question.id)
+          ? KidsAnswerState.correct
+          : KidsAnswerState.ready;
     }
     notifyListeners();
   }
 
   void restart() {
     _index = 0;
+    _solved.clear();
     _score = 0;
     _choice = null;
     _tiles.clear();
@@ -116,17 +199,27 @@ class KidsActivitySession extends ChangeNotifier {
 }
 
 class KidsLearningController extends ChangeNotifier {
+  KidsLearningController({this.storage}) {
+    _category =
+        LearningCategory.values
+            .where((category) => category.name == storage?.category)
+            .firstOrNull ??
+        LearningCategory.early;
+    _completed.addAll(storage?.completedActivities ?? {});
+  }
+  final LearningProgress? storage;
   LearningCategory _category = LearningCategory.early;
   final _sessions = <String, KidsActivitySession>{};
   final _completed = <String>{};
 
   LearningCategory get category => _category;
-  int get stars => _completed.length;
+  int get stars => storage?.stars ?? _completed.length;
   bool completed(String id) => _completed.contains(id);
 
   void selectCategory(LearningCategory value) {
     if (_category == value) return;
     _category = value;
+    storage?.selectCategory(value.name);
     notifyListeners();
   }
 
@@ -134,8 +227,14 @@ class KidsLearningController extends ChangeNotifier {
       _sessions.putIfAbsent(activity.id, () {
         late final KidsActivitySession session;
         session = KidsActivitySession(activity, () {
-          session._earnedStarOnCompletion = _completed.add(activity.id);
+          final fresh = _completed.add(activity.id);
+          session._earnedStarOnCompletion =
+              storage?.completeActivity(activity.id) ?? fresh;
           if (session.earnedStarOnCompletion) notifyListeners();
+        }, storage: storage);
+        session.addListener(() {
+          storage?.saveSession(activity.id, session.snapshot());
+          notifyListeners();
         });
         return session;
       });

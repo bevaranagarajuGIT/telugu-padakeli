@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../app/theme/app_colors.dart';
 import '../core/kids_learning_controller.dart';
+import '../core/learning_progress.dart';
 import '../models/kids_learning.dart';
 import '../services/kids_learning_service.dart';
 import '../services/engagement_audio_manager.dart';
@@ -13,15 +14,20 @@ import 'kids_game_screen.dart';
 import 'settings_screen.dart';
 
 class KidsLearningScreen extends StatefulWidget {
-  const KidsLearningScreen({required this.onBack, super.key});
+  const KidsLearningScreen({
+    required this.onBack,
+    this.resumeRequest = 0,
+    super.key,
+  });
   final VoidCallback onBack;
+  final int resumeRequest;
 
   @override
   State<KidsLearningScreen> createState() => _KidsLearningScreenState();
 }
 
 class _KidsLearningScreenState extends State<KidsLearningScreen> {
-  final _learning = KidsLearningController();
+  late final KidsLearningController _learning;
   List<KidsLearningActivity>? _activities;
   String? _error;
   bool _legacyOpen = false;
@@ -30,7 +36,37 @@ class _KidsLearningScreenState extends State<KidsLearningScreen> {
   @override
   void initState() {
     super.initState();
+    _learning = KidsLearningController(
+      storage: context.read<LearningProgress?>(),
+    );
     _load();
+    if (widget.resumeRequest > 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _resume());
+    }
+  }
+
+  @override
+  void didUpdateWidget(KidsLearningScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.resumeRequest != oldWidget.resumeRequest) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _resume());
+    }
+  }
+
+  void _resume() {
+    if (!mounted) return;
+    final saved = context.read<LearningProgress?>();
+    if (saved?.lastDestination == 'practice') {
+      _showLegacy(true);
+    } else {
+      final activity = _activities
+          ?.where((item) => item.id == saved?.lastActivity)
+          .firstOrNull;
+      if (activity != null) {
+        _learning.selectCategory(activity.categories.first);
+        _open(activity);
+      }
+    }
   }
 
   void _load() {
@@ -155,7 +191,7 @@ class _KidsLearningScreenState extends State<KidsLearningScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
                         color: AppColors.purple,
                         borderRadius: BorderRadius.circular(28),
@@ -166,12 +202,12 @@ class _KidsLearningScreenState extends State<KidsLearningScreen> {
                           KidsLearningText(
                             'తెలుగు నేర్చుకుందాం — ఆడుతూ, ఆనందంగా!',
                             english: 'Learn Telugu through play!',
-                            style: theme.textTheme.headlineSmall?.copyWith(
+                            style: theme.textTheme.titleLarge?.copyWith(
                               color: Colors.white,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 8),
                           Wrap(
                             spacing: 16,
                             runSpacing: 12,
@@ -179,14 +215,13 @@ class _KidsLearningScreenState extends State<KidsLearningScreen> {
                             children: [
                               Image.asset(
                                 HomeArtwork.welcome,
-                                width: 92,
-                                height: 110,
+                                width: 52,
+                                height: 56,
                                 excludeFromSemantics: true,
                                 cacheWidth: 276,
                               ),
                               Semantics(
-                                label:
-                                    'ఈ సెషన్‌లో ${_learning.stars} నక్షత్రాలు',
+                                label: 'మొత్తం ${_learning.stars} నక్షత్రాలు',
                                 child: ExcludeSemantics(
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
@@ -211,8 +246,7 @@ class _KidsLearningScreenState extends State<KidsLearningScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'ఒక ఆట పూర్తి చేస్తే ఒక నక్షత్రం. '
-                            'ఈ యాప్ సెషన్‌లో మాత్రమే.',
+                            'ఒక్కో ఆటకు ఒక నక్షత్రం. మీ పురోగతి ఈ పరికరంలో ఉంటుంది.',
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: Colors.white,
                             ),
@@ -307,62 +341,66 @@ class _KidsLearningScreenState extends State<KidsLearningScreen> {
       KidsActivityType.builder => HomeArtwork.classic,
       KidsActivityType.meaning => HomeArtwork.progress,
     };
-    final previous = _learning.existingSession(activity.id);
+    final previous = _learning.sessionFor(activity);
     return Card(
       margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        key: ValueKey('kids-activity-${activity.id}'),
-        onTap: () => _open(activity),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Image.asset(
-                image,
-                width: 64,
-                height: 76,
-                excludeFromSemantics: true,
-                cacheWidth: 192,
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    KidsLearningText(
-                      'రౌండ్ $round',
-                      english: 'Round $round',
-                      style: Theme.of(context).textTheme.labelLarge,
-                    ),
-                    const SizedBox(height: 4),
-                    KidsLearningText.control(
-                      activity.title,
-                      english: activity.englishTitle,
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '${previous?.score ?? 0} / ${activity.questions.length} ప్రశ్నలు',
-                    ),
-                    const SizedBox(height: 6),
-                    LinearProgressIndicator(
-                      value: previous?.progress ?? 0,
-                      color: color,
-                      backgroundColor: scheme.surfaceContainerHighest,
-                      semanticsLabel: '${activity.title} పురోగతి',
-                    ),
-                  ],
+      child: Semantics(
+        button: true,
+        child: InkWell(
+          key: ValueKey('kids-activity-${activity.id}'),
+          onTap: () => _open(activity),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Image.asset(
+                  image,
+                  width: 64,
+                  height: 76,
+                  excludeFromSemantics: true,
+                  cacheWidth: 192,
                 ),
-              ),
-              const SizedBox(width: 8),
-              Icon(
-                _learning.completed(activity.id)
-                    ? Icons.star_rounded
-                    : Icons.chevron_right_rounded,
-                color: scheme.onSurface,
-              ),
-            ],
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      KidsLearningText(
+                        'రౌండ్ $round',
+                        english: 'Round $round',
+                        style: Theme.of(context).textTheme.labelLarge,
+                      ),
+                      const SizedBox(height: 4),
+                      KidsLearningText.control(
+                        activity.title,
+                        english: activity.englishTitle,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '${previous.score} / ${activity.questions.length} ప్రశ్నలు',
+                      ),
+                      const SizedBox(height: 6),
+                      ExcludeSemantics(
+                        child: LinearProgressIndicator(
+                          value: previous.progress,
+                          color: color,
+                          backgroundColor: scheme.surfaceContainerHighest,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                  _learning.completed(activity.id)
+                      ? Icons.star_rounded
+                      : Icons.chevron_right_rounded,
+                  color: scheme.onSurface,
+                ),
+              ],
+            ),
           ),
         ),
       ),

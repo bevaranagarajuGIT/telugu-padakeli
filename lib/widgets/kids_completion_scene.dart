@@ -11,6 +11,7 @@ class KidsCompletionScene extends StatelessWidget {
     this.earnedStar = false,
     this.totalStars,
     this.character,
+    this.sceneHeight,
     super.key,
   }) : assert(totalStars == null || totalStars >= 0);
 
@@ -18,6 +19,7 @@ class KidsCompletionScene extends StatelessWidget {
   final bool earnedStar;
   final int? totalStars;
   final Widget? character;
+  final double? sceneHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +39,7 @@ class KidsCompletionScene extends StatelessWidget {
           builder: (context, motion) => RepaintBoundary(
             child: SizedBox(
               height:
-                  (character == null ? 236.0 : 264.0) +
+                  (sceneHeight ?? (character == null ? 236.0 : 264.0)) +
                   math.max(0.0, counterHeight - 48),
               child: LayoutBuilder(
                 builder: (context, constraints) {
@@ -90,7 +92,7 @@ class KidsCompletionScene extends StatelessWidget {
                               child: Semantics(
                                 label: totalStars == null
                                     ? 'కొత్త నక్షత్రం: 1'
-                                    : 'ఈ సెషన్‌లో $totalStars నక్షత్రాలు',
+                                    : 'సంపాదించిన నక్షత్రాలు: $totalStars',
                                 child: ExcludeSemantics(
                                   child: Container(
                                     key: const ValueKey(

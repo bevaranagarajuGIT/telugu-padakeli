@@ -19,6 +19,7 @@ class SpecialAchievementCelebration extends StatefulWidget {
     this.character,
     this.characterDescription,
     this.onSkip,
+    this.sceneHeight,
     super.key,
   }) : assert(
          character == null ||
@@ -32,6 +33,7 @@ class SpecialAchievementCelebration extends StatefulWidget {
   final Widget? character;
   final String? characterDescription;
   final VoidCallback? onSkip;
+  final double? sceneHeight;
 
   @override
   State<SpecialAchievementCelebration> createState() =>
@@ -66,13 +68,14 @@ class _SpecialAchievementCelebrationState
             earnedStar: widget.earnedStar,
             totalStars: widget.totalStars,
             character: BalHanumanCharacter(progress: motion),
+            sceneHeight: widget.sceneHeight,
           )
         : Column(
             children: [
               if (widget.totalStars != null)
                 KidsLearningText(
-                  'ఈ సెషన్‌లో ${widget.totalStars} నక్షత్రాలు',
-                  english: '${widget.totalStars} stars this session',
+                  'సంపాదించిన నక్షత్రాలు: ${widget.totalStars}',
+                  english: '${widget.totalStars} earned stars',
                   center: true,
                 ),
               SizedBox(

@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:image/image.dart' as image;
 import 'package:telugu_padakeli/core/app_settings_controller.dart';
 import 'package:telugu_padakeli/data/puzzle_data_source.dart';
 import 'package:telugu_padakeli/screens/kids_game_screen.dart';
 import 'package:telugu_padakeli/screens/padakeli_screen.dart';
 import 'package:telugu_padakeli/services/kids_question_service.dart';
+import 'package:telugu_padakeli/services/kids_learning_service.dart';
 import 'package:telugu_padakeli/services/local_puzzle_repository.dart';
 import 'package:telugu_padakeli/models/telugu_akshara.dart';
 import 'package:telugu_padakeli/models/kids_question.dart';
@@ -31,6 +33,104 @@ class _RetrySource implements PuzzleDataSource {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  test(
+    'editable content inventory covers the authored pack without claiming human review',
+    () async {
+      final inventory =
+          jsonDecode(
+                await rootBundle.loadString('assets/data/content_review.json'),
+              )
+              as Map<String, dynamic>;
+      final rows = (inventory['items'] as List).cast<Map<String, dynamic>>();
+      final indexed = {for (final row in rows) row['id']: row};
+      var expected = 0;
+      for (final activity in const KidsLearningService().getActivities()) {
+        for (final question in activity.questions) {
+          final row = indexed['kids:${activity.id}:${question.id}']!;
+          expect(row['prompt'], question.prompt);
+          expect(row['answer'], question.answer);
+          expect(row['picture'], question.imageAsset);
+          expect(row['pictureDescription'], question.imageDescription);
+          expect(row['audio'], isNull);
+          expect(
+            row['englishHelper']['explanation'],
+            question.englishExplanation,
+          );
+          expected++;
+        }
+      }
+      for (final level in const KidsQuestionService().getLevels()) {
+        for (final question in level.questions) {
+          final row = indexed['practice:${level.name}:${question.prompt}']!;
+          expect(row['answer'], question.answer);
+          expect(row['recordingScript'], question.completedWord);
+          expect(row['englishHelper'], question.englishHint);
+          expected++;
+        }
+      }
+      for (final puzzle in await const LocalPuzzleRepository().getPuzzles()) {
+        for (final (direction, clues) in [
+          ('across', puzzle.acrossClues),
+          ('down', puzzle.downClues),
+        ]) {
+          for (final clue in clues) {
+            final row =
+                indexed['classic:${puzzle.id}:$direction:${clue.number}']!;
+            expect(row['prompt'], clue.clue);
+            expect(row['answer'], clue.answer);
+            expect(row['explanation'], clue.hint);
+            expected++;
+          }
+        }
+      }
+      expect(rows.length, expected);
+      expect(indexed.length, expected);
+      expect(
+        rows.every((row) => row['reviewStatus'] == 'pending-human-review'),
+        isTrue,
+      );
+      expect(inventory['repeatedVocabulary'], isNotEmpty);
+    },
+  );
+
+  test(
+    'original vocabulary art has consistent dimensions and transparent safe margins',
+    () async {
+      for (final name in [
+        'mango',
+        'parrot',
+        'book',
+        'banana',
+        'lotus',
+        'cat',
+        'fish',
+        'pencil',
+        'elephant',
+      ]) {
+        final data = await rootBundle.load('assets/artwork/kids/$name.png');
+        final decoded = image.decodePng(
+          data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
+        )!;
+        expect((decoded.width, decoded.height), (512, 512), reason: name);
+        var painted = 0;
+        for (final pixel in decoded) {
+          if (pixel.a == 0) continue;
+          painted++;
+          expect(
+            pixel.x >= 36 && pixel.y >= 36 && pixel.x < 476 && pixel.y < 476,
+            isTrue,
+            reason: '$name safe margin',
+          );
+        }
+        expect(
+          painted,
+          greaterThan(10000),
+          reason: '$name identifiable object',
+        );
+      }
+    },
+  );
 
   test(
     'all bundled puzzles validate and every answer matches its cells',

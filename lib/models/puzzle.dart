@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'telugu_akshara.dart';
 
 enum PuzzleDirection { across, down }
@@ -20,6 +21,25 @@ class Puzzle {
   final List<List<String>> rows;
   final List<PuzzleClue> acrossClues;
   final List<PuzzleClue> downClues;
+
+  String get progressSignature => jsonEncode([
+    id,
+    level,
+    rows,
+    for (final clues in [acrossClues, downClues])
+      clues
+          .map(
+            (clue) => [
+              clue.number,
+              clue.row,
+              clue.column,
+              clue.answer,
+              clue.clue,
+              clue.hint,
+            ],
+          )
+          .toList(),
+  ]);
 
   factory Puzzle.fromJson(Map<String, dynamic> json) {
     final clues = json['clues'] as Map<String, dynamic>;

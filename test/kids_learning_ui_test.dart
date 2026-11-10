@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:telugu_padakeli/app/theme/app_colors.dart';
@@ -73,6 +74,25 @@ void main() {
       }
       await loader.load();
     }
+  });
+
+  testWidgets('activity cards expose button actions, not progress-bar roles', (
+    tester,
+  ) async {
+    final settings = AppSettingsController();
+    addTearDown(settings.dispose);
+    final semantics = tester.ensureSemantics();
+    await tester.pumpWidget(_host(KidsLearningScreen(onBack: () {}), settings));
+    await tester.pumpAndSettle();
+    final activity = find.byKey(const ValueKey('kids-activity-pictures'));
+    await Scrollable.ensureVisible(tester.element(activity));
+    await tester.pumpAndSettle();
+    final data = tester.getSemantics(activity).getSemanticsData();
+    expect(data.flagsCollection.isButton, isTrue);
+    expect(data.hasAction(SemanticsAction.tap), isTrue);
+    expect(data.label, contains('0 / 5'));
+    semantics.dispose();
+    await tester.pumpWidget(const SizedBox.shrink());
   });
 
   testWidgets(
@@ -319,7 +339,7 @@ void main() {
         );
         await _tap(tester, find.byKey(const ValueKey('learning-next')));
       }
-      expect(find.text('అద్భుతం! ఆట పూర్తయింది.'), findsOneWidget);
+      expect(find.text('ఆట పూర్తయింది!'), findsOneWidget);
       await _tap(tester, find.byKey(const ValueKey('learning-restart')));
       expect(find.text('ప్రశ్న 1 / 5'), findsOneWidget);
       await _tap(tester, find.byTooltip('ఆటలకు వెళ్లు / Return to activities'));

@@ -1,17 +1,21 @@
 # Home artwork
 
-## Phase C educational crop
+## Current vocabulary artwork
 
-`kids/mango.png` is an 88x126 lossless crop of the approved original
-`home/learn.png`, using Pillow's `(70, 74, 158, 200)` pixel rectangle. It isolates
-the mango illustration for picture matching instead of asking a child to identify
-one object from a mixed mango/lotus scene. The approved source PNG is unchanged.
-The other playable picture is the existing `home/parrot-welcome.png`.
-Both are bundled offline with Telugu image descriptions; neither is a new
-third-party download or a placeholder. The source artwork's generation/service
-terms and distribution-review limits below also apply to this derived crop.
-More fruits, animals and everyday objects require original or licensed,
-human-reviewed illustrations before expanding the picture activity.
+The old 88x126 mango crop of a learning card has been replaced. The user's
+approved 2026-11-10 original nine-object generation supplies mango, parrot, book,
+banana, lotus, cat, fish, pencil and elephant. Equal sheet cells are fitted into
+512x512 RGBA canvases with consistent safe margins using the existing Dart image
+dependency and `tool/prepare_learning_artwork.dart`. Objects are not stretched or
+tightly cropped. Disconnected neighboring-object fragments are removed before
+scaling, preserving the main object's connected silhouette. Mango/parrot are used in picture questions; seven reserved
+objects do not inflate question or reviewed-vocabulary counts.
+
+`kids/ATTRIBUTION.txt` records the source ID, transformation, use, missing audio
+and unresolved human art/rights review. It is bundled in the application's
+licenses. These are original supporting illustrations, not third-party stock,
+commercially cleared final artwork or a replacement for the existing articulated
+Flutter Hanuman. Existing home and opening artwork remains unchanged.
 
 ## App icon
 
@@ -138,7 +142,7 @@ by the user, before a commercial release or new parrot derivatives.
 | Material | Verified fact | Release status |
 | --- | --- | --- |
 | All seven `home/` PNGs, including both parrots | Recorded original tool IDs and briefs | Generation/service and third-party rights pending |
-| `kids/mango.png` | Documented crop of `home/learn.png` | Inherits unresolved source rights |
+| Nine `kids/` vocabulary PNGs | User-approved original generation, consistently padded on 2026-11-10 | Human art/rights review pending; see bundled notice |
 | Both `opening/` WebPs | Source photograph's CC BY-SA 4.0 permission verified | Generated-adaptation rights and authenticity pending |
 | New Phase C+ effects | Flutter code draws circles/rectangles and animates Material icons; no image/audio inputs | No new external asset license required; not an artwork-clearance claim |
 | Audio | No recordings, music, voices or audio files added | Silent; future audio needs provenance and approval |

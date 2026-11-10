@@ -1,0 +1,31 @@
+Telugu Padakeli vocabulary illustrations — original generated artwork
+
+Created on 2026-11-10 with the image-generation tool after explicit user approval.
+Source asset ID:
+sha256:42126f19e9868e0908380e6fab8336740950be539635fcc5d482721a5a691aa0
+
+An original 3-by-3 vocabulary sheet: mango, parrot, book, banana, lotus, cat,
+fish, pencil, elephant. No competitor screenshot or stock image was used.
+The source sheet is retained as a session artifact, not a runtime dependency.
+tool/prepare_learning_artwork.dart extracts equal cells without trimming any
+identifying details, removes disconnected neighboring-object fragments, scales
+proportionally, and adds consistent empty margins.
+PNG files are 512 square; Flutter displays them with BoxFit.contain.
+Mango and parrot are currently used in picture questions; the other seven
+are reserved artwork and do not imply additional reviewed learning content.
+
+The new mango replaces the earlier UI-card crop, not the Tirumala/family art.
+Existing opening/home illustration attribution remains applicable separately.
+The Hanuman celebration is still the existing original articulated Flutter
+vector character; these assets are supporting vocabulary, not a replacement.
+
+Limitations: generated pixels can have small edge artifacts. Object/answer
+matching has been visually inspected, but Telugu educator, cultural, anatomical,
+final art-direction and distribution-rights review are still required.
+No claim of copyright exclusivity or blanket commercial clearance is made.
+No Telugu lettering is baked into the images. Descriptions remain Flutter text.
+
+Audio: no reviewed pronunciation recordings or approved reward sounds are
+bundled. content_review.json contains the recording script and null audio
+reference for each exercise. Do not enable a player until files, speaker consent,
+license, pronunciation and audio levels are reviewed.

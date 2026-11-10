@@ -1,6 +1,5 @@
 import '../models/kids_learning.dart';
 import '../models/telugu_akshara.dart';
-import '../shared/widgets/home_artwork.dart';
 import 'kids_question_service.dart';
 
 class KidsLearningService {
@@ -113,7 +112,7 @@ class KidsLearningService {
             prompt: 'ఇది ఏమిటి?',
             englishPrompt: 'What is this?',
             answer: 'చిలుక',
-            imageAsset: HomeArtwork.welcome,
+            imageAsset: 'assets/artwork/kids/parrot.png',
             imageDescription: 'పచ్చని చిలుక బొమ్మ',
             choices: [
               KidsChoice('కాకి', 'Crow'),
@@ -143,7 +142,7 @@ class KidsLearningService {
             prompt: 'ఈ చిలుక దేనికి ఉదాహరణ?',
             englishPrompt: 'What kind of animal is this parrot?',
             answer: 'పక్షి',
-            imageAsset: HomeArtwork.welcome,
+            imageAsset: 'assets/artwork/kids/parrot.png',
             imageDescription: 'పచ్చని చిలుక బొమ్మ',
             choices: [
               KidsChoice('చేప', 'Fish'),

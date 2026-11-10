@@ -2,12 +2,15 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 
 import '../app/theme/app_colors.dart';
+import '../core/learning_progress.dart';
 import '../models/puzzle.dart';
 import '../models/telugu_akshara.dart';
 import '../services/local_puzzle_repository.dart';
 import '../services/puzzle_repository.dart';
+import '../services/daily_puzzle_service.dart';
 import '../widgets/app_page.dart';
 import '../widgets/crossword_grid.dart';
 import '../widgets/classic_hints_sheet.dart';
@@ -19,17 +22,24 @@ class PadakeliScreen extends StatefulWidget {
   const PadakeliScreen({
     this.repository = const LocalPuzzleRepository(),
     this.onBack,
+    this.dailyDate,
     super.key,
   });
 
   final PuzzleRepository repository;
   final VoidCallback? onBack;
+  final String? dailyDate;
 
   @override
   State<PadakeliScreen> createState() => _PadakeliScreenState();
 }
 
-class _PadakeliScreenState extends State<PadakeliScreen> {
+class _PadakeliScreenState extends State<PadakeliScreen>
+    with WidgetsBindingObserver {
+  LearningProgress? _storage;
+  Timer? _calendarTimer;
+  String get _slot =>
+      widget.dailyDate == null ? 'classic' : 'daily:${widget.dailyDate}';
   String? _loadError;
   List<Puzzle>? _puzzles;
   Puzzle? _puzzle;
@@ -82,7 +92,42 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
   @override
   void initState() {
     super.initState();
+    _storage = context.read<LearningProgress?>();
+    WidgetsBinding.instance.addObserver(this);
+    if (widget.dailyDate != null) {
+      _calendarTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+        if (mounted) setState(() {});
+      });
+    }
     _loadPuzzles();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _persist();
+    if (state != AppLifecycleState.resumed) {
+      unawaited(_storage?.flush());
+    } else if (mounted && widget.dailyDate != null) {
+      setState(() {});
+    }
+  }
+
+  void _persist() {
+    final puzzle = _puzzle;
+    if (puzzle == null || _storage == null) return;
+    _storage!.saveBoard(_slot, {
+      'id': puzzle.id,
+      'signature': puzzle.progressSignature,
+      'cells': [
+        for (final row in _controllers)
+          for (final controller in row) controller.text,
+      ],
+      'direction': _selectedDirection.name,
+      'clue': _selectedClue?.number,
+      'cell': _selectedCellIndex,
+      'hints': _hintCount,
+      'complete': _isComplete,
+    }, active: TickerMode.valuesOf(context).enabled);
   }
 
   Future<void> _loadPuzzles() async {
@@ -97,7 +142,24 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
       }
       if (!mounted) return;
       setState(() => _puzzles = puzzles);
-    } catch (_) {
+      final saved = _storage?.board(_slot) ?? <String, dynamic>{};
+      if (widget.dailyDate != null && _storage != null) {
+        _openPuzzle(
+          const DailyPuzzleService().choose(
+            puzzles,
+            widget.dailyDate!,
+            _storage!,
+          ),
+          saved: saved,
+        );
+      } else {
+        final previous = puzzles
+            .where((puzzle) => puzzle.id == saved['id'])
+            .firstOrNull;
+        if (previous != null) _openPuzzle(previous, saved: saved);
+      }
+    } catch (error, stack) {
+      debugPrint('Local crossword loading failed: $error\n$stack');
       if (!mounted) return;
       setState(
         () => _loadError = 'పదకేళిని లోడ్ చేయలేకపోయాము. మళ్ళీ ప్రయత్నించండి.',
@@ -115,7 +177,7 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
     _openPuzzle(puzzle);
   }
 
-  void _openPuzzle(Puzzle puzzle) {
+  void _openPuzzle(Puzzle puzzle, {Map<String, dynamic> saved = const {}}) {
     _advanceTimer?.cancel();
     if (_puzzle != null) {
       _disposeControllers();
@@ -140,7 +202,74 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
       _selectedCellIndex = _selectedClue == null
           ? null
           : _selectedClue!.row * puzzle.gridSize + _selectedClue!.column;
+      if (saved.isNotEmpty && saved['signature'] != puzzle.progressSignature) {
+        _message =
+            'Saved content changed. This board starts fresh; other progress is kept.';
+      } else if (saved.isNotEmpty) {
+        final cells = saved['cells'];
+        if (cells is List &&
+            cells.length == puzzle.gridSize * puzzle.gridSize) {
+          for (var index = 0; index < cells.length; index++) {
+            final value = cells[index];
+            if (value is String &&
+                value.isNotEmpty &&
+                !puzzle.isBlocked(
+                  index ~/ puzzle.gridSize,
+                  index % puzzle.gridSize,
+                )) {
+              try {
+                if (TeluguAkshara.split(value).length == 1) {
+                  _controllers[index ~/ puzzle.gridSize][index %
+                              puzzle.gridSize]
+                          .text =
+                      value;
+                }
+              } on FormatException {
+                _message =
+                    'An unreadable saved cell was cleared. Other answers are kept.';
+              }
+            }
+          }
+        }
+        _selectedDirection = saved['direction'] == 'down'
+            ? PuzzleDirection.down
+            : PuzzleDirection.across;
+        _selectedClue =
+            _cluesFor(
+              puzzle,
+              _selectedDirection,
+            ).where((clue) => clue.number == saved['clue']).firstOrNull ??
+            _cluesFor(puzzle, _selectedDirection).firstOrNull;
+        final cell = saved['cell'];
+        if (cell is int &&
+            cell >= 0 &&
+            cell < puzzle.gridSize * puzzle.gridSize &&
+            !puzzle.isBlocked(
+              cell ~/ puzzle.gridSize,
+              cell % puzzle.gridSize,
+            )) {
+          _selectedCellIndex = cell;
+        }
+        final hints = saved['hints'];
+        _hintCount = hints is int && hints >= 0 ? hints : 0;
+        _isComplete =
+            saved['complete'] == true &&
+            List.generate(puzzle.gridSize * puzzle.gridSize, (index) => index)
+                .where(
+                  (index) => !puzzle.isBlocked(
+                    index ~/ puzzle.gridSize,
+                    index % puzzle.gridSize,
+                  ),
+                )
+                .every(_isCorrectCell);
+      }
     });
+    for (final row in _controllers) {
+      for (final controller in row) {
+        controller.addListener(_persist);
+      }
+    }
+    _persist();
     if (_scrollController.hasClients) _scrollController.jumpTo(0);
   }
 
@@ -180,6 +309,7 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
       _selectedCellIndex = clue.row * puzzle.gridSize + clue.column;
       _message = null;
     });
+    _persist();
   }
 
   void _changeDirection(PuzzleDirection direction) {
@@ -209,6 +339,7 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
           : clue.row * puzzle.gridSize + clue.column;
       _message = null;
     });
+    _persist();
   }
 
   void _selectCell(int index) {
@@ -233,6 +364,7 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
         _selectedCellIndex = index;
         _message = null;
       });
+      _persist();
       return;
     }
 
@@ -251,6 +383,7 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
             _selectedCellIndex = index;
             _message = null;
           });
+          _persist();
           return;
         }
       }
@@ -260,6 +393,7 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
       _selectedClue = null;
       _message = null;
     });
+    _persist();
   }
 
   void _enterAkshara(String akshara) {
@@ -284,6 +418,7 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
         _selectedCellIndex = path[pathPosition + 1];
       }
     });
+    _persist();
   }
 
   void _revealFirstAkshara() {
@@ -309,6 +444,7 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
       _message = 'ఒక అక్షరం చూపించబడింది.';
       _wasCorrect = null;
     });
+    _persist();
   }
 
   void _revealOneAkshara() {
@@ -366,6 +502,7 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
                   _message = clue.hint;
                   _wasCorrect = null;
                 });
+                _persist();
               },
       ),
     );
@@ -373,6 +510,8 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _calendarTimer?.cancel();
     _advanceTimer?.cancel();
     _scrollController.dispose();
     if (_puzzle != null) {
@@ -415,8 +554,10 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
           : 'ఇంకొంచెం ప్రయత్నించండి.';
     });
     if (isCorrect) {
+      _storage?.completePuzzle('${puzzle.id}', dailyDate: widget.dailyDate);
       _scheduleAdvance(puzzle);
     }
+    _persist();
   }
 
   void _scheduleAdvance(Puzzle puzzle) {
@@ -424,13 +565,14 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
     _advanceTimer = Timer(const Duration(milliseconds: 1100), () {
       if (!mounted || !identical(puzzle, _puzzle) || !_isAdvancing) return;
       final nextIndex = _puzzleNumber;
-      if (nextIndex < _levelPuzzles.length) {
+      if (widget.dailyDate == null && nextIndex < _levelPuzzles.length) {
         _openPuzzle(_levelPuzzles[nextIndex]);
       } else {
         setState(() {
           _isComplete = true;
           _isAdvancing = false;
         });
+        _persist();
         if (_scrollController.hasClients) _scrollController.jumpTo(0);
       }
     });
@@ -456,6 +598,7 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
       _message = null;
       _wasCorrect = null;
     });
+    _persist();
   }
 
   void _resetWord() {
@@ -470,6 +613,7 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
       _message = null;
       _wasCorrect = null;
     });
+    _persist();
   }
 
   Future<void> _confirmReset() async {
@@ -529,6 +673,7 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
       _hintCount = 0;
       _selectedCellIndex = _selectedCells.firstOrNull;
     });
+    _persist();
   }
 
   @override
@@ -579,8 +724,12 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
         systemOverlayStyle: SystemUiOverlayStyle.light,
         toolbarHeight: (titleSize * 1.8 + 16).clamp(64, double.infinity),
         leading: IconButton(
-          tooltip: 'Change difficulty',
-          onPressed: _showDifficulties,
+          tooltip: widget.dailyDate == null
+              ? 'Change difficulty'
+              : 'Back to Home',
+          onPressed: widget.dailyDate == null
+              ? _showDifficulties
+              : () => Navigator.maybePop(context),
           icon: const Icon(Icons.arrow_back_rounded),
         ),
         title: Text(
@@ -629,11 +778,30 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 720),
-                child: _isComplete
-                    ? _completion()
-                    : puzzle == null
-                    ? const CircularProgressIndicator()
-                    : _gameContent(puzzle),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (widget.dailyDate != null) ...[
+                      Text(
+                        'నేటి పదకేళి / Daily · ${widget.dailyDate}\n'
+                        '${_storage?.daily(widget.dailyDate!)['repeat'] == true ? 'Practice repeat · ' : ''}'
+                        'Rotating ${_puzzles!.length}-puzzle offline pack; repeats are possible.',
+                        key: const ValueKey('daily-puzzle-label'),
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                      if (_storage?.today != widget.dailyDate)
+                        const Text(
+                          'This is a saved past date. Return Home for today’s puzzle; your answers are kept.',
+                        ),
+                      const SizedBox(height: 12),
+                    ],
+                    _isComplete
+                        ? _completion()
+                        : puzzle == null
+                        ? const CircularProgressIndicator()
+                        : _gameContent(puzzle),
+                  ],
+                ),
               ),
             ),
           ),
@@ -998,6 +1166,34 @@ class _PadakeliScreenState extends State<PadakeliScreen> {
 
   Widget _completion() {
     final theme = Theme.of(context);
+    if (widget.dailyDate != null) {
+      return Column(
+        key: const ValueKey('daily-puzzle-complete'),
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Icon(Icons.verified_rounded, color: AppColors.teal, size: 64),
+          const SizedBox(height: 12),
+          Text(
+            'నేటి పదకేళి పూర్తయింది! / Daily completed',
+            style: theme.textTheme.headlineSmall,
+          ),
+          Text(
+            '${widget.dailyDate} · One daily completion reward per saved date. '
+            'Replaying never awards another daily star.',
+          ),
+          const SizedBox(height: 16),
+          FilledButton(
+            onPressed: () => Navigator.maybePop(context),
+            child: _controlLabel('హోమ్‌కు వెళ్లు', 'Back to Home'),
+          ),
+          OutlinedButton(
+            key: const ValueKey('daily-replay'),
+            onPressed: () => _openPuzzle(_puzzle!),
+            child: _controlLabel('మళ్లీ ఆడు', 'Practice again'),
+          ),
+        ],
+      );
+    }
     final availableLevels = _puzzles!.map((puzzle) => puzzle.level).toSet();
     final nextLevel = Puzzle.levels
         .skip(Puzzle.levels.indexOf(_selectedLevel!) + 1)

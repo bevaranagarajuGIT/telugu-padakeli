@@ -163,13 +163,13 @@ void main() {
           } else {
             expect(tester.getSize(title).height, greaterThan(normalHeight));
             expect(learn.top, greaterThanOrEqualTo(classic.bottom));
-            expect(classic.width, 350);
+            expect(classic.width, 358);
           }
           expect(
             find.byType(HomeScenery),
             preset == TeluguFontSize.extraLarge ? findsNothing : findsOneWidget,
           );
-          await tester.ensureVisible(find.text('Continue Playing'));
+          await tester.ensureVisible(find.text('My Progress'));
           await tester.pumpAndSettle();
           expect(tester.takeException(), isNull);
         }
