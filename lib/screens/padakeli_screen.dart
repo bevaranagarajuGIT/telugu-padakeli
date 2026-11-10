@@ -15,6 +15,7 @@ import '../widgets/app_page.dart';
 import '../widgets/crossword_grid.dart';
 import '../widgets/classic_hints_sheet.dart';
 import '../widgets/difficulty_selection.dart';
+import '../widgets/engagement_motion.dart';
 import '../widgets/kids_learning_text.dart';
 import '../widgets/premium_telugu_text.dart';
 
@@ -935,53 +936,7 @@ class _PadakeliScreenState extends State<PadakeliScreen>
           enabled: !_isAdvancing,
         ),
         const SizedBox(height: 4),
-        Material(
-          key: const ValueKey('classic-edit-toolbar'),
-          color: scheme.surfaceContainerLow,
-          clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: scheme.outlineVariant),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(2),
-            child: Wrap(
-              alignment: WrapAlignment.center,
-              spacing: 4,
-              runSpacing: 4,
-              children: [
-                for (final (key, label, english, action) in [
-                  (
-                    'classic-clear-cell',
-                    'అక్షరం తీసేయి',
-                    'Clear letter',
-                    () => _clearCell(),
-                  ),
-                  (
-                    'classic-backspace',
-                    'వెనక్కి',
-                    'Backspace',
-                    () => _clearCell(backspace: true),
-                  ),
-                  (
-                    'classic-reset-word',
-                    'పదం తీసేయి',
-                    'Clear word',
-                    _resetWord,
-                  ),
-                ])
-                  TextButton(
-                    key: ValueKey(key),
-                    onPressed: _isAdvancing || _selectedCellIndex == null
-                        ? null
-                        : action,
-                    style: _actionStyle(null, scheme.onSurface),
-                    child: _controlLabel(label, english),
-                  ),
-              ],
-            ),
-          ),
-        ),
+        _editToolbar(context),
         const SizedBox(height: 8),
         Wrap(
           alignment: WrapAlignment.center,
@@ -1154,6 +1109,116 @@ class _PadakeliScreenState extends State<PadakeliScreen>
 
   Widget _controlLabel(String telugu, String english) =>
       KidsLearningText.control(telugu, english: english, center: true);
+
+  Widget _editToolbar(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final enabled = !_isAdvancing && _selectedCellIndex != null;
+    return Material(
+      key: const ValueKey('classic-edit-toolbar'),
+      color: Colors.transparent,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final stacked =
+              constraints.maxWidth < 240 ||
+              MediaQuery.textScalerOf(
+                    context,
+                  ).scale(theme.textTheme.labelLarge!.fontSize!) >
+                  18;
+          final buttons = [
+            for (final (
+                  key,
+                  label,
+                  english,
+                  icon,
+                  background,
+                  foreground,
+                  action,
+                )
+                in [
+                  (
+                    'classic-clear-cell',
+                    'అక్షరం తీసేయి',
+                    'Clear letter',
+                    Icons.highlight_remove_rounded,
+                    scheme.primaryContainer,
+                    scheme.onPrimaryContainer,
+                    () => _clearCell(),
+                  ),
+                  (
+                    'classic-backspace',
+                    'వెనక్కి',
+                    'Backspace',
+                    Icons.backspace_outlined,
+                    scheme.secondaryContainer,
+                    scheme.onSecondaryContainer,
+                    () => _clearCell(backspace: true),
+                  ),
+                  (
+                    'classic-reset-word',
+                    'పదం తీసేయి',
+                    'Clear word',
+                    Icons.clear_all_rounded,
+                    scheme.tertiaryContainer,
+                    scheme.onTertiaryContainer,
+                    _resetWord,
+                  ),
+                ])
+              TapFeedback(
+                enabled: enabled,
+                child: FilledButton.tonal(
+                  key: ValueKey(key),
+                  onPressed: enabled ? action : null,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: background,
+                    foregroundColor: foreground,
+                    minimumSize: const Size(48, 64),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 8,
+                    ),
+                    side: BorderSide(color: foreground.withValues(alpha: 0.18)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ExcludeSemantics(child: Icon(icon, size: 20)),
+                      const SizedBox(height: 4),
+                      _controlLabel(label, english),
+                    ],
+                  ),
+                ),
+              ),
+          ];
+          if (stacked) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var index = 0; index < buttons.length; index++) ...[
+                  if (index > 0) const SizedBox(height: 8),
+                  buttons[index],
+                ],
+              ],
+            );
+          }
+          return IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var index = 0; index < buttons.length; index++) ...[
+                  if (index > 0) const SizedBox(width: 8),
+                  Expanded(child: buttons[index]),
+                ],
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
 
   ButtonStyle _actionStyle(Color? background, Color foreground) =>
       TextButton.styleFrom(

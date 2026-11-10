@@ -16,6 +16,10 @@ speech recognition, runtime font download or backend is required.
   word editing, authored hints, one-cell reveals and confirmed reset remain.
   Correct checks advance within a level after 1.1 seconds; changing level is
   explicit. Filled-cell percentage is not an accuracy claim.
+  Clear letter, Backspace and Clear word use distinct tonal icon buttons with
+  brief press feedback, equal normal-text targets and a large-text stacked
+  layout. Reduced motion disables the press animation; editing behavior is
+  unchanged.
 - Kids offers three freely selectable Telugu-first learning paths: చిన్నారులు,
   బాల మిత్రులు and పద వీరులు. Picture, letter, missing-akshara, word-builder and
   meaning games retain retries and explicit continuation. Original practice is
@@ -69,6 +73,18 @@ clearing application data removes progress.
 ## My Progress: metric definitions
 
 The dashboard uses saved events, never sample numbers or online rankings.
+Today’s goal has a dedicated summary with the actual correct-question count
+even after the goal is exceeded. Resume appears beside the learning summary,
+followed by responsive all-time statistics, first-check results, learning paths
+and earned/unearned achievements. Metric definitions are available in the
+expandable “How progress is counted” section; the device-local storage notice
+remains visible. Large text stacks the statistics without truncating labels.
+Activities, puzzles, stars and streaks have blue, mint, gold and warm-orange
+KPI backgrounds; first-check results use lavender. Each palette adapts to dark
+mode and retains text labels, so colour is never the only way to identify a metric.
+Learning paths use distinct mint, blue and lavender surfaces with matching
+progress bars and a tonal Explore action; their counts still require
+content-valid saved completions, not inferred mastery.
 
 | Metric | Definition |
 |---|---|

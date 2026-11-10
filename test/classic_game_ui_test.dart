@@ -10,6 +10,7 @@ import 'package:telugu_padakeli/services/local_puzzle_repository.dart';
 import 'package:telugu_padakeli/services/puzzle_repository.dart';
 import 'package:telugu_padakeli/widgets/premium_telugu_text.dart';
 import 'package:telugu_padakeli/widgets/crossword_grid.dart';
+import 'package:telugu_padakeli/widgets/engagement_motion.dart';
 
 class _Repository implements PuzzleRepository {
   const _Repository(this.puzzles);
@@ -74,6 +75,7 @@ Future<void> _open(
   double appScale = 1,
   double systemScale = 1,
   bool dark = false,
+  bool disableAnimations = true,
   double navigationHeight = 0,
   List<Puzzle>? puzzles,
 }) async {
@@ -83,7 +85,7 @@ Future<void> _open(
       builder: (context, child) => MediaQuery(
         data: MediaQuery.of(context).copyWith(
           textScaler: TextScaler.linear(systemScale),
-          disableAnimations: true,
+          disableAnimations: disableAnimations,
         ),
         child: child!,
       ),
@@ -368,14 +370,14 @@ void main() {
     );
 
     testWidgets(
-      'flat edit toolbar retains contrast and locks on success dark=$dark',
+      'tonal edit buttons retain contrast and lock on success dark=$dark',
       (tester) async {
         await _open(tester, dark: dark);
         final toolbar = find.byKey(const ValueKey('classic-edit-toolbar'));
         final material = tester.widget<Material>(toolbar);
         expect(material.elevation, 0);
         expect(
-          find.descendant(of: toolbar, matching: find.byType(TextButton)),
+          find.descendant(of: toolbar, matching: find.byType(FilledButton)),
           findsNWidgets(3),
         );
         expect(
@@ -396,12 +398,12 @@ void main() {
           'classic-reset-word',
         ]) {
           final finder = find.byKey(ValueKey(key));
-          final button = tester.widget<TextButton>(finder);
-          expect(button.style!.backgroundColor?.resolve({}), isNull);
+          final button = tester.widget<FilledButton>(finder);
+          final background = button.style!.backgroundColor!.resolve({})!;
           final foreground = button.style!.foregroundColor!.resolve({})!;
           final luminances = [
             foreground.computeLuminance(),
-            material.color!.computeLuminance(),
+            background.computeLuminance(),
           ]..sort();
           expect(
             (luminances.last + 0.05) / (luminances.first + 0.05),
@@ -409,6 +411,10 @@ void main() {
           );
           expect(tester.getSize(finder).width, greaterThanOrEqualTo(48));
           expect(tester.getSize(finder).height, greaterThanOrEqualTo(48));
+          expect(
+            find.descendant(of: finder, matching: find.byType(Icon)),
+            findsOneWidget,
+          );
         }
         await _fill(tester, _puzzles.first);
         await _tap(tester, find.byKey(const ValueKey('classic-check')));
@@ -418,7 +424,7 @@ void main() {
           'classic-reset-word',
         ]) {
           expect(
-            tester.widget<TextButton>(find.byKey(ValueKey(key))).onPressed,
+            tester.widget<FilledButton>(find.byKey(ValueKey(key))).onPressed,
             isNull,
           );
         }
@@ -808,6 +814,84 @@ void main() {
     );
     expect(tester.takeException(), isNull);
   });
+
+  for (final (width, scale) in [
+    (320.0, 1.0),
+    (390.0, 1.0),
+    (320.0, 1.4),
+    (390.0, 1.4),
+  ]) {
+    for (final dark in [false, true]) {
+      testWidgets('edit controls fit $width at app scale $scale, dark=$dark', (
+        tester,
+      ) async {
+        tester.view.physicalSize = Size(width, 568);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        await _open(tester, appScale: scale, dark: dark, navigationHeight: 88);
+        final sizes = <Size>[];
+        for (final (key, english) in [
+          ('classic-clear-cell', 'Clear letter'),
+          ('classic-backspace', 'Backspace'),
+          ('classic-reset-word', 'Clear word'),
+        ]) {
+          final finder = find.byKey(ValueKey(key));
+          await tester.ensureVisible(finder);
+          await tester.pumpAndSettle();
+          expect(finder.hitTestable(), findsOneWidget);
+          final rect = tester.getRect(finder);
+          expect(rect.left, greaterThanOrEqualTo(0));
+          expect(rect.right, lessThanOrEqualTo(width));
+          expect(rect.top, greaterThanOrEqualTo(0));
+          expect(rect.bottom, lessThanOrEqualTo(568 - 88));
+          expect(rect.height, greaterThanOrEqualTo(48));
+          final label = tester.getRect(
+            find.descendant(of: finder, matching: find.text(english)),
+          );
+          expect(label.left, greaterThanOrEqualTo(rect.left));
+          expect(label.right, lessThanOrEqualTo(rect.right));
+          sizes.add(rect.size);
+        }
+        for (final size in sizes.skip(1)) {
+          expect(size.width, closeTo(sizes.first.width, 0.01));
+          if (scale == 1) {
+            expect(size.height, closeTo(sizes.first.height, 0.01));
+          }
+        }
+        expect(tester.takeException(), isNull);
+      });
+    }
+  }
+
+  for (final reducedMotion in [false, true]) {
+    testWidgets('edit press feedback respects reduced motion=$reducedMotion', (
+      tester,
+    ) async {
+      await _open(tester, disableAnimations: reducedMotion);
+      final button = find.byKey(const ValueKey('classic-backspace'));
+      await tester.ensureVisible(button);
+      await tester.pumpAndSettle();
+      final feedback = find.ancestor(
+        of: button,
+        matching: find.byType(TapFeedback),
+      );
+      final transform = find
+          .descendant(of: feedback, matching: find.byType(Transform))
+          .first;
+      double scale() =>
+          tester.widget<Transform>(transform).transform.storage.first;
+      final gesture = await tester.startGesture(tester.getCenter(button));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(scale(), reducedMotion ? equals(1) : lessThan(1));
+      await gesture.cancel();
+      await tester.pumpAndSettle();
+      expect(scale(), 1);
+      expect(tester.binding.transientCallbackCount, 0);
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   testWidgets('short 320x568 phone keeps input and reset reachable', (
     tester,
