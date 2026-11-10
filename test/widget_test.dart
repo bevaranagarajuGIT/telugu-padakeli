@@ -199,9 +199,31 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('feature cards have matching heights within each normal row', (
+  testWidgets('active puzzle resume appears before the playable cards', (
     tester,
   ) async {
+    var opened = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeScreen(
+          onClassic: () => opened = true,
+          onLearn: () {},
+          onProgress: () {},
+          onSettings: () {},
+          hasActivePuzzle: true,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      tester.getRect(find.text('Resume Classic')).bottom,
+      lessThan(tester.getRect(find.byType(FeatureCard).first).top),
+    );
+    await tester.tap(find.text('Resume Classic'));
+    expect(opened, isTrue);
+  });
+
+  testWidgets('playable feature cards have matching heights', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         home: HomeScreen(
@@ -214,11 +236,11 @@ void main() {
     );
 
     final heights = [
-      for (var index = 0; index < 4; index++)
+      for (var index = 0; index < 2; index++)
         tester.getSize(find.byType(FeatureCard).at(index)).height,
     ];
     expect(heights[0], heights[1]);
-    expect(heights[2], heights[3]);
+    expect(find.byType(FeatureCard), findsNWidgets(2));
   });
 
   testWidgets('coming-soon status is included in feature-card semantics', (

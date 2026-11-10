@@ -313,6 +313,11 @@ void main() {
         session.selectChoice(session.question.answer);
         expect(session.check(), isTrue);
         await tester.pumpAndSettle();
+        await tester.drag(
+          find.byType(SingleChildScrollView),
+          const Offset(0, -300),
+        );
+        await tester.pumpAndSettle();
         final finish = find.byKey(const ValueKey('learning-next'));
         await Scrollable.ensureVisible(tester.element(finish), alignment: 0.5);
         await tester.pumpAndSettle();

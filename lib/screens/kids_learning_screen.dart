@@ -154,72 +154,7 @@ class _KidsLearningScreenState extends State<KidsLearningScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: AppColors.purple,
-                        borderRadius: BorderRadius.circular(28),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          KidsLearningText(
-                            'తెలుగు నేర్చుకుందాం — ఆడుతూ, ఆనందంగా!',
-                            english: 'Learn Telugu through play!',
-                            style: theme.textTheme.headlineSmall?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Wrap(
-                            spacing: 16,
-                            runSpacing: 12,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            children: [
-                              Image.asset(
-                                HomeArtwork.welcome,
-                                width: 92,
-                                height: 110,
-                                excludeFromSemantics: true,
-                                cacheWidth: 276,
-                              ),
-                              Semantics(
-                                label:
-                                    'ఈ సెషన్‌లో ${_learning.stars} నక్షత్రాలు',
-                                child: ExcludeSemantics(
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(
-                                        Icons.star_rounded,
-                                        color: AppColors.gold,
-                                        size: 32,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        '${_learning.stars}',
-                                        key: const ValueKey('kids-stars'),
-                                        style: theme.textTheme.headlineMedium
-                                            ?.copyWith(color: Colors.white),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'ఒక ఆట పూర్తి చేస్తే ఒక నక్షత్రం. '
-                            'ఈ యాప్ సెషన్‌లో మాత్రమే.',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    _LearningWelcome(stars: _learning.stars),
                     const SizedBox(height: 24),
                     KidsLearningText(
                       'మీ అభ్యాస దారిని ఎంచుకోండి',
@@ -365,6 +300,94 @@ class _KidsLearningScreenState extends State<KidsLearningScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _LearningWelcome extends StatelessWidget {
+  const _LearningWelcome({required this.stars});
+  final int stars;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final showMascot =
+        MediaQuery.textScalerOf(
+          context,
+        ).scale(theme.textTheme.bodyLarge?.fontSize ?? 16) <=
+        24;
+    return Container(
+      key: const ValueKey('kids-welcome-panel'),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [AppColors.purple, AppColors.deepBlue],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                KidsLearningText(
+                  'తెలుగు నేర్చుకుందాం — ఆడుతూ, ఆనందంగా!',
+                  english: 'Learn Telugu through play!',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Semantics(
+                  label: 'ఈ సెషన్‌లో $stars నక్షత్రాలు',
+                  child: ExcludeSemantics(
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.star_rounded,
+                          color: AppColors.gold,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '$stars',
+                          key: const ValueKey('kids-stars'),
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            'ఈ సెషన్‌లో',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (showMascot) ...[
+            const SizedBox(width: 10),
+            Image.asset(
+              HomeArtwork.welcome,
+              width: 72,
+              height: 86,
+              excludeFromSemantics: true,
+              cacheWidth: 216,
+            ),
+          ],
+        ],
       ),
     );
   }

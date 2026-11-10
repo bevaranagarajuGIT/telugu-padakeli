@@ -75,6 +75,80 @@ void main() {
     }
   });
 
+  for (final dark in [false, true]) {
+    testWidgets('next stays reachable on a small phone, dark=$dark', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final settings = AppSettingsController()..setEnglishHelper(true);
+      final learning = KidsLearningController();
+      addTearDown(settings.dispose);
+      addTearDown(learning.dispose);
+      final session = learning.sessionFor(
+        activities.firstWhere(
+          (activity) => activity.type == KidsActivityType.letter,
+        ),
+      );
+      await tester.pumpWidget(
+        _host(
+          KidsActivityScreen(session: session, learning: learning),
+          settings,
+          dark: dark,
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.drag(
+        find.byType(SingleChildScrollView),
+        const Offset(0, -250),
+      );
+      await tester.pumpAndSettle();
+      session.selectChoice(session.question.answer);
+      expect(session.check(), isTrue);
+      await tester.pumpAndSettle();
+      final next = find.byKey(const ValueKey('learning-next'));
+      expect(next.hitTestable(), findsOneWidget);
+      final viewport = tester.getRect(
+        find.byKey(const ValueKey('kids-activity-scroll')),
+      );
+      final button = tester.getRect(next);
+      expect(button.top, greaterThanOrEqualTo(viewport.bottom));
+      expect(button.bottom, lessThanOrEqualTo(640));
+      await tester.tap(next);
+      await tester.pumpAndSettle();
+      expect(session.index, 1);
+      expect(
+        tester.state<ScrollableState>(find.byType(Scrollable)).position.pixels,
+        0,
+      );
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  }
+
+  testWidgets('kids welcome leaves room for the activities', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final settings = AppSettingsController();
+    addTearDown(settings.dispose);
+    await tester.pumpWidget(_host(KidsLearningScreen(onBack: () {}), settings));
+    await tester.pumpAndSettle();
+    expect(
+      tester.getSize(find.byKey(const ValueKey('kids-welcome-panel'))).height,
+      lessThan(200),
+    );
+    expect(
+      find.byKey(const ValueKey('kids-activity-pictures')).hitTestable(),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   testWidgets(
     'age selection shows only corresponding activities and preserves Telugu',
     (tester) async {
