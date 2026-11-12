@@ -1402,10 +1402,15 @@ void main() {
             systemScale: systemScale,
             dark: dark,
           );
+          expect(
+            find.byKey(const ValueKey('classic-review-answers')),
+            findsNothing,
+          );
           await _fill(tester, _puzzles.first);
           await tester.pumpAndSettle();
           for (final key in [
             'classic-next-puzzle',
+            'classic-review-answers',
             'classic-replay',
             'classic-choose-level',
             'classic-completion-home',
@@ -1428,7 +1433,8 @@ void main() {
               expect(labelBounds.top, greaterThanOrEqualTo(bounds.top));
               expect(labelBounds.bottom, lessThanOrEqualTo(bounds.bottom));
             }
-            if (key != 'classic-completion-home') {
+            if (key != 'classic-completion-home' &&
+                key != 'classic-review-answers') {
               final button = tester.widget<FilledButton>(finder);
               final luminances = [
                 button.style!.foregroundColor!.resolve({})!.computeLuminance(),
@@ -1441,6 +1447,36 @@ void main() {
             }
           }
           expect(tester.takeException(), isNull);
+          await _tap(
+            tester,
+            find.byKey(const ValueKey('classic-review-answers')),
+          );
+          await tester.pumpAndSettle();
+          await tester.scrollUntilVisible(
+            find.byKey(const ValueKey('classic-review-done')),
+            200,
+            scrollable: find.descendant(
+              of: find.byKey(const ValueKey('classic-answer-review-scroll')),
+              matching: find.byType(Scrollable),
+            ),
+            maxScrolls: 100,
+          );
+          await tester.pumpAndSettle();
+          await tester.ensureVisible(
+            find.byKey(const ValueKey('classic-review-done')),
+          );
+          await tester.pumpAndSettle();
+          expect(
+            find.byKey(const ValueKey('classic-review-done')).hitTestable(),
+            findsOneWidget,
+          );
+          expect(tester.takeException(), isNull);
+          await tester.pageBack();
+          await tester.pumpAndSettle();
+          expect(
+            find.byKey(const ValueKey('classic-level-complete')),
+            findsOneWidget,
+          );
           await _tap(tester, find.byKey(const ValueKey('classic-replay')));
           await tester.pumpAndSettle();
           expect(find.byType(Dialog), findsNothing);

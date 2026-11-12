@@ -56,6 +56,7 @@ class _PadakeliScreenState extends State<PadakeliScreen>
   final _incorrectCells = <int>{};
   int _hintCount = 0;
   bool _resetDialogOpen = false;
+  bool _reviewOpen = false;
 
   bool _isCorrectCell(int index) {
     final puzzle = _puzzle!;
@@ -1399,6 +1400,128 @@ class _PadakeliScreenState extends State<PadakeliScreen>
     );
   }
 
+  Future<void> _reviewAnswers() async {
+    final puzzle = _puzzle;
+    if (!_isComplete || puzzle == null || _reviewOpen) return;
+    _reviewOpen = true;
+    try {
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (context) => Scaffold(
+            key: const ValueKey('classic-answer-review'),
+            appBar: AppBar(
+              title: const Text(
+                'సమాధానాలు / Answers',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            body: SafeArea(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 720),
+                  child: ListView(
+                    key: const ValueKey('classic-answer-review-scroll'),
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      Text(
+                        'సమాధానాలు చూడండి\nReview answers',
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(fontWeight: FontWeight.w800),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'పూర్తయిన పదకేళి · చదవడానికి మాత్రమే\n'
+                        'Completed puzzle · Read only',
+                      ),
+                      for (final (direction, label, color, clues) in [
+                        (
+                          PuzzleDirection.across,
+                          'అడ్డం / Across',
+                          AppColors.acrossSelection,
+                          puzzle.acrossClues,
+                        ),
+                        (
+                          PuzzleDirection.down,
+                          'నిలువు / Down',
+                          AppColors.downSelection,
+                          puzzle.downClues,
+                        ),
+                      ]) ...[
+                        const SizedBox(height: 24),
+                        Semantics(
+                          header: true,
+                          child: Row(
+                            children: [
+                              Icon(
+                                direction == PuzzleDirection.across
+                                    ? Icons.arrow_forward_rounded
+                                    : Icons.arrow_downward_rounded,
+                                color: color,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  label,
+                                  style: Theme.of(context).textTheme.titleLarge
+                                      ?.copyWith(fontWeight: FontWeight.w700),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        for (final clue in clues) ...[
+                          Padding(
+                            key: ValueKey(
+                              'review-clue-${direction.name}-${clue.number}',
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                PremiumTeluguText(
+                                  '${clue.number}. ${clue.clue} (${clue.aksharaCount})',
+                                  style: Theme.of(context).textTheme.bodyLarge,
+                                ),
+                                const SizedBox(height: 8),
+                                PremiumTeluguText(
+                                  clue.answer,
+                                  key: ValueKey(
+                                    'review-answer-${direction.name}-${clue.number}',
+                                  ),
+                                  style: Theme.of(context).textTheme.titleLarge
+                                      ?.copyWith(fontWeight: FontWeight.w800),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Divider(height: 1),
+                        ],
+                      ],
+                      const SizedBox(height: 24),
+                      FilledButton.icon(
+                        key: const ValueKey('classic-review-done'),
+                        onPressed: () => Navigator.pop(context),
+                        style: FilledButton.styleFrom(
+                          minimumSize: const Size(48, 56),
+                          padding: const EdgeInsets.all(12),
+                        ),
+                        icon: const Icon(Icons.check_rounded),
+                        label: _controlLabel('పూర్తయింది', 'Done'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    } finally {
+      _reviewOpen = false;
+    }
+  }
+
   Widget _completion({BuildContext? dialogContext}) {
     final theme = Theme.of(context);
     final completedPuzzle = _puzzle;
@@ -1523,6 +1646,20 @@ class _PadakeliScreenState extends State<PadakeliScreen>
             ),
             const SizedBox(height: 12),
           ],
+          OutlinedButton.icon(
+            key: const ValueKey('classic-review-answers'),
+            onPressed: () => choose(() => unawaited(_reviewAnswers())),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(48, 56),
+              padding: const EdgeInsets.all(12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            icon: const Icon(Icons.fact_check_outlined),
+            label: _controlLabel('సమాధానాలు చూడండి', 'Review answers'),
+          ),
+          const SizedBox(height: 12),
           FilledButton.icon(
             key: const ValueKey('classic-replay'),
             onPressed: () => choose(() => _openPuzzle(_puzzle!)),

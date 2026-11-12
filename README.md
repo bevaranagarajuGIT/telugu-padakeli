@@ -35,6 +35,10 @@ speech recognition, runtime font download or backend is required.
   level buttons, with a separate outlined Home action and gold success badge.
   The dialog scrolls at enlarged text sizes. Restart confirmation keeps its
   warning visible with full-width Cancel and violet Restart controls.
+  Review answers opens a read-only list of all numbered Across/Down clues and
+  their answers after Classic completion, including restored completed
+  puzzles. Done or Back returns to completion choices without changing saved
+  answers, hints or rewards; review never advances or restarts the puzzle.
   Labeled gold Hint and violet Actions buttons replace ambiguous top-bar icons;
   Actions opens a scrollable sheet for Clear word and confirmed Restart.
   Clear letter and Backspace remain beside the palette with rich gold/violet

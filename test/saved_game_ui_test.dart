@@ -135,9 +135,68 @@ void main() {
         expect(progress.board('classic')['hints'], finish == 'hint' ? 3 : 2);
         expect(progress.stars, 1);
         final snapshot = progress.board('classic');
+        Future<void> review(LearningProgress current) async {
+          final reviewAgain = tester
+              .widget<OutlinedButton>(
+                find.byKey(const ValueKey('classic-review-answers')),
+              )
+              .onPressed!;
+          await _tap(tester, 'classic-review-answers');
+          reviewAgain();
+          await tester.pumpAndSettle();
+          expect(
+            find.byKey(const ValueKey('classic-answer-review')),
+            findsOneWidget,
+          );
+          final scrollable = find.descendant(
+            of: find.byKey(const ValueKey('classic-answer-review-scroll')),
+            matching: find.byType(Scrollable),
+          );
+          for (final (direction, clues) in [
+            ('across', puzzle.acrossClues),
+            ('down', puzzle.downClues),
+          ]) {
+            for (final clue in clues) {
+              final row = find.byKey(
+                ValueKey('review-clue-$direction-${clue.number}'),
+              );
+              await tester.scrollUntilVisible(row, 100, scrollable: scrollable);
+              expect(
+                find.descendant(of: row, matching: find.text(clue.answer)),
+                findsOneWidget,
+              );
+              expect(
+                find.descendant(
+                  of: row,
+                  matching: find.text(
+                    '${clue.number}. ${clue.clue} (${clue.aksharaCount})',
+                  ),
+                ),
+                findsOneWidget,
+              );
+            }
+          }
+          expect(find.byType(TextField), findsNothing);
+          await tester.scrollUntilVisible(
+            find.byKey(const ValueKey('classic-review-done')),
+            100,
+            scrollable: scrollable,
+          );
+          await tester.pumpAndSettle();
+          await _tap(tester, 'classic-review-done');
+          await tester.pumpAndSettle();
+          expect(current.board('classic'), snapshot);
+          expect(current.stars, 1);
+          expect(
+            find.byKey(const ValueKey('classic-level-complete')),
+            findsOneWidget,
+          );
+        }
+
+        await review(progress);
         await tester.pump(const Duration(seconds: 5));
         expect(progress.board('classic'), snapshot);
-        expect(find.byType(Dialog), findsOneWidget);
+        expect(find.byType(Dialog), findsNothing);
         await _tap(tester, 'classic-completion-home');
         await tester.pumpAndSettle();
         expect(homeCount, 1);
@@ -155,6 +214,7 @@ void main() {
           findsOneWidget,
         );
         expect(restored.board('classic'), snapshot);
+        await review(restored);
         await _tap(tester, 'classic-replay');
         await tester.pumpAndSettle();
         expect(restored.board('classic')['complete'], false);
