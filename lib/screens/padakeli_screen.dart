@@ -662,23 +662,74 @@ class _PadakeliScreenState extends State<PadakeliScreen>
       context: context,
       builder: (context) => AlertDialog(
         scrollable: true,
-        title: const Text('మళ్లీ ఆడాలా?\nRestart this puzzle?'),
-        content: const Text(
-          'మీ సమాధానాలు, వాడిన సూచనల లెక్క తీసివేయబడతాయి.\n\n'
-          'Your answers and hint count will be cleared.',
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
         ),
-        actions: [
-          TextButton(
-            key: const ValueKey('classic-reset-cancel'),
-            onPressed: () => Navigator.pop(context, false),
-            child: _controlLabel('వద్దు', 'Cancel'),
-          ),
-          FilledButton(
-            key: const ValueKey('classic-reset-confirm'),
-            onPressed: () => Navigator.pop(context, true),
-            child: _controlLabel('మళ్లీ ఆడు', 'Restart'),
-          ),
-        ],
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: AppColors.gold,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Icon(
+                Icons.restart_alt_rounded,
+                color: AppColors.ink,
+                size: 32,
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'మళ్లీ ఆడాలా?\nRestart this puzzle?',
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'మీ సమాధానాలు, వాడిన సూచనల లెక్క తీసివేయబడతాయి.\n\n'
+              'Your answers and hint count will be cleared.',
+            ),
+            const SizedBox(height: 24),
+            OutlinedButton(
+              key: const ValueKey('classic-reset-cancel'),
+              onPressed: () => Navigator.pop(context, false),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(48, 56),
+                padding: const EdgeInsets.all(12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: _controlLabel('వద్దు', 'Cancel'),
+            ),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              key: const ValueKey('classic-reset-confirm'),
+              onPressed: () => Navigator.pop(context, true),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.purple,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(48, 56),
+                padding: const EdgeInsets.all(12),
+                elevation: 2,
+                shadowColor: AppColors.ink.withValues(alpha: 0.2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              icon: const Icon(Icons.restart_alt_rounded),
+              label: _controlLabel('మళ్లీ ఆడు', 'Restart'),
+            ),
+          ],
+        ),
       ),
     );
     _resetDialogOpen = false;

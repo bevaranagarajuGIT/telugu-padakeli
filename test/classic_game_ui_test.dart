@@ -1062,6 +1062,24 @@ void main() {
             find.byKey(const ValueKey('classic-reset-confirm')),
             findsOneWidget,
           );
+          for (final key in ['classic-reset-cancel', 'classic-reset-confirm']) {
+            final action = find.byKey(ValueKey(key));
+            await tester.ensureVisible(action);
+            await tester.pumpAndSettle();
+            expect(action.hitTestable(), findsOneWidget);
+            final bounds = tester.getRect(action);
+            expect(bounds.width, greaterThanOrEqualTo(48));
+            expect(bounds.height, greaterThanOrEqualTo(48));
+            for (final label in tester.widgetList<Text>(
+              find.descendant(of: action, matching: find.byType(Text)),
+            )) {
+              final labelBounds = tester.getRect(find.byWidget(label));
+              expect(labelBounds.left, greaterThanOrEqualTo(bounds.left));
+              expect(labelBounds.right, lessThanOrEqualTo(bounds.right));
+              expect(labelBounds.top, greaterThanOrEqualTo(bounds.top));
+              expect(labelBounds.bottom, lessThanOrEqualTo(bounds.bottom));
+            }
+          }
           expect(tester.takeException(), isNull);
           await _tap(
             tester,
