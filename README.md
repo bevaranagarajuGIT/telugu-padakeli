@@ -20,8 +20,10 @@ speech recognition, runtime font download or backend is required.
   row. Compact spacing retains 48-dp targets; arrow-marked Across/Down chips use
   a strong selected state, and the letter palette repeats the current direction
   and clue number so it stays clear when the board is scrolled out of view.
-  The active clue uses solid blue, white text and a direction arrow in both
-  themes. Completed clues retain checkmarks and turn green when not selected.
+  Across uses muted blue and Down muted violet, matching each selected direction
+  button to its active clue with white text and an arrow in both themes.
+  Unselected direction buttons have a light tint; completed clues retain
+  checkmarks and turn green when not selected.
   Play again restarts the current puzzle with an empty board, not the completed save;
   ordinary Resume and difficulty re-selection still restore saved answers.
   Completed words validate automatically, with checkmarks for correct words and

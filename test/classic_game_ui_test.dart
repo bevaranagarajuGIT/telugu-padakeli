@@ -197,6 +197,7 @@ void main() {
       tester,
     ) async {
       await _open(tester, dark: dark);
+      Color? acrossColor;
       for (final direction in ['across', 'down']) {
         await _tap(
           tester,
@@ -211,6 +212,15 @@ void main() {
           find.byKey(const ValueKey('selected-clue')),
         );
         final background = tile.selectedTileColor!;
+        final chip = tester.widget<ChoiceChip>(
+          find.byKey(ValueKey('classic-direction-$direction')),
+        );
+        expect(background, chip.selectedColor);
+        if (direction == 'across') {
+          acrossColor = background;
+        } else {
+          expect(background, isNot(acrossColor));
+        }
         final foreground = label.style!.color!;
         final luminances = [
           foreground.computeLuminance(),

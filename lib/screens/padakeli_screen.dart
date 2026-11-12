@@ -1179,9 +1179,13 @@ class _PadakeliScreenState extends State<PadakeliScreen>
           runSpacing: 4,
           alignment: WrapAlignment.center,
           children: [
-            for (final (direction, label) in [
-              (PuzzleDirection.across, 'అడ్డం (Across)'),
-              (PuzzleDirection.down, 'నిలువు (Down)'),
+            for (final (direction, label, color) in [
+              (
+                PuzzleDirection.across,
+                'అడ్డం (Across)',
+                AppColors.acrossSelection,
+              ),
+              (PuzzleDirection.down, 'నిలువు (Down)', AppColors.downSelection),
             ])
               ChoiceChip(
                 key: ValueKey('classic-direction-${direction.name}'),
@@ -1207,11 +1211,14 @@ class _PadakeliScreenState extends State<PadakeliScreen>
                   ),
                 ),
                 selected: _selectedDirection == direction,
-                selectedColor: AppColors.deepBlue,
-                backgroundColor: scheme.surface,
+                selectedColor: color,
+                backgroundColor: Color.alphaBlend(
+                  color.withValues(alpha: 0.12),
+                  scheme.surface,
+                ),
                 side: BorderSide(
                   color: _selectedDirection == direction
-                      ? AppColors.deepBlue
+                      ? color
                       : scheme.outline,
                   width: _selectedDirection == direction ? 2 : 1,
                 ),
@@ -1582,6 +1589,9 @@ class _ClueList extends StatelessWidget {
         : AppColors.successForeground;
     bool isSelected(PuzzleClue clue) =>
         identical(selectedClue, clue) && selectedDirection == direction;
+    final selectionColor = direction == PuzzleDirection.across
+        ? AppColors.acrossSelection
+        : AppColors.downSelection;
     return Card(
       key: const ValueKey('classic-clue-list'),
       margin: EdgeInsets.zero,
@@ -1604,7 +1614,7 @@ class _ClueList extends StatelessWidget {
                 tileColor: correctClues.contains(clue)
                     ? correctBackground
                     : null,
-                selectedTileColor: AppColors.deepBlue,
+                selectedTileColor: selectionColor,
                 selectedColor: Colors.white,
                 leading: isSelected(clue)
                     ? Icon(

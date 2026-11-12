@@ -4,6 +4,8 @@ abstract final class AppColors {
   static const blue = Color(0xFF006EFF);
   static const actionBlue = Color(0xFF0064E8);
   static const deepBlue = Color(0xFF0046BB);
+  static const acrossSelection = Color(0xFF456BA5);
+  static const downSelection = Color(0xFF72569A);
   static const teal = Color(0xFF00B894);
   static const purple = Color(0xFF873AF2);
   static const orange = Color(0xFFFF7A00);
