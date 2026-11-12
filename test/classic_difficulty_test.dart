@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:telugu_padakeli/screens/padakeli_screen.dart';
+import 'package:telugu_padakeli/widgets/crossword_grid.dart';
 
 void main() {
   testWidgets('Classic Easy sample puzzle is selectable and checkable', (
@@ -136,8 +137,10 @@ void main() {
       '2. ఊదితే శబ్దం చేసే సముద్రపు గుల్ల (2)',
     );
     expect(
-      find.byKey(const ValueKey('crossword-cell-container-7')),
-      findsOneWidget,
+      tester
+          .widget<CrosswordGrid>(find.byType(CrosswordGrid))
+          .selectedCellIndex,
+      7,
     );
   });
 }

@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../models/kids_learning.dart';
 import '../models/telugu_akshara.dart';
+import '../services/kids_answer_order.dart';
 import 'learning_progress.dart';
 
 enum KidsAnswerState { ready, incorrect, correct }
@@ -21,8 +22,16 @@ class KidsActivitySession extends ChangeNotifier {
   KidsAnswerState _answerState = KidsAnswerState.ready;
   bool _complete = false;
   bool _earnedStarOnCompletion = false;
+  int _answerOrderSeed = newAnswerOrderSeed();
 
   KidsLearningQuestion get question => activity.questions[_index];
+  List<KidsChoice> get choices => orderedKidsChoices(
+    question.choices,
+    isAnswer: (choice) =>
+        TeluguAkshara.equivalent(choice.telugu, question.answer),
+    seed: _answerOrderSeed,
+    questionIndex: _index,
+  );
   int get index => _index;
   int get score => _score;
   String? get choice => _choice;
@@ -45,6 +54,10 @@ class KidsActivitySession extends ChangeNotifier {
   }
 
   void _restore(Map<String, dynamic> saved) {
+    final seed = saved['answerOrderSeed'];
+    if (seed is int && seed >= 0 && seed <= 0x7fffffff) {
+      _answerOrderSeed = seed;
+    }
     final solved = savedMap(saved['solved']);
     for (final item in activity.questions) {
       if (solved[item.id] == item.progressSignature) {
@@ -97,6 +110,7 @@ class KidsActivitySession extends ChangeNotifier {
     'tiles': List<int>.of(_tiles),
     'answerState': _answerState.name,
     'complete': _complete,
+    'answerOrderSeed': _answerOrderSeed,
   };
 
   void selectChoice(String value) {
@@ -186,6 +200,7 @@ class KidsActivitySession extends ChangeNotifier {
   }
 
   void restart() {
+    _answerOrderSeed = newAnswerOrderSeed();
     _index = 0;
     _solved.clear();
     _score = 0;

@@ -8,12 +8,14 @@ import '../app/theme/app_colors.dart';
 import '../core/learning_progress.dart';
 import '../models/kids_question.dart';
 import '../models/telugu_akshara.dart';
+import '../services/kids_answer_order.dart';
 import '../services/kids_question_service.dart';
 import '../services/engagement_audio_manager.dart';
 import '../shared/widgets/home_artwork.dart';
 import '../widgets/premium_telugu_text.dart';
 import '../widgets/kids_learning_text.dart';
 import '../widgets/engagement_motion.dart';
+import '../widgets/learning_action_footer.dart';
 import '../widgets/special_achievement_celebration.dart';
 
 class KidsGameScreen extends StatefulWidget {
@@ -27,18 +29,20 @@ class KidsGameScreen extends StatefulWidget {
 
 class _KidsGameScreenState extends State<KidsGameScreen> {
   final _levels = const KidsQuestionService().getLevels();
+  final _scrollController = ScrollController();
+  final _headingFocus = FocusNode();
   Timer? _advanceTimer;
-  Timer? _clearFeedbackTimer;
+  int _answerOrderSeed = newAnswerOrderSeed();
   int _levelIndex = 0;
   int _index = 0;
   int _score = 0;
   bool _hasScored = false;
   bool _isAdvancing = false;
   bool _isComplete = false;
+  bool _isLevelComplete = false;
   String? _selectedAnswer;
   String? _message;
   bool? _wasCorrect;
-  bool _levelCelebration = false;
   int _feedbackRevision = 0;
   EngagementAudioManager? _audio;
   LearningProgress? _storage;
@@ -69,6 +73,10 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
     if (!_restored) {
       _restored = true;
       final saved = _storage?.practice ?? {};
+      final seed = saved['answerOrderSeed'];
+      if (seed is int && seed >= 0 && seed <= 0x7fffffff) {
+        _answerOrderSeed = seed;
+      }
       if (saved['signature'] == _signature) {
         final level = _levels.indexWhere((item) => item.name == saved['level']);
         if (level >= 0) {
@@ -95,6 +103,12 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
                 _currentQuestion.answer,
               );
           _isComplete = saved['complete'] == true && _score == maximum;
+          _isLevelComplete =
+              !_isComplete &&
+              saved['levelComplete'] == true &&
+              _levelIndex + 1 < _levels.length &&
+              _index == _currentLevel.questions.length - 1 &&
+              _hasScored;
         }
       } else if (saved.isNotEmpty) {
         _message =
@@ -111,6 +125,8 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
     'choice': _selectedAnswer,
     'scored': _hasScored,
     'complete': _isComplete,
+    'levelComplete': _isLevelComplete,
+    'answerOrderSeed': _answerOrderSeed,
   });
 
   void _play(EngagementCue cue) => _audio?.play(
@@ -122,6 +138,17 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
 
   KidsQuestionLevel get _currentLevel => _levels[_levelIndex];
   KidsQuestion get _currentQuestion => _currentLevel.questions[_index];
+  List<String> get _options => orderedKidsChoices(
+    _currentQuestion.options,
+    isAnswer: (option) =>
+        TeluguAkshara.equivalent(option, _currentQuestion.answer),
+    seed: _answerOrderSeed,
+    questionIndex:
+        _index +
+        _levels
+            .take(_levelIndex)
+            .fold<int>(0, (total, level) => total + level.questions.length),
+  );
   static const _levelColors = [
     AppColors.teal,
     AppColors.blue,
@@ -137,20 +164,19 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
   @override
   void dispose() {
     _advanceTimer?.cancel();
-    _clearFeedbackTimer?.cancel();
+    _scrollController.dispose();
+    _headingFocus.dispose();
     _audio?.stop();
     super.dispose();
   }
 
   void _check() {
-    if (_isAdvancing || _isComplete) {
+    if (_isAdvancing || _isComplete || _isLevelComplete) {
       return;
     }
-    _clearFeedbackTimer?.cancel();
     if (_selectedAnswer == null) {
       setState(() {
         _feedbackRevision++;
-        _levelCelebration = false;
         _message = 'ఒక అక్షరం ఎంచుకోండి.';
         _wasCorrect = null;
       });
@@ -169,7 +195,6 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
     }
     setState(() {
       _feedbackRevision++;
-      _levelCelebration = false;
       _wasCorrect = isCorrect;
       if (isCorrect) {
         if (!_hasScored) {
@@ -205,37 +230,23 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
         _wasCorrect = null;
       });
       _save();
+      _resetScrollAndFocus();
       return;
     }
 
     if (_levelIndex + 1 < _levels.length) {
       _storage?.completeActivity('practice:${_currentLevel.name}');
       setState(() {
-        _feedbackRevision++;
-        _levelCelebration = true;
-        _levelIndex++;
-        _index = 0;
-        _hasScored = false;
+        _isLevelComplete = true;
         _isAdvancing = false;
-        _selectedAnswer = null;
-        _message = 'కొత్త స్థాయి: ${_levels[_levelIndex].title}';
-        _wasCorrect = true;
       });
       _save();
       _play(EngagementCue.completion);
-      _clearFeedbackTimer = Timer(const Duration(milliseconds: 1800), () {
-        if (mounted) {
-          setState(() {
-            _message = null;
-            _wasCorrect = null;
-          });
-        }
-      });
+      _resetScrollAndFocus();
       return;
     }
 
     setState(() {
-      _levelCelebration = false;
       _isComplete = true;
       _isAdvancing = false;
       _freshCompletion = true;
@@ -243,26 +254,51 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
     _storage?.completeActivity('practice:${_currentLevel.name}');
     _save();
     _play(EngagementCue.completion);
+    _resetScrollAndFocus();
+  }
+
+  void _nextLevel() {
+    if (!_isLevelComplete) return;
+    setState(() {
+      _isLevelComplete = false;
+      _levelIndex++;
+      _index = 0;
+      _hasScored = false;
+      _selectedAnswer = null;
+      _message = null;
+      _wasCorrect = null;
+    });
+    _save();
+    _resetScrollAndFocus();
+  }
+
+  void _resetScrollAndFocus() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_scrollController.hasClients) _scrollController.jumpTo(0);
+      _headingFocus.requestFocus();
+    });
   }
 
   void _restart() {
     _advanceTimer?.cancel();
-    _clearFeedbackTimer?.cancel();
     _audio?.stop();
     setState(() {
-      _levelCelebration = false;
+      _answerOrderSeed = newAnswerOrderSeed();
       _levelIndex = 0;
       _index = 0;
       _score = 0;
       _hasScored = false;
       _isAdvancing = false;
       _isComplete = false;
+      _isLevelComplete = false;
       _freshCompletion = false;
       _selectedAnswer = null;
       _message = null;
       _wasCorrect = null;
     });
     _save();
+    _resetScrollAndFocus();
   }
 
   @override
@@ -274,6 +310,25 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
     ).scale(theme.textTheme.titleMedium?.fontSize ?? 16);
     return Scaffold(
       backgroundColor: scheme.surface,
+      bottomNavigationBar: _isLevelComplete
+          ? LearningActionFooter(
+              child: FilledButton.icon(
+                key: const ValueKey('legacy-next-level'),
+                onPressed: _nextLevel,
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size(48, 56),
+                  padding: const EdgeInsets.all(16),
+                ),
+                icon: const Icon(Icons.arrow_forward_rounded),
+                iconAlignment: IconAlignment.end,
+                label: const KidsLearningText.control(
+                  'తరువాతి స్థాయి',
+                  english: 'Next level',
+                  center: true,
+                ),
+              ),
+            )
+          : null,
       appBar: AppBar(
         backgroundColor: AppColors.purple,
         foregroundColor: Colors.white,
@@ -310,6 +365,7 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
         child: SafeArea(
           top: false,
           child: SingleChildScrollView(
+            controller: _scrollController,
             key: ValueKey(
               _isComplete ? 'kids-completion-scroll' : 'kids-scroll',
             ),
@@ -317,12 +373,22 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 720),
-                child: _isComplete
-                    ? _completion()
+                child: _isLevelComplete
+                    ? _levelCompletion()
+                    : _isComplete
+                    ? Focus(
+                        focusNode: _headingFocus,
+                        includeSemantics: false,
+                        child: _completion(),
+                      )
                     : Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          _status(),
+                          Focus(
+                            focusNode: _headingFocus,
+                            includeSemantics: false,
+                            child: _status(),
+                          ),
                           const SizedBox(height: 16),
                           LayoutBuilder(
                             builder: (context, constraints) {
@@ -566,7 +632,7 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
               spacing: gap,
               runSpacing: gap,
               children: [
-                for (final option in _currentQuestion.options)
+                for (final option in _options)
                   SizedBox(
                     width: width,
                     child: Semantics(
@@ -697,12 +763,10 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
         child: Row(
           children: [
             SizedBox(
-              width: _levelCelebration ? 80 : 48,
+              width: 48,
               child: EngagementReaction(
                 key: ValueKey('legacy-feedback-motion-$_feedbackRevision'),
-                moment: _levelCelebration
-                    ? EngagementMoment.completion
-                    : _wasCorrect == true
+                moment: _wasCorrect == true
                     ? EngagementMoment.correct
                     : EngagementMoment.retry,
                 animate: _wasCorrect != null,
@@ -875,6 +939,50 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
               center: true,
             ),
           ),
+        ),
+      ],
+    );
+  }
+
+  Widget _levelCompletion() {
+    final theme = Theme.of(context);
+    final next = _levels[_levelIndex + 1];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Focus(
+          focusNode: _headingFocus,
+          includeSemantics: false,
+          child: Semantics(
+            header: true,
+            liveRegion: true,
+            child: KidsLearningText(
+              '${_currentLevel.title} పూర్తయింది!',
+              key: const ValueKey('legacy-level-complete-heading'),
+              english: '${_currentLevel.name} complete!',
+              center: true,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        KidsLearningText(
+          'స్థాయి ${_levelIndex + 1} / ${_levels.length} • స్కోరు: $_score',
+          english:
+              'Level ${_levelIndex + 1} of ${_levels.length} • Score: $_score',
+          center: true,
+          style: theme.textTheme.titleMedium,
+        ),
+        const SizedBox(height: 24),
+        Icon(Icons.check_circle_rounded, color: _levelColor, size: 64),
+        const SizedBox(height: 24),
+        KidsLearningText(
+          'తరువాత: ${next.title}',
+          english: 'Next: ${next.name}. Tap Next level when you are ready.',
+          center: true,
+          style: theme.textTheme.titleMedium,
         ),
       ],
     );

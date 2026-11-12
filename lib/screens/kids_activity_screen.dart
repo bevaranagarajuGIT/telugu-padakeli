@@ -241,7 +241,7 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
                           if (session.activity.type == KidsActivityType.builder)
                             _builder(context)
                           else
-                            for (final choice in session.question.choices) ...[
+                            for (final choice in session.choices) ...[
                               _choice(context, choice),
                               const SizedBox(height: 12),
                             ],

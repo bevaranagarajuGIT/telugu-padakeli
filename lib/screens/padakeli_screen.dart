@@ -321,13 +321,22 @@ class _PadakeliScreenState extends State<PadakeliScreen>
     setState(() {
       _selectedDirection = direction;
       _selectedClue = clue;
-      _selectedCellIndex = clue.row * puzzle.gridSize + clue.column;
+      _selectedCellIndex = _firstUnsolvedCell(clue, direction);
       _message = null;
     });
     _persist();
   }
 
-  void _changeDirection(PuzzleDirection direction) {
+  int? _firstUnsolvedCell(PuzzleClue clue, PuzzleDirection direction) {
+    final cells = _puzzle!.cellsForClue(clue, direction);
+    return cells.where((index) => !_isCorrectCell(index)).firstOrNull ??
+        cells.firstOrNull;
+  }
+
+  void _changeDirection(
+    PuzzleDirection direction, {
+    bool preserveSelectedCell = false,
+  }) {
     final puzzle = _puzzle;
     if (puzzle == null || _isAdvancing || _isComplete) {
       return;
@@ -343,15 +352,26 @@ class _PadakeliScreenState extends State<PadakeliScreen>
         }
       }
     }
-    final clue = matchingClue ?? (clues.isEmpty ? null : clues.first);
+    final clue =
+        matchingClue ??
+        clues
+            .where(
+              (clue) => puzzle
+                  .cellsForClue(clue, direction)
+                  .any((index) => !_isCorrectCell(index)),
+            )
+            .firstOrNull ??
+        clues.firstOrNull;
     setState(() {
       _selectedDirection = direction;
       _selectedClue = clue;
       _selectedCellIndex = clue == null
           ? null
-          : matchingClue != null
+          : matchingClue != null &&
+                currentIndex != null &&
+                (preserveSelectedCell || !_isCorrectCell(currentIndex))
           ? currentIndex
-          : clue.row * puzzle.gridSize + clue.column;
+          : _firstUnsolvedCell(clue, direction);
       _message = null;
     });
     _persist();
@@ -371,7 +391,7 @@ class _PadakeliScreenState extends State<PadakeliScreen>
           puzzle,
           other,
         ).any((clue) => puzzle.cellsForClue(clue, other).contains(index))) {
-          _changeDirection(other);
+          _changeDirection(other, preserveSelectedCell: true);
           return;
         }
       }
@@ -430,7 +450,12 @@ class _PadakeliScreenState extends State<PadakeliScreen>
       _wasCorrect = null;
       _message = null;
       if (pathPosition >= 0 && pathPosition + 1 < path.length) {
-        _selectedCellIndex = path[pathPosition + 1];
+        _selectedCellIndex =
+            path
+                .skip(pathPosition + 1)
+                .where((index) => !_isCorrectCell(index))
+                .firstOrNull ??
+            selectedIndex;
       }
     });
     _persist();
@@ -684,6 +709,7 @@ class _PadakeliScreenState extends State<PadakeliScreen>
       _message = null;
       _wasCorrect = null;
       _isAdvancing = false;
+      _isComplete = false;
       _incorrectCells.clear();
       _hintCount = 0;
       _selectedCellIndex = _selectedCells.firstOrNull;
@@ -1315,7 +1341,7 @@ class _PadakeliScreenState extends State<PadakeliScreen>
             ],
             OutlinedButton.icon(
               key: const ValueKey('classic-replay'),
-              onPressed: () => _loadPuzzle(_selectedLevel!),
+              onPressed: () => _openPuzzle(_levelPuzzles.first),
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size(48, 56),
                 padding: const EdgeInsets.all(12),

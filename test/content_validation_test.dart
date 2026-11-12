@@ -416,6 +416,17 @@ void main() {
         await tester.pump(const Duration(milliseconds: 1200));
         await tester.pumpAndSettle();
       }
+      if (level != levels.last) {
+        expect(
+          find.byKey(const ValueKey('legacy-level-complete-heading')),
+          findsOneWidget,
+        );
+        expect(find.text('${level.title} పూర్తయింది!'), findsOneWidget);
+        final next = find.byKey(const ValueKey('legacy-next-level'));
+        expect(next.hitTestable(), findsOneWidget);
+        await tester.tap(next);
+        await tester.pumpAndSettle();
+      }
     }
     expect(find.text('మొత్తం స్కోరు: 54 / 54'), findsOneWidget);
     final completionScroll = tester.state<ScrollableState>(

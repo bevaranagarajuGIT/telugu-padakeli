@@ -54,7 +54,7 @@ void main() {
     expect(find.byTooltip('Settings'), findsOneWidget);
   });
 
-  testWidgets('correct answer shows feedback, advances, and unlocks easy', (
+  testWidgets('correct answers advance; next level waits for a tap', (
     tester,
   ) async {
     await pumpReturningUserApp(tester);
@@ -114,6 +114,12 @@ void main() {
       await tester.pump(const Duration(milliseconds: 1200));
       await tester.pumpAndSettle();
     }
+    expect(find.text('ప్రారంభ స్థాయి పూర్తయింది!'), findsOneWidget);
+    expect(find.text('ఆ_'), findsNothing);
+    final next = find.byKey(const ValueKey('legacy-next-level'));
+    expect(next.hitTestable(), findsOneWidget);
+    await tester.tap(next);
+    await tester.pumpAndSettle();
     expect(find.text('స్థాయి 2 · సులభ స్థాయి'), findsOneWidget);
     expect(find.text('సులభ స్థాయి'), findsOneWidget);
     expect(find.text('ఆ_'), findsOneWidget);

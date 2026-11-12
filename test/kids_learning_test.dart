@@ -2,14 +2,95 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:telugu_padakeli/core/app_settings_controller.dart';
 import 'package:telugu_padakeli/core/kids_learning_controller.dart';
+import 'package:telugu_padakeli/core/learning_progress.dart';
 import 'package:telugu_padakeli/models/kids_learning.dart';
 import 'package:telugu_padakeli/models/telugu_akshara.dart';
 import 'package:telugu_padakeli/services/kids_learning_service.dart';
 import 'package:telugu_padakeli/services/kids_question_service.dart';
+import 'package:telugu_padakeli/services/kids_answer_order.dart';
+import 'package:telugu_padakeli/services/learning_store.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   final activities = const KidsLearningService().getActivities();
+
+  test(
+    'choice presentation balances correct positions without mutating content',
+    () {
+      for (final count in [3, 4]) {
+        final source = List.generate(count, (index) => '$index');
+        for (var seed = 0; seed < 100; seed++) {
+          final positions = <int>[];
+          for (var index = 0; index < count * 2; index++) {
+            final order = orderedKidsChoices(
+              source,
+              isAnswer: (choice) => choice == '0',
+              seed: seed,
+              questionIndex: index,
+            );
+            expect(order.toSet(), source.toSet());
+            positions.add(order.indexOf('0'));
+            expect(
+              orderedKidsChoices(
+                source,
+                isAnswer: (choice) => choice == '0',
+                seed: seed,
+                questionIndex: index,
+              ),
+              order,
+            );
+          }
+          expect(positions.take(count).toSet().length, count);
+          expect(positions.skip(count).toSet().length, count);
+        }
+        expect(source, List.generate(count, (index) => '$index'));
+      }
+    },
+  );
+
+  test(
+    'choice order survives retry and session restoration with old saves supported',
+    () {
+      final activity = activities.firstWhere(
+        (item) => item.id == 'completion-0',
+      );
+      final session = KidsActivitySession(activity, () {});
+      addTearDown(session.dispose);
+      final order = session.choices;
+      expect(order.toSet(), session.question.choices.toSet());
+      session.selectChoice(
+        session.choices
+            .firstWhere((choice) => choice.telugu != session.question.answer)
+            .telugu,
+      );
+      expect(session.check(), false);
+      expect(session.choices, order);
+      session.selectChoice(session.question.answer);
+      session.check();
+      session.next();
+      final saved = session.snapshot();
+      final nextOrder = session.choices;
+      final storage = LearningProgress(MemoryLearningStore(), autoSave: false);
+      addTearDown(storage.dispose);
+      storage.saveSession(activity.id, saved);
+      final restored = KidsActivitySession(activity, () {}, storage: storage);
+      addTearDown(restored.dispose);
+      expect(restored.choices, nextOrder);
+      expect(restored.score, 1);
+      expect(restored.index, 1);
+      for (final seed in [null, -1, 'invalid']) {
+        storage.saveSession(activity.id, {...saved, 'answerOrderSeed': seed});
+        final older = KidsActivitySession(activity, () {}, storage: storage);
+        addTearDown(older.dispose);
+        expect(older.index, 1);
+        expect(older.score, 1);
+        expect(older.choices.toSet(), older.question.choices.toSet());
+      }
+      restored.restart();
+      expect(restored.score, 0);
+      expect(restored.choices.toSet(), restored.question.choices.toSet());
+    },
+  );
 
   test(
     'English Helper defaults off and notifies immediately without duplicates',

@@ -14,6 +14,10 @@ speech recognition, runtime font download or backend is required.
   Telugu aksharas occupy cells; crossings, numbering, coverage and connectivity
   are checked before play. Across/Down clue selection, a letter palette, selected
   word editing, authored hints, one-cell reveals and confirmed reset remain.
+  Selecting a clue or switching Across/Down prefers an unfilled/incorrect cell;
+  typing skips already-correct crossings. Explicit cell taps still allow editing.
+  Play again starts the level with an empty first board, not the completed save;
+  ordinary Resume and difficulty re-selection still restore saved answers.
   Correct checks advance within a level after 1.1 seconds; changing level is
   explicit. Filled-cell percentage is not an accuracy claim.
   Clear letter, Backspace and Clear word use distinct tonal icon buttons with
@@ -23,7 +27,12 @@ speech recognition, runtime font download or backend is required.
 - Kids offers three freely selectable Telugu-first learning paths: చిన్నారులు,
   బాల మిత్రులు and పద వీరులు. Picture, letter, missing-akshara, word-builder and
   meaning games retain retries and explicit continuation. Original practice is
-  also available, with its original questions and automatic progression intact.
+  also available, with its original questions and automatic question progression.
+  Its completed level stays visible until Next level is tapped; this checkpoint
+  survives reopening. Question/level changes return the scroll position to the top.
+  Choice-based Kids games and original practice use balanced, shuffled answer
+  positions, stable during retries and saved attempts. Authored content identities
+  and previously earned progress/rewards are unchanged.
   These suggested paths are not verified age assessments.
 - A correct answer exposes Next/Finish in a separate adaptive SafeArea footer.
   Scrolling answers/explanations never sits underneath it. Completion resets
