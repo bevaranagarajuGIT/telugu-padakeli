@@ -618,35 +618,110 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        Wrap(
-          alignment: WrapAlignment.center,
-          spacing: 12,
-          runSpacing: 8,
-          children: [
-            TextButton(
-              key: const ValueKey('learning-undo'),
-              onPressed: session.locked || session.selectedTiles.isEmpty
-                  ? null
-                  : session.undoTile,
-              child: const KidsLearningText.control(
-                'చివరిది తీసేయి',
-                english: 'Undo last tile',
-                center: true,
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final labelSize = MediaQuery.textScalerOf(
+              context,
+            ).scale(theme.textTheme.labelLarge?.fontSize ?? 14);
+            final stacked =
+                constraints.maxWidth < (labelSize * 7 + 32) * 2 + 12;
+            final width = stacked
+                ? constraints.maxWidth
+                : (constraints.maxWidth - 12) / 2;
+            return Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                for (final undo in [true, false])
+                  SizedBox(
+                    width: width,
+                    child: _builderAction(context, undo: undo),
+                  ),
+              ],
+            );
+          },
+        ),
+        const SizedBox(height: 12),
+      ],
+    );
+  }
+
+  Widget _builderAction(BuildContext context, {required bool undo}) {
+    final theme = Theme.of(context);
+    final enabled =
+        !session.locked && (!undo || session.selectedTiles.isNotEmpty);
+    final background = undo ? AppColors.gold : AppColors.purple;
+    final foreground = undo ? AppColors.ink : Colors.white;
+    return TapFeedback(
+      enabled: enabled,
+      child: FilledButton(
+        key: ValueKey(undo ? 'learning-undo' : 'learning-clear'),
+        onPressed: enabled
+            ? undo
+                  ? session.undoTile
+                  : session.clearAttempt
+            : null,
+        style:
+            FilledButton.styleFrom(
+              backgroundColor: background,
+              foregroundColor: foreground,
+              disabledBackgroundColor:
+                  theme.colorScheme.surfaceContainerHighest,
+              disabledForegroundColor: theme.colorScheme.onSurfaceVariant,
+              minimumSize: const Size(48, 104),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              elevation: 2,
+              shadowColor: background.withValues(alpha: 0.3),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+              animationDuration: MediaQuery.disableAnimationsOf(context)
+                  ? Duration.zero
+                  : const Duration(milliseconds: 140),
+            ).copyWith(
+              elevation: WidgetStateProperty.resolveWith(
+                (states) =>
+                    states.contains(WidgetState.disabled) ||
+                        states.contains(WidgetState.pressed)
+                    ? 0
+                    : 2,
+              ),
+              overlayColor: WidgetStatePropertyAll(
+                foreground.withValues(alpha: 0.06),
+              ),
+              side: WidgetStateProperty.resolveWith(
+                (states) => BorderSide(
+                  color: states.contains(WidgetState.disabled)
+                      ? theme.colorScheme.outlineVariant
+                      : undo
+                      ? AppColors.deepOrange
+                      : AppColors.purple,
+                  width: 1.5,
+                ),
               ),
             ),
-            TextButton(
-              key: const ValueKey('learning-clear'),
-              onPressed: session.locked ? null : session.clearAttempt,
-              child: const KidsLearningText.control(
-                'మళ్లీ అమర్చు',
-                english: 'Reset attempt',
-                center: true,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              undo ? Icons.undo_rounded : Icons.restart_alt_rounded,
+              size: 24,
+            ),
+            const SizedBox(height: 8),
+            KidsLearningText.control(
+              undo ? 'చివరిది తీసేయి' : 'మళ్లీ అమర్చు',
+              english: undo ? 'Undo last tile' : 'Reset attempt',
+              center: true,
+              style: theme.textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: enabled
+                    ? foreground
+                    : theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
-      ],
+      ),
     );
   }
 

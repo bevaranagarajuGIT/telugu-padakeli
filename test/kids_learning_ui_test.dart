@@ -467,6 +467,93 @@ void main() {
     },
   );
 
+  for (final dark in [false, true]) {
+    testWidgets(
+      'vibrant builder controls stay readable and usable with large text, dark=$dark',
+      (tester) async {
+        tester.view.physicalSize = const Size(320, 640);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final settings = AppSettingsController();
+        final session = KidsActivitySession(
+          activities.firstWhere((activity) => activity.id == 'builder'),
+          () {},
+        );
+        addTearDown(settings.dispose);
+        addTearDown(session.dispose);
+        await tester.pumpWidget(
+          _host(
+            KidsActivityScreen(session: session),
+            settings,
+            dark: dark,
+            appScale: 1.4,
+            systemScale: 3.2,
+          ),
+        );
+        final undo = find.byKey(const ValueKey('learning-undo'));
+        final reset = find.byKey(const ValueKey('learning-clear'));
+        expect(tester.widget<FilledButton>(undo).onPressed, isNull);
+        session.selectTile(2);
+        await tester.pumpAndSettle();
+        for (final finder in [undo, reset]) {
+          await Scrollable.ensureVisible(
+            tester.element(finder),
+            alignment: 0.5,
+          );
+          await tester.pumpAndSettle();
+          final size = tester.getSize(finder);
+          expect(size.width, inInclusiveRange(48, 320));
+          expect(size.height, greaterThanOrEqualTo(48));
+          expect(finder.hitTestable(), findsOneWidget);
+          final style = tester.widget<FilledButton>(finder).style!;
+          final label = tester.widget<PremiumTeluguText>(
+            find.descendant(
+              of: finder,
+              matching: find.byType(PremiumTeluguText),
+            ),
+          );
+          final textColor = label.style!.color!;
+          expect(textColor, style.foregroundColor!.resolve({}));
+          for (final states in [
+            <WidgetState>{},
+            {WidgetState.pressed},
+            {WidgetState.focused},
+          ]) {
+            final overlay = states.isEmpty
+                ? Colors.transparent
+                : style.overlayColor!.resolve(states)!;
+            final foreground = textColor.computeLuminance();
+            final background = Color.alphaBlend(
+              overlay,
+              style.backgroundColor!.resolve(states)!,
+            ).computeLuminance();
+            final lighter = foreground > background ? foreground : background;
+            final darker = foreground < background ? foreground : background;
+            expect(
+              (lighter + 0.05) / (darker + 0.05),
+              greaterThanOrEqualTo(4.5),
+            );
+          }
+        }
+        await _tap(tester, undo);
+        expect(session.selectedTiles, isEmpty);
+        await _tap(tester, find.byKey(const ValueKey('learning-tile-0')));
+        await _tap(tester, reset);
+        expect(session.selectedTiles, isEmpty);
+        for (final index in [2, 0, 1]) {
+          session.selectTile(index);
+        }
+        session.check();
+        await tester.pumpAndSettle();
+        expect(tester.widget<FilledButton>(undo).onPressed, isNull);
+        expect(tester.widget<FilledButton>(reset).onPressed, isNull);
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+  }
+
   testWidgets(
     'meaning helper does not reveal target meaning before an answer',
     (tester) async {

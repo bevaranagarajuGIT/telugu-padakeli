@@ -33,6 +33,9 @@ speech recognition, runtime font download or backend is required.
   Choice-based Kids games and original practice use balanced, shuffled answer
   positions, stable during retries and saved attempts. Authored content identities
   and previously earned progress/rewards are unchanged.
+  Word-builder Undo and Reset use gold/violet icon buttons with bilingual labels
+  and reduced-motion-aware press feedback. Large text stacks these controls;
+  their existing editing and correct-answer locking behavior is unchanged.
   These suggested paths are not verified age assessments.
 - A correct answer exposes Next/Finish in a separate adaptive SafeArea footer.
   Scrolling answers/explanations never sits underneath it. Completion resets
