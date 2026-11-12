@@ -688,6 +688,167 @@ class _PadakeliScreenState extends State<PadakeliScreen>
     }
   }
 
+  Future<void> _showActions() async {
+    final puzzle = _puzzle;
+    var chosen = false;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      constraints: BoxConstraints(
+        maxWidth: 560,
+        maxHeight: MediaQuery.sizeOf(context).height * 0.85,
+      ),
+      builder: (sheetContext) {
+        void choose(VoidCallback action) {
+          if (chosen || !mounted || !identical(puzzle, _puzzle)) return;
+          chosen = true;
+          Navigator.pop(sheetContext);
+          action();
+        }
+
+        return SingleChildScrollView(
+          key: const ValueKey('classic-actions-sheet'),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: _controlLabel('పదకేళి చర్యలు', 'Puzzle actions'),
+                  ),
+                  IconButton(
+                    tooltip: 'Close actions',
+                    onPressed: () => Navigator.pop(sheetContext),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              for (final (key, telugu, english, icon, color, foreground, action)
+                  in [
+                    (
+                      'classic-reset-word',
+                      'పదం తీసేయి',
+                      'Clear word',
+                      Icons.clear_all_rounded,
+                      AppColors.gold,
+                      AppColors.ink,
+                      !_isComplete && _selectedCells.isNotEmpty
+                          ? _resetWord
+                          : null,
+                    ),
+                    (
+                      'classic-reset',
+                      'మళ్లీ ఆడు',
+                      'Restart',
+                      Icons.restart_alt_rounded,
+                      AppColors.purple,
+                      Colors.white,
+                      () => unawaited(_confirmReset()),
+                    ),
+                  ]) ...[
+                FilledButton.icon(
+                  key: ValueKey(key),
+                  onPressed: action == null ? null : () => choose(action),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: color,
+                    foregroundColor: foreground,
+                    minimumSize: const Size(48, 56),
+                    padding: const EdgeInsets.all(12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  icon: Icon(icon),
+                  label: _controlLabel(telugu, english),
+                ),
+                const SizedBox(height: 12),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _headerActions(
+    double buttonWidth,
+    double height,
+    TextStyle labelStyle,
+  ) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final (key, label, tooltip, icon, background, foreground, action)
+            in [
+              (
+                'open-hints',
+                'సహాయం\nHints',
+                'Hints',
+                Icons.lightbulb_rounded,
+                AppColors.gold,
+                AppColors.ink,
+                _selectedClue == null || _isComplete ? null : _showHints,
+              ),
+              (
+                'classic-more',
+                'చర్యలు\nActions',
+                'మరిన్ని / More options',
+                Icons.tune_rounded,
+                AppColors.purple,
+                Colors.white,
+                _showActions,
+              ),
+            ]) ...[
+          SizedBox(
+            width: buttonWidth,
+            height: height,
+            child: Tooltip(
+              message: tooltip,
+              child: FilledButton(
+                key: ValueKey(key),
+                onPressed: action,
+                style: FilledButton.styleFrom(
+                  backgroundColor: background,
+                  foregroundColor: foreground,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 6,
+                  ),
+                  side: BorderSide(color: Colors.white.withValues(alpha: 0.7)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    ExcludeSemantics(child: Icon(icon, size: 18)),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        label,
+                        textAlign: TextAlign.center,
+                        style: labelStyle.copyWith(
+                          color: action == null
+                              ? Theme.of(context).colorScheme.onSurface
+                              : foreground,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
+      ],
+    );
+  }
+
   void _reset() {
     final puzzle = _puzzle;
     if (puzzle == null) {
@@ -748,13 +909,44 @@ class _PadakeliScreenState extends State<PadakeliScreen>
     final titleSize = MediaQuery.textScalerOf(
       context,
     ).scale(titleStyle.fontSize!);
+    final labelStyle = theme.textTheme.labelMedium!.copyWith(
+      fontFamily: PremiumTeluguText.fontFamily,
+      height: PremiumTeluguText.lineHeight,
+      fontWeight: FontWeight.w700,
+    );
+    final width = MediaQuery.sizeOf(context).width;
+    final separateActions =
+        width < 380 ||
+        MediaQuery.textScalerOf(context).scale(labelStyle.fontSize!) > 14.5;
+    final buttonWidth = separateActions ? (width.clamp(0, 720) - 32) / 2 : 88.0;
+    var actionsHeight = 48.0;
+    for (final label in ['సహాయం\nHints', 'చర్యలు\nActions']) {
+      final painter = TextPainter(
+        text: TextSpan(text: label, style: labelStyle),
+        textDirection: Directionality.of(context),
+        textScaler: MediaQuery.textScalerOf(context),
+      )..layout(maxWidth: buttonWidth - 38);
+      if (painter.height + 12 > actionsHeight) {
+        actionsHeight = painter.height + 12;
+      }
+      painter.dispose();
+    }
+    final scrollActions =
+        separateActions &&
+        titleSize * 1.8 + 24 + actionsHeight >
+            MediaQuery.sizeOf(context).height * 0.6;
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
         backgroundColor: AppColors.deepBlue,
         foregroundColor: Colors.white,
         systemOverlayStyle: SystemUiOverlayStyle.light,
-        toolbarHeight: (titleSize * 1.8 + 16).clamp(64, double.infinity),
+        toolbarHeight: (titleSize * 1.8 + 16).clamp(
+          separateActions ? 64 : (actionsHeight + 8).clamp(64, double.infinity),
+          double.infinity,
+        ),
+        titleSpacing: 8,
+        leadingWidth: 48,
         leading: IconButton(
           tooltip: widget.dailyDate == null
               ? 'Change difficulty'
@@ -776,38 +968,18 @@ class _PadakeliScreenState extends State<PadakeliScreen>
             fontWeight: FontWeight.w700,
           ),
         ),
-        actions: [
-          IconButton(
-            key: const ValueKey('open-hints'),
-            tooltip: 'Hints',
-            onPressed: _selectedClue == null || _isComplete ? null : _showHints,
-            icon: const Icon(Icons.lightbulb_rounded, color: AppColors.gold),
-          ),
-          PopupMenuButton<String>(
-            key: const ValueKey('classic-more'),
-            tooltip: 'మరిన్ని / More options',
-            onSelected: (action) {
-              if (action == 'clear-word') {
-                _resetWord();
-              } else {
-                unawaited(_confirmReset());
-              }
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                key: const ValueKey('classic-reset-word'),
-                value: 'clear-word',
-                enabled: !_isComplete && _selectedCells.isNotEmpty,
-                child: _controlLabel('పదం తీసేయి', 'Clear word'),
+        actions: separateActions
+            ? null
+            : [_headerActions(buttonWidth, actionsHeight, labelStyle)],
+        bottom: !separateActions || scrollActions
+            ? null
+            : PreferredSize(
+                preferredSize: Size.fromHeight(actionsHeight + 8),
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 12, right: 4, bottom: 8),
+                  child: _headerActions(buttonWidth, actionsHeight, labelStyle),
+                ),
               ),
-              PopupMenuItem(
-                key: const ValueKey('classic-reset'),
-                value: 'restart',
-                child: _controlLabel('మళ్లీ ఆడు', 'Restart'),
-              ),
-            ],
-          ),
-        ],
       ),
       body: Container(
         constraints: const BoxConstraints.expand(),
@@ -836,6 +1008,10 @@ class _PadakeliScreenState extends State<PadakeliScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    if (scrollActions) ...[
+                      _headerActions(buttonWidth, actionsHeight, labelStyle),
+                      const SizedBox(height: 8),
+                    ],
                     if (widget.dailyDate != null) ...[
                       Text(
                         'నేటి పదకేళి / Daily · ${widget.dailyDate}\n'
@@ -1072,8 +1248,8 @@ class _PadakeliScreenState extends State<PadakeliScreen>
                     'అక్షరం తీసేయి',
                     'Clear letter',
                     Icons.highlight_remove_rounded,
-                    scheme.primaryContainer,
-                    scheme.onPrimaryContainer,
+                    AppColors.gold,
+                    AppColors.ink,
                     () => _clearCell(),
                   ),
                   (
@@ -1081,19 +1257,27 @@ class _PadakeliScreenState extends State<PadakeliScreen>
                     'వెనక్కి',
                     'Backspace',
                     Icons.backspace_outlined,
-                    scheme.secondaryContainer,
-                    scheme.onSecondaryContainer,
+                    AppColors.purple,
+                    Colors.white,
                     () => _clearCell(backspace: true),
                   ),
                 ])
               TapFeedback(
                 enabled: enabled,
-                child: FilledButton.tonal(
+                child: FilledButton(
                   key: ValueKey(key),
                   onPressed: enabled ? action : null,
                   style: FilledButton.styleFrom(
                     backgroundColor: background,
                     foregroundColor: foreground,
+                    disabledBackgroundColor: scheme.onSurface.withValues(
+                      alpha: 0.12,
+                    ),
+                    disabledForegroundColor: scheme.onSurface.withValues(
+                      alpha: 0.5,
+                    ),
+                    elevation: enabled ? 2 : 0,
+                    shadowColor: AppColors.ink.withValues(alpha: 0.25),
                     minimumSize: const Size(48, 56),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 6,
@@ -1114,7 +1298,9 @@ class _PadakeliScreenState extends State<PadakeliScreen>
                           english: english,
                           center: true,
                           style: theme.textTheme.labelLarge?.copyWith(
-                            color: foreground,
+                            color: enabled
+                                ? foreground
+                                : scheme.onSurface.withValues(alpha: 0.5),
                           ),
                         ),
                       ),

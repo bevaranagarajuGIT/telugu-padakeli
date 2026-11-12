@@ -27,9 +27,10 @@ speech recognition, runtime font download or backend is required.
   opens a success dialog with explicit Next puzzle/Next level, Play again, Home
   and Choose level actions; no timer advances the board. Saved completions reopen
   with these choices. Filled-cell percentage is not an accuracy claim.
-  Hint is available once in the top bar; Clear word and confirmed Restart live in
-  its More options menu. Clear letter and Backspace remain beside the palette with
-  distinct tonal icon buttons, brief press feedback, equal normal-text targets and a large-text stacked
+  Labeled gold Hint and violet Actions buttons replace ambiguous top-bar icons;
+  Actions opens a scrollable sheet for Clear word and confirmed Restart.
+  Clear letter and Backspace remain beside the palette with rich gold/violet
+  icon buttons, brief press feedback, equal normal-text targets and a large-text stacked
   layout. Reduced motion disables the press animation; editing behavior is
   unchanged.
 - Kids offers three freely selectable Telugu-first learning paths: చిన్నారులు,

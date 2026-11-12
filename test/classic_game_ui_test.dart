@@ -113,6 +113,7 @@ Future<void> _tap(WidgetTester tester, Finder finder) async {
 Future<void> _menu(WidgetTester tester, String key) async {
   await _tap(tester, find.byKey(const ValueKey('classic-more')));
   await tester.pumpAndSettle();
+  expect(find.byKey(const ValueKey('classic-actions-sheet')), findsOneWidget);
   await _tap(tester, find.byKey(ValueKey(key)));
   await tester.pumpAndSettle();
 }
@@ -361,7 +362,7 @@ void main() {
     );
 
     testWidgets(
-      'tonal edit buttons retain contrast and lock on success dark=$dark',
+      'vibrant edit buttons retain contrast and lock on success dark=$dark',
       (tester) async {
         await _open(tester, dark: dark);
         final toolbar = find.byKey(const ValueKey('classic-edit-toolbar'));
@@ -373,7 +374,7 @@ void main() {
         );
         expect(
           tester.widget(find.byKey(const ValueKey('open-hints'))),
-          isA<IconButton>(),
+          isA<FilledButton>(),
         );
         expect(find.byKey(const ValueKey('classic-check')), findsNothing);
         for (final key in ['classic-clear-cell', 'classic-backspace']) {
@@ -989,6 +990,38 @@ void main() {
             systemScale: systemScale,
             dark: dark,
           );
+          for (final (key, label) in [
+            ('open-hints', 'సహాయం\nHints'),
+            ('classic-more', 'చర్యలు\nActions'),
+          ]) {
+            final finder = find.byKey(ValueKey(key));
+            expect(finder.hitTestable(), findsOneWidget);
+            final bounds = tester.getRect(finder);
+            expect(bounds.width, greaterThanOrEqualTo(48));
+            expect(bounds.height, greaterThanOrEqualTo(48));
+            expect(bounds.left, greaterThanOrEqualTo(0));
+            expect(bounds.right, lessThanOrEqualTo(width));
+            final textFinder = find.descendant(
+              of: finder,
+              matching: find.text(label),
+            );
+            final textBounds = tester.getRect(textFinder);
+            expect(textBounds.left, greaterThanOrEqualTo(bounds.left));
+            expect(textBounds.right, lessThanOrEqualTo(bounds.right));
+            expect(textBounds.top, greaterThanOrEqualTo(bounds.top));
+            expect(textBounds.bottom, lessThanOrEqualTo(bounds.bottom));
+            final button = tester.widget<FilledButton>(finder);
+            final background = button.style!.backgroundColor!.resolve({})!;
+            final foreground = tester.widget<Text>(textFinder).style!.color!;
+            final luminances = [
+              background.computeLuminance(),
+              foreground.computeLuminance(),
+            ]..sort();
+            expect(
+              (luminances.last + 0.05) / (luminances.first + 0.05),
+              greaterThanOrEqualTo(4.5),
+            );
+          }
           expect(
             find.byKey(const ValueKey('classic-puzzle-1')),
             findsOneWidget,
