@@ -604,6 +604,11 @@ class _PadakeliScreenState extends State<PadakeliScreen>
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => Dialog(
+        constraints: const BoxConstraints(maxWidth: 420),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+        ),
         child: SingleChildScrollView(
           child: _completion(dialogContext: dialogContext),
         ),
@@ -1442,21 +1447,49 @@ class _PadakeliScreenState extends State<PadakeliScreen>
         .where(availableLevels.contains)
         .firstOrNull;
     final hasNextPuzzle = _puzzleNumber < _levelPuzzles.length;
+    ButtonStyle filledStyle(Color background, Color foreground) =>
+        FilledButton.styleFrom(
+          backgroundColor: background,
+          foregroundColor: foreground,
+          minimumSize: const Size(48, 56),
+          padding: const EdgeInsets.all(12),
+          elevation: 2,
+          shadowColor: AppColors.ink.withValues(alpha: 0.2),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        );
+
     return Padding(
       key: const ValueKey('classic-level-complete'),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Icon(Icons.verified_rounded, size: 72, color: AppColors.teal),
+          Center(
+            child: Container(
+              width: 80,
+              height: 80,
+              decoration: const BoxDecoration(
+                color: AppColors.gold,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.verified_rounded,
+                size: 56,
+                color: AppColors.successForeground,
+              ),
+            ),
+          ),
           const SizedBox(height: 16),
           PremiumTeluguText(
             hasNextPuzzle ? 'పదకేళి పూర్తయింది!' : 'స్థాయి పూర్తయింది!',
             textAlign: TextAlign.center,
             style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w800,
             ),
           ),
+          const SizedBox(height: 8),
           PremiumTeluguText(
             '$_puzzleNumber / ${_levelPuzzles.length} పదకేళీలు పూర్తి చేశారు.',
             textAlign: TextAlign.center,
@@ -1468,48 +1501,49 @@ class _PadakeliScreenState extends State<PadakeliScreen>
               key: const ValueKey('classic-next-puzzle'),
               onPressed: () =>
                   choose(() => _openPuzzle(_levelPuzzles[_puzzleNumber])),
+              style: filledStyle(AppColors.deepBlue, Colors.white),
               icon: const Icon(Icons.arrow_forward_rounded),
               label: _controlLabel('తదుపరి పదకేళి', 'Next puzzle'),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
           ] else if (nextLevel != null) ...[
             FilledButton.icon(
               key: const ValueKey('classic-next-level'),
               onPressed: () => choose(() => _loadPuzzle(nextLevel)),
-              style: FilledButton.styleFrom(
-                minimumSize: const Size(48, 56),
-                padding: const EdgeInsets.all(12),
-              ),
+              style: filledStyle(AppColors.deepBlue, Colors.white),
               icon: const Icon(Icons.arrow_forward_rounded),
               label: _controlLabel('తరువాతి స్థాయి', 'Next level'),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
           ],
-          OutlinedButton.icon(
+          FilledButton.icon(
             key: const ValueKey('classic-replay'),
             onPressed: () => choose(() => _openPuzzle(_puzzle!)),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size(48, 56),
-              padding: const EdgeInsets.all(12),
-            ),
+            style: filledStyle(AppColors.purple, Colors.white),
             icon: const Icon(Icons.replay_rounded),
             label: _controlLabel('మళ్లీ ఆడు', 'Play again'),
           ),
-          const SizedBox(height: 8),
-          OutlinedButton(
+          const SizedBox(height: 12),
+          FilledButton.icon(
             key: const ValueKey('classic-choose-level'),
             onPressed: () => choose(_showDifficulties),
+            style: filledStyle(AppColors.gold, AppColors.ink),
+            icon: const Icon(Icons.grid_view_rounded),
+            label: _controlLabel('స్థాయిని ఎంచుకోండి', 'Choose level'),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            key: const ValueKey('classic-completion-home'),
+            onPressed: () => choose(home),
             style: OutlinedButton.styleFrom(
               minimumSize: const Size(48, 56),
               padding: const EdgeInsets.all(12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
             ),
-            child: _controlLabel('స్థాయిని ఎంచుకోండి', 'Choose level'),
-          ),
-          const SizedBox(height: 8),
-          TextButton(
-            key: const ValueKey('classic-completion-home'),
-            onPressed: () => choose(home),
-            child: _controlLabel('హోమ్‌కు వెళ్లు', 'Home'),
+            icon: const Icon(Icons.home_rounded),
+            label: _controlLabel('హోమ్‌కు వెళ్లు', 'Home'),
           ),
         ],
       ),

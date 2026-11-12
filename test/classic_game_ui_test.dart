@@ -1331,6 +1331,73 @@ void main() {
     );
   }
 
+  for (final (width, height, appScale, systemScale) in [
+    (320.0, 568.0, 1.0, 1.0),
+    (800.0, 844.0, 1.0, 1.0),
+    (320.0, 568.0, 1.4, 3.2),
+  ]) {
+    for (final dark in [false, true]) {
+      testWidgets(
+        'completion actions fit $width x $height app=$appScale system=$systemScale dark=$dark',
+        (tester) async {
+          tester.view.physicalSize = Size(width, height);
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.resetPhysicalSize);
+          addTearDown(tester.view.resetDevicePixelRatio);
+          await _open(
+            tester,
+            appScale: appScale,
+            systemScale: systemScale,
+            dark: dark,
+          );
+          await _fill(tester, _puzzles.first);
+          await tester.pumpAndSettle();
+          for (final key in [
+            'classic-next-puzzle',
+            'classic-replay',
+            'classic-choose-level',
+            'classic-completion-home',
+          ]) {
+            final finder = find.byKey(ValueKey(key));
+            await tester.ensureVisible(finder);
+            await tester.pumpAndSettle();
+            expect(finder.hitTestable(), findsOneWidget);
+            final bounds = tester.getRect(finder);
+            expect(bounds.width, greaterThanOrEqualTo(48));
+            expect(bounds.height, greaterThanOrEqualTo(48));
+            expect(bounds.left, greaterThanOrEqualTo(0));
+            expect(bounds.right, lessThanOrEqualTo(width));
+            for (final label in tester.widgetList<Text>(
+              find.descendant(of: finder, matching: find.byType(Text)),
+            )) {
+              final labelBounds = tester.getRect(find.byWidget(label));
+              expect(labelBounds.left, greaterThanOrEqualTo(bounds.left));
+              expect(labelBounds.right, lessThanOrEqualTo(bounds.right));
+              expect(labelBounds.top, greaterThanOrEqualTo(bounds.top));
+              expect(labelBounds.bottom, lessThanOrEqualTo(bounds.bottom));
+            }
+            if (key != 'classic-completion-home') {
+              final button = tester.widget<FilledButton>(finder);
+              final luminances = [
+                button.style!.foregroundColor!.resolve({})!.computeLuminance(),
+                button.style!.backgroundColor!.resolve({})!.computeLuminance(),
+              ]..sort();
+              expect(
+                (luminances.last + 0.05) / (luminances.first + 0.05),
+                greaterThanOrEqualTo(4.5),
+              );
+            }
+          }
+          expect(tester.takeException(), isNull);
+          await _tap(tester, find.byKey(const ValueKey('classic-replay')));
+          await tester.pumpAndSettle();
+          expect(find.byType(Dialog), findsNothing);
+          expect(tester.takeException(), isNull);
+        },
+      );
+    }
+  }
+
   for (final action in ['Replay', 'Choose level', 'Dispose']) {
     testWidgets('$action after completion never advances automatically', (
       tester,

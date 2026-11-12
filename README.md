@@ -27,6 +27,10 @@ speech recognition, runtime font download or backend is required.
   opens a success dialog with explicit Next puzzle/Next level, Play again, Home
   and Choose level actions; no timer advances the board. Saved completions reopen
   with these choices. Filled-cell percentage is not an accuracy claim.
+  Completion choices use full-width blue Next, violet Play again and gold Choose
+  level buttons, with a separate outlined Home action and gold success badge.
+  The dialog scrolls at enlarged text sizes. Restart confirmation keeps its
+  warning visible with full-width Cancel and violet Restart controls.
   Labeled gold Hint and violet Actions buttons replace ambiguous top-bar icons;
   Actions opens a scrollable sheet for Clear word and confirmed Restart.
   Clear letter and Backspace remain beside the palette with rich gold/violet
