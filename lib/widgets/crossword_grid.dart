@@ -308,12 +308,14 @@ class AksharaPalette extends StatelessWidget {
     required this.puzzle,
     required this.onSelected,
     this.enabled = true,
+    this.label = 'అక్షరాలు',
     super.key,
   });
 
   final Puzzle puzzle;
   final ValueChanged<String> onSelected;
   final bool enabled;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
@@ -324,15 +326,17 @@ class AksharaPalette extends StatelessWidget {
         .map(TeluguAkshara.normalize)
         .toSet();
     return Card(
+      margin: EdgeInsets.zero,
       child: Padding(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(4),
         child: Wrap(
-          spacing: 8,
-          runSpacing: 8,
+          spacing: 4,
+          runSpacing: 4,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             Text(
-              'అక్షరాలు',
+              label,
+              key: const ValueKey('classic-input-direction'),
               style: Theme.of(
                 context,
               ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700),

@@ -16,6 +16,10 @@ speech recognition, runtime font download or backend is required.
   word editing, authored hints, one-cell reveals and confirmed reset remain.
   Selecting a clue or switching Across/Down prefers an unfilled/incorrect cell;
   typing skips already-correct crossings. Explicit cell taps still allow editing.
+  Classic edits answers directly in the grid, without a duplicate answer-preview
+  row. Compact spacing retains 48-dp targets; arrow-marked Across/Down chips use
+  a strong selected state, and the letter palette repeats the current direction
+  and clue number so it stays clear when the board is scrolled out of view.
   Play again starts the level with an empty first board, not the completed save;
   ordinary Resume and difficulty re-selection still restore saved answers.
   Correct checks advance within a level after 1.1 seconds; changing level is

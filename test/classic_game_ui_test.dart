@@ -284,7 +284,7 @@ void main() {
     );
 
     testWidgets(
-      'hint completion confirms grid and large-text answer preview dark=$dark',
+      'hint completion keeps large-text grid answers editable dark=$dark',
       (tester) async {
         tester.view.physicalSize = const Size(390, 844);
         tester.view.devicePixelRatio = 1;
@@ -322,39 +322,29 @@ void main() {
           find.byKey(ValueKey('clue-correct-across-${clue.number}')),
           findsOneWidget,
         );
-        for (final index in path) {
-          final button = tester.widget<OutlinedButton>(
-            find.byKey(ValueKey('classic-word-cell-$index')),
-          );
-          expect(button.onPressed, isNotNull);
-          for (final states in [
-            <WidgetState>{},
-            {WidgetState.disabled},
-          ]) {
-            expect(
-              button.style!.backgroundColor!.resolve(states),
-              dark
-                  ? AppColors.darkSuccessBackground
-                  : AppColors.successBackground,
-            );
-            expect(
-              button.style!.foregroundColor!.resolve(states),
-              dark
-                  ? AppColors.darkSuccessForeground
-                  : AppColors.successForeground,
-            );
-          }
-        }
-        final active = tester.widget<OutlinedButton>(
-          find.byKey(ValueKey('classic-word-cell-${path.last}')),
-        );
         expect(
-          active.style!.side!.resolve({})!.color,
-          dark ? AppColors.orange : AppColors.deepOrange,
+          find.byKey(const ValueKey('classic-answer-editor')),
+          findsNothing,
         );
+        for (final index in path) {
+          expect(
+            tester
+                .widget<InkWell>(find.byKey(ValueKey('crossword-cell-$index')))
+                .onTap,
+            isNotNull,
+          );
+          expect(
+            tester
+                .widget<Text>(
+                  find.byKey(ValueKey('crossword-cell-value-$index')),
+                )
+                .data,
+            puzzle.answerAt(index ~/ puzzle.gridSize, index % puzzle.gridSize),
+          );
+        }
         await _tap(
           tester,
-          find.byKey(ValueKey('classic-word-cell-${path.first}')),
+          find.byKey(ValueKey('crossword-cell-${path.first}')),
         );
         await _tap(tester, find.byKey(const ValueKey('classic-clear-cell')));
         expect(
@@ -455,6 +445,92 @@ void main() {
         }
         final list = find.byKey(const ValueKey('classic-clue-list'));
         expect(tester.getSize(list).height, closeTo(tilesHeight + 8, 0.1));
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  for (final dark in [false, true]) {
+    testWidgets(
+      'compact Classic identifies direction beside input dark=$dark',
+      (tester) async {
+        tester.view.physicalSize = const Size(390, 844);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final puzzle = _puzzles.firstWhere((puzzle) => puzzle.id == 11);
+        await _open(tester, level: 'Expert', puzzles: [puzzle], dark: dark);
+        expect(
+          find.byKey(const ValueKey('classic-answer-editor')),
+          findsNothing,
+        );
+        expect(
+          tester
+              .getSize(find.byKey(const ValueKey('crossword-visible-board')))
+              .height,
+          lessThanOrEqualTo(300),
+        );
+        final gridScroll = tester.state<ScrollableState>(
+          find.descendant(
+            of: find.byKey(const ValueKey('crossword-grid-scroll')),
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget is Scrollable &&
+                  widget.axisDirection == AxisDirection.right,
+            ),
+          ),
+        );
+        expect(gridScroll.position.maxScrollExtent, 0);
+        for (final direction in PuzzleDirection.values) {
+          final chip = find.byKey(
+            ValueKey('classic-direction-${direction.name}'),
+          );
+          await _tap(tester, chip);
+          final selected = tester.widget<ChoiceChip>(chip);
+          expect(selected.selected, isTrue);
+          expect(
+            (selected.avatar! as Icon).icon,
+            direction == PuzzleDirection.across
+                ? Icons.arrow_forward_rounded
+                : Icons.arrow_downward_rounded,
+          );
+          final textColor = (selected.label as PremiumTeluguText).style!.color!;
+          final luminances = [
+            textColor.computeLuminance(),
+            selected.selectedColor!.computeLuminance(),
+          ]..sort();
+          expect(
+            (luminances.last + 0.05) / (luminances.first + 0.05),
+            greaterThanOrEqualTo(4.5),
+          );
+          final label = tester
+              .widget<Text>(
+                find.byKey(const ValueKey('classic-input-direction')),
+              )
+              .data!;
+          expect(
+            label,
+            contains(
+              direction == PuzzleDirection.across
+                  ? '→ అడ్డం / Across'
+                  : '↓ నిలువు / Down',
+            ),
+          );
+          final grid = tester.widget<CrosswordGrid>(find.byType(CrosswordGrid));
+          final cells = grid.selectedCells;
+          expect(cells, isNotEmpty);
+          expect(
+            cells
+                .map(
+                  (cell) => direction == PuzzleDirection.across
+                      ? cell ~/ puzzle.gridSize
+                      : cell % puzzle.gridSize,
+                )
+                .toSet()
+                .length,
+            1,
+          );
+        }
         expect(tester.takeException(), isNull);
       },
     );
@@ -663,9 +739,11 @@ void main() {
           expect(active.right, lessThanOrEqualTo(visible.right + 0.1));
           expect(
             tester
-                .widget<Text>(find.byKey(ValueKey('classic-word-value-$cell')))
+                .widget<Text>(
+                  find.byKey(ValueKey('crossword-cell-value-$cell')),
+                )
                 .data,
-            '_',
+            '',
           );
         }
         expect(tester.takeException(), isNull);
@@ -674,7 +752,7 @@ void main() {
   }
 
   testWidgets(
-    'word preview updates, corrects earlier answers and shares crossings',
+    'grid alone updates, corrects earlier answers and shares crossings',
     (tester) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1;
@@ -692,21 +770,11 @@ void main() {
       for (final (position, cell) in path.indexed) {
         expect(
           tester
-              .widget<Text>(find.byKey(ValueKey('classic-word-value-$cell')))
-              .data,
-          answer[position],
-        );
-        expect(
-          tester
               .widget<Text>(find.byKey(ValueKey('crossword-cell-value-$cell')))
               .data,
           answer[position],
         );
       }
-      await _tap(
-        tester,
-        find.byKey(ValueKey('classic-word-cell-${path.last}')),
-      );
       expect(
         tester
             .widget<ListTile>(
@@ -715,10 +783,7 @@ void main() {
             .selected,
         isTrue,
       );
-      await _tap(
-        tester,
-        find.byKey(ValueKey('classic-word-cell-${path.first}')),
-      );
+      await _tap(tester, find.byKey(ValueKey('crossword-cell-${path.first}')));
       final wrongAnswer = puzzle.rows
           .expand((row) => row)
           .firstWhere((value) => value != '#' && value != answer.first);
@@ -726,15 +791,12 @@ void main() {
       expect(
         tester
             .widget<Text>(
-              find.byKey(ValueKey('classic-word-value-${path.first}')),
+              find.byKey(ValueKey('crossword-cell-value-${path.first}')),
             )
             .data,
         wrongAnswer,
       );
-      await _tap(
-        tester,
-        find.byKey(ValueKey('classic-word-cell-${path.first}')),
-      );
+      await _tap(tester, find.byKey(ValueKey('crossword-cell-${path.first}')));
       await _tap(tester, find.byKey(ValueKey('akshara-${answer.first}')));
       final down = puzzle.downClues.firstWhere(
         (c) => puzzle.cellsForClue(c, PuzzleDirection.down).any(path.contains),
@@ -742,21 +804,21 @@ void main() {
       final shared = puzzle
           .cellsForClue(down, PuzzleDirection.down)
           .firstWhere(path.contains);
-      await _tap(tester, find.byKey(ValueKey('classic-word-cell-$shared')));
+      await _tap(tester, find.byKey(ValueKey('crossword-cell-$shared')));
       await _tap(tester, find.text('నిలువు (Down)'));
       expect(
         tester
-            .widget<Text>(find.byKey(ValueKey('classic-word-value-$shared')))
+            .widget<Text>(find.byKey(ValueKey('crossword-cell-value-$shared')))
             .data,
         puzzle.answerAt(shared ~/ puzzle.gridSize, shared % puzzle.gridSize),
       );
-      await _tap(tester, find.byKey(ValueKey('classic-word-cell-$shared')));
+      await _tap(tester, find.byKey(ValueKey('crossword-cell-$shared')));
       await _tap(tester, find.byKey(const ValueKey('classic-clear-cell')));
       expect(
         tester
-            .widget<Text>(find.byKey(ValueKey('classic-word-value-$shared')))
+            .widget<Text>(find.byKey(ValueKey('crossword-cell-value-$shared')))
             .data,
-        '_',
+        '',
       );
       expect(
         tester
@@ -768,7 +830,7 @@ void main() {
       await _tap(tester, find.byKey(const ValueKey('hint-reveal-cell')));
       expect(
         tester
-            .widget<Text>(find.byKey(ValueKey('classic-word-value-$shared')))
+            .widget<Text>(find.byKey(ValueKey('crossword-cell-value-$shared')))
             .data,
         puzzle.answerAt(shared ~/ puzzle.gridSize, shared % puzzle.gridSize),
       );
@@ -776,7 +838,7 @@ void main() {
     },
   );
 
-  testWidgets('large-text word preview remains editable on a small phone', (
+  testWidgets('large-text grid remains editable without a duplicate preview', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(320, 568);
@@ -794,7 +856,7 @@ void main() {
     final cell = puzzle
         .cellsForClue(puzzle.acrossClues.first, PuzzleDirection.across)
         .first;
-    final button = find.byKey(ValueKey('classic-word-cell-$cell'));
+    final button = find.byKey(ValueKey('crossword-cell-$cell'));
     await _tap(tester, button);
     expect(tester.getSize(button).height, greaterThanOrEqualTo(48));
     expect(tester.getSize(button).width, greaterThanOrEqualTo(48));
@@ -808,7 +870,7 @@ void main() {
     );
     expect(
       tester
-          .widget<Text>(find.byKey(ValueKey('classic-word-value-$cell')))
+          .widget<Text>(find.byKey(ValueKey('crossword-cell-value-$cell')))
           .data,
       puzzle.answerAt(cell ~/ puzzle.gridSize, cell % puzzle.gridSize),
     );

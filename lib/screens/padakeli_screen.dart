@@ -815,7 +815,7 @@ class _PadakeliScreenState extends State<PadakeliScreen>
           child: SingleChildScrollView(
             controller: _scrollController,
             key: const ValueKey('classic-game-scroll'),
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(8),
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 720),
@@ -892,18 +892,18 @@ class _PadakeliScreenState extends State<PadakeliScreen>
             style: theme.textTheme.bodySmall,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         Align(
           child: ConstrainedBox(
             constraints: BoxConstraints(
               maxWidth: puzzle.gridSize > 3
-                  ? 720
+                  ? (puzzle.gridSize * 60.0).clamp(240, 720)
                   : MediaQuery.sizeOf(context).width >= 600
                   ? 360
                   : 240,
             ),
             child: Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surface,
                 borderRadius: BorderRadius.circular(18),
@@ -934,8 +934,8 @@ class _PadakeliScreenState extends State<PadakeliScreen>
         ),
         const SizedBox(height: 4),
         Wrap(
-          spacing: 10,
-          runSpacing: 10,
+          spacing: 8,
+          runSpacing: 4,
           alignment: WrapAlignment.center,
           children: [
             for (final (direction, label) in [
@@ -943,19 +943,44 @@ class _PadakeliScreenState extends State<PadakeliScreen>
               (PuzzleDirection.down, 'నిలువు (Down)'),
             ])
               ChoiceChip(
+                key: ValueKey('classic-direction-${direction.name}'),
+                avatar: Icon(
+                  direction == PuzzleDirection.across
+                      ? Icons.arrow_forward_rounded
+                      : Icons.arrow_downward_rounded,
+                  color: _selectedDirection == direction
+                      ? Colors.white
+                      : scheme.onSurface,
+                  size: 20,
+                ),
+                showCheckmark: false,
                 label: PremiumTeluguText(
                   label,
-                  style: theme.textTheme.labelLarge,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: _selectedDirection == direction
+                        ? Colors.white
+                        : scheme.onSurface,
+                    fontWeight: _selectedDirection == direction
+                        ? FontWeight.w700
+                        : FontWeight.w500,
+                  ),
                 ),
                 selected: _selectedDirection == direction,
-                selectedColor: theme.colorScheme.secondaryContainer,
+                selectedColor: AppColors.deepBlue,
+                backgroundColor: scheme.surface,
+                side: BorderSide(
+                  color: _selectedDirection == direction
+                      ? AppColors.deepBlue
+                      : scheme.outline,
+                  width: _selectedDirection == direction ? 2 : 1,
+                ),
                 onSelected: _isAdvancing || _cluesFor(puzzle, direction).isEmpty
                     ? null
                     : (_) => _changeDirection(direction),
               ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         _ClueList(
           clues: _cluesFor(puzzle, _selectedDirection),
           direction: _selectedDirection,
@@ -965,23 +990,22 @@ class _PadakeliScreenState extends State<PadakeliScreen>
           onSelect: _selectClue,
           enabled: !_isAdvancing && _selectedCellIndex != null,
         ),
-        const SizedBox(height: 8),
-        if (puzzle.gridSize > 3 && _selectedCells.isNotEmpty) ...[
-          _answerEditor(puzzle, correctCells),
-          const SizedBox(height: 8),
-        ],
+        const SizedBox(height: 4),
         AksharaPalette(
           puzzle: puzzle,
           onSelected: _enterAkshara,
           enabled: !_isAdvancing,
+          label: _selectedDirection == PuzzleDirection.across
+              ? '→ అడ్డం / Across · ${_selectedClue?.number ?? ''}'
+              : '↓ నిలువు / Down · ${_selectedClue?.number ?? ''}',
         ),
         const SizedBox(height: 4),
         _editToolbar(context),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         Wrap(
           alignment: WrapAlignment.center,
-          spacing: 10,
-          runSpacing: 10,
+          spacing: 8,
+          runSpacing: 4,
           children: [
             OutlinedButton.icon(
               key: const ValueKey('open-hints'),
@@ -1051,102 +1075,6 @@ class _PadakeliScreenState extends State<PadakeliScreen>
     );
   }
 
-  Widget _answerEditor(Puzzle puzzle, Set<int> correctCells) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final dark = theme.brightness == Brightness.dark;
-    final correctBackground = dark
-        ? AppColors.darkSuccessBackground
-        : AppColors.successBackground;
-    final correctForeground = dark
-        ? AppColors.darkSuccessForeground
-        : AppColors.successForeground;
-    return Card(
-      key: const ValueKey('classic-answer-editor'),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'మీ సమాధానం · ${_selectedClue!.number}',
-              style: theme.textTheme.labelLarge,
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: [
-                for (final (position, index) in _selectedCells.indexed)
-                  Semantics(
-                    selected: index == _selectedCellIndex,
-                    label:
-                        'పదంలో అక్షరం ${position + 1}${correctCells.contains(index) ? ', సరైన పదం / Correct word' : ''}',
-                    child: OutlinedButton(
-                      key: ValueKey('classic-word-cell-$index'),
-                      onPressed: _isAdvancing
-                          ? null
-                          : () {
-                              if (index != _selectedCellIndex) {
-                                _selectCell(index);
-                              }
-                            },
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(48, 48),
-                        padding: const EdgeInsets.all(8),
-                        backgroundColor: correctCells.contains(index)
-                            ? correctBackground
-                            : index == _selectedCellIndex
-                            ? AppColors.gold
-                            : scheme.surface,
-                        foregroundColor: correctCells.contains(index)
-                            ? correctForeground
-                            : index == _selectedCellIndex
-                            ? AppColors.ink
-                            : scheme.onSurface,
-                        disabledBackgroundColor: correctCells.contains(index)
-                            ? correctBackground
-                            : null,
-                        disabledForegroundColor: correctCells.contains(index)
-                            ? correctForeground
-                            : null,
-                        side: correctCells.contains(index)
-                            ? BorderSide(
-                                color: index == _selectedCellIndex
-                                    ? dark
-                                          ? AppColors.orange
-                                          : AppColors.deepOrange
-                                    : correctForeground,
-                                width: index == _selectedCellIndex ? 2 : 1,
-                              )
-                            : null,
-                      ),
-                      child: Text(
-                        _controllers[index ~/ puzzle.gridSize][index %
-                                    puzzle.gridSize]
-                                .text
-                                .isEmpty
-                            ? '_'
-                            : _controllers[index ~/ puzzle.gridSize][index %
-                                      puzzle.gridSize]
-                                  .text,
-                        key: ValueKey('classic-word-value-$index'),
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontFamily: PremiumTeluguText.fontFamily,
-                          height: PremiumTeluguText.lineHeight,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _controlLabel(String telugu, String english) =>
       KidsLearningText.control(telugu, english: english, center: true);
 
@@ -1212,22 +1140,30 @@ class _PadakeliScreenState extends State<PadakeliScreen>
                   style: FilledButton.styleFrom(
                     backgroundColor: background,
                     foregroundColor: foreground,
-                    minimumSize: const Size(48, 64),
+                    minimumSize: const Size(48, 56),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 6,
-                      vertical: 8,
+                      vertical: 6,
                     ),
                     side: BorderSide(color: foreground.withValues(alpha: 0.18)),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
+                  child: Row(
                     children: [
                       ExcludeSemantics(child: Icon(icon, size: 20)),
-                      const SizedBox(height: 4),
-                      _controlLabel(label, english),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: KidsLearningText.control(
+                          label,
+                          english: english,
+                          center: true,
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: foreground,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
