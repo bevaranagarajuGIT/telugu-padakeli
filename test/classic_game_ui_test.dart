@@ -1629,6 +1629,124 @@ void main() {
     },
   );
 
+  for (final direction in PuzzleDirection.values) {
+    testWidgets(
+      '${direction.name} to opposite direction skips the correct first shared letter',
+      (tester) async {
+        await _open(tester);
+        final puzzle = _puzzles.first;
+        final other = direction == PuzzleDirection.across
+            ? PuzzleDirection.down
+            : PuzzleDirection.across;
+        final clue = direction == PuzzleDirection.across
+            ? puzzle.acrossClues.first
+            : puzzle.downClues.first;
+        final oppositeClue = other == PuzzleDirection.across
+            ? puzzle.acrossClues.first
+            : puzzle.downClues.first;
+        final path = puzzle.cellsForClue(clue, direction);
+        final oppositePath = puzzle.cellsForClue(oppositeClue, other);
+        expect(path.first, oppositePath.first);
+        await _tap(
+          tester,
+          find.byKey(ValueKey('classic-direction-${direction.name}')),
+        );
+        await _tap(
+          tester,
+          find.byKey(ValueKey('clue-${direction.name}-${clue.number}')),
+        );
+        for (final cell in path) {
+          await _tap(
+            tester,
+            find.byKey(
+              ValueKey(
+                'akshara-${puzzle.answerAt(cell ~/ puzzle.gridSize, cell % puzzle.gridSize)}',
+              ),
+            ),
+          );
+        }
+        await _tap(
+          tester,
+          find.byKey(ValueKey('classic-direction-${other.name}')),
+        );
+        await _tap(
+          tester,
+          find.byKey(ValueKey('clue-${other.name}-${oppositeClue.number}')),
+        );
+        final missing = oppositePath.firstWhere((cell) => !path.contains(cell));
+        expect(
+          tester.getCenter(find.byKey(const ValueKey('selected-cell'))),
+          tester.getCenter(find.byKey(ValueKey('crossword-cell-$missing'))),
+        );
+        await _tap(
+          tester,
+          find.byKey(
+            ValueKey(
+              'akshara-${puzzle.answerAt(missing ~/ puzzle.gridSize, missing % puzzle.gridSize)}',
+            ),
+          ),
+        );
+        for (final cell in path) {
+          expect(
+            tester
+                .widget<Text>(
+                  find.byKey(ValueKey('crossword-cell-value-$cell')),
+                )
+                .data,
+            puzzle.answerAt(cell ~/ puzzle.gridSize, cell % puzzle.gridSize),
+          );
+        }
+        await _tap(
+          tester,
+          find.byKey(ValueKey('crossword-cell-${path.first}')),
+        );
+        expect(
+          tester.getCenter(find.byKey(const ValueKey('selected-cell'))),
+          tester.getCenter(
+            find.byKey(ValueKey('crossword-cell-${path.first}')),
+          ),
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  testWidgets(
+    'direction switching does not skip an incorrect shared first letter',
+    (tester) async {
+      await _open(tester);
+      final puzzle = _puzzles.first;
+      final shared = puzzle
+          .cellsForClue(puzzle.acrossClues.first, PuzzleDirection.across)
+          .first;
+      final correct = puzzle.answerAt(
+        shared ~/ puzzle.gridSize,
+        shared % puzzle.gridSize,
+      );
+      final wrong = puzzle.rows
+          .expand((row) => row)
+          .firstWhere((value) => value != '#' && value != correct);
+      await _tap(tester, find.byKey(ValueKey('akshara-$wrong')));
+      await _tap(tester, find.byKey(const ValueKey('classic-direction-down')));
+      await _tap(
+        tester,
+        find.byKey(ValueKey('clue-down-${puzzle.downClues.first.number}')),
+      );
+      expect(
+        tester.getCenter(find.byKey(const ValueKey('selected-cell'))),
+        tester.getCenter(find.byKey(ValueKey('crossword-cell-$shared'))),
+      );
+      await _tap(tester, find.byKey(ValueKey('akshara-$correct')));
+      expect(
+        tester
+            .widget<Text>(find.byKey(ValueKey('crossword-cell-value-$shared')))
+            .data,
+        correct,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets(
     'intersection toggles direction, input advances, clear and backspace work',
     (tester) async {
