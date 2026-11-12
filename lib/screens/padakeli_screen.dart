@@ -1410,6 +1410,14 @@ class _PadakeliScreenState extends State<PadakeliScreen>
           builder: (context) => Scaffold(
             key: const ValueKey('classic-answer-review'),
             appBar: AppBar(
+              backgroundColor: AppColors.deepBlue,
+              foregroundColor: Colors.white,
+              systemOverlayStyle: SystemUiOverlayStyle.light,
+              toolbarHeight:
+                  (MediaQuery.textScalerOf(context).scale(20) * 1.8 + 16).clamp(
+                    64,
+                    double.infinity,
+                  ),
               title: const Text(
                 'సమాధానాలు / Answers',
                 maxLines: 1,
@@ -1424,15 +1432,22 @@ class _PadakeliScreenState extends State<PadakeliScreen>
                     key: const ValueKey('classic-answer-review-scroll'),
                     padding: const EdgeInsets.all(16),
                     children: [
-                      Text(
-                        'సమాధానాలు చూడండి\nReview answers',
-                        style: Theme.of(context).textTheme.headlineSmall
-                            ?.copyWith(fontWeight: FontWeight.w800),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'పూర్తయిన పదకేళి · చదవడానికి మాత్రమే\n'
-                        'Completed puzzle · Read only',
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(
+                            Icons.lock_outline_rounded,
+                            color: AppColors.acrossSelection,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'పూర్తయిన పదకేళి · చదవడానికి మాత్రమే\n'
+                              'Completed puzzle · Read only',
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                          ),
+                        ],
                       ),
                       for (final (direction, label, color, clues) in [
                         (
@@ -1448,63 +1463,143 @@ class _PadakeliScreenState extends State<PadakeliScreen>
                           puzzle.downClues,
                         ),
                       ]) ...[
-                        const SizedBox(height: 24),
-                        Semantics(
-                          header: true,
-                          child: Row(
+                        const SizedBox(height: 16),
+                        Material(
+                          key: ValueKey('review-section-${direction.name}'),
+                          color: Color.alphaBlend(
+                            color.withValues(alpha: 0.08),
+                            Theme.of(context).colorScheme.surface,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            side: BorderSide(
+                              color: color.withValues(alpha: 0.3),
+                            ),
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              Icon(
-                                direction == PuzzleDirection.across
-                                    ? Icons.arrow_forward_rounded
-                                    : Icons.arrow_downward_rounded,
+                              Container(
+                                key: ValueKey(
+                                  'review-header-${direction.name}',
+                                ),
                                 color: color,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  label,
-                                  style: Theme.of(context).textTheme.titleLarge
-                                      ?.copyWith(fontWeight: FontWeight.w700),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 8,
+                                ),
+                                child: Semantics(
+                                  container: true,
+                                  header: true,
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        direction == PuzzleDirection.across
+                                            ? Icons.arrow_forward_rounded
+                                            : Icons.arrow_downward_rounded,
+                                        color: Colors.white,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: PremiumTeluguText(
+                                          label,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleMedium
+                                              ?.copyWith(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
+                              for (final clue in clues) ...[
+                                if (clue != clues.first)
+                                  const Divider(
+                                    height: 1,
+                                    indent: 14,
+                                    endIndent: 14,
+                                  ),
+                                Padding(
+                                  key: ValueKey(
+                                    'review-clue-${direction.name}-${clue.number}',
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 10,
+                                  ),
+                                  child: Semantics(
+                                    container: true,
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        PremiumTeluguText(
+                                          '${clue.number}. ${clue.clue} (${clue.aksharaCount})',
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.bodyLarge,
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Row(
+                                          children: [
+                                            Icon(
+                                              Icons.check_circle_rounded,
+                                              size: 20,
+                                              color:
+                                                  Theme.of(
+                                                        context,
+                                                      ).brightness ==
+                                                      Brightness.dark
+                                                  ? AppColors
+                                                        .darkSuccessForeground
+                                                  : AppColors.successForeground,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: PremiumTeluguText(
+                                                clue.answer,
+                                                key: ValueKey(
+                                                  'review-answer-${direction.name}-${clue.number}',
+                                                ),
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .titleLarge
+                                                    ?.copyWith(
+                                                      fontWeight:
+                                                          FontWeight.w800,
+                                                    ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         ),
-                        for (final clue in clues) ...[
-                          Padding(
-                            key: ValueKey(
-                              'review-clue-${direction.name}-${clue.number}',
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                PremiumTeluguText(
-                                  '${clue.number}. ${clue.clue} (${clue.aksharaCount})',
-                                  style: Theme.of(context).textTheme.bodyLarge,
-                                ),
-                                const SizedBox(height: 8),
-                                PremiumTeluguText(
-                                  clue.answer,
-                                  key: ValueKey(
-                                    'review-answer-${direction.name}-${clue.number}',
-                                  ),
-                                  style: Theme.of(context).textTheme.titleLarge
-                                      ?.copyWith(fontWeight: FontWeight.w800),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const Divider(height: 1),
-                        ],
                       ],
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 16),
                       FilledButton.icon(
                         key: const ValueKey('classic-review-done'),
                         onPressed: () => Navigator.pop(context),
                         style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.deepBlue,
+                          foregroundColor: Colors.white,
                           minimumSize: const Size(48, 56),
                           padding: const EdgeInsets.all(12),
+                          elevation: 2,
+                          shadowColor: AppColors.ink.withValues(alpha: 0.2),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
                         ),
                         icon: const Icon(Icons.check_rounded),
                         label: _controlLabel('పూర్తయింది', 'Done'),
@@ -1646,16 +1741,10 @@ class _PadakeliScreenState extends State<PadakeliScreen>
             ),
             const SizedBox(height: 12),
           ],
-          OutlinedButton.icon(
+          FilledButton.icon(
             key: const ValueKey('classic-review-answers'),
             onPressed: () => choose(() => unawaited(_reviewAnswers())),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size(48, 56),
-              padding: const EdgeInsets.all(12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-            ),
+            style: filledStyle(AppColors.acrossSelection, Colors.white),
             icon: const Icon(Icons.fact_check_outlined),
             label: _controlLabel('సమాధానాలు చూడండి', 'Review answers'),
           ),
@@ -1676,16 +1765,10 @@ class _PadakeliScreenState extends State<PadakeliScreen>
             label: _controlLabel('స్థాయిని ఎంచుకోండి', 'Choose level'),
           ),
           const SizedBox(height: 12),
-          OutlinedButton.icon(
+          FilledButton.icon(
             key: const ValueKey('classic-completion-home'),
             onPressed: () => choose(home),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size(48, 56),
-              padding: const EdgeInsets.all(12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-            ),
+            style: filledStyle(AppColors.teal, AppColors.ink),
             icon: const Icon(Icons.home_rounded),
             label: _controlLabel('హోమ్‌కు వెళ్లు', 'Home'),
           ),

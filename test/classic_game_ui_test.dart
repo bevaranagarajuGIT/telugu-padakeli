@@ -1433,18 +1433,15 @@ void main() {
               expect(labelBounds.top, greaterThanOrEqualTo(bounds.top));
               expect(labelBounds.bottom, lessThanOrEqualTo(bounds.bottom));
             }
-            if (key != 'classic-completion-home' &&
-                key != 'classic-review-answers') {
-              final button = tester.widget<FilledButton>(finder);
-              final luminances = [
-                button.style!.foregroundColor!.resolve({})!.computeLuminance(),
-                button.style!.backgroundColor!.resolve({})!.computeLuminance(),
-              ]..sort();
-              expect(
-                (luminances.last + 0.05) / (luminances.first + 0.05),
-                greaterThanOrEqualTo(4.5),
-              );
-            }
+            final button = tester.widget<FilledButton>(finder);
+            final luminances = [
+              button.style!.foregroundColor!.resolve({})!.computeLuminance(),
+              button.style!.backgroundColor!.resolve({})!.computeLuminance(),
+            ]..sort();
+            expect(
+              (luminances.last + 0.05) / (luminances.first + 0.05),
+              greaterThanOrEqualTo(4.5),
+            );
           }
           expect(tester.takeException(), isNull);
           await _tap(
@@ -1452,6 +1449,55 @@ void main() {
             find.byKey(const ValueKey('classic-review-answers')),
           );
           await tester.pumpAndSettle();
+          final directionColors = <Color>{};
+          final semantics = tester.ensureSemantics();
+          try {
+            for (final direction in ['across', 'down']) {
+              final header = find.byKey(ValueKey('review-header-$direction'));
+              await tester.scrollUntilVisible(
+                header,
+                200,
+                scrollable: find.descendant(
+                  of: find.byKey(
+                    const ValueKey('classic-answer-review-scroll'),
+                  ),
+                  matching: find.byType(Scrollable),
+                ),
+                maxScrolls: 100,
+              );
+              await tester.pumpAndSettle();
+              expect(
+                find.bySemanticsLabel(
+                  direction == 'across' ? 'అడ్డం / Across' : 'నిలువు / Down',
+                ),
+                findsOneWidget,
+              );
+              final background = tester.widget<Container>(header).color!;
+              directionColors.add(background);
+              final text = find.descendant(
+                of: header,
+                matching: find.byType(Text),
+              );
+              final foreground = tester.widget<Text>(text).style!.color!;
+              final luminances = [
+                foreground.computeLuminance(),
+                background.computeLuminance(),
+              ]..sort();
+              expect(
+                (luminances.last + 0.05) / (luminances.first + 0.05),
+                greaterThanOrEqualTo(4.5),
+              );
+              final headerBounds = tester.getRect(header);
+              final textBounds = tester.getRect(text);
+              expect(textBounds.left, greaterThanOrEqualTo(headerBounds.left));
+              expect(textBounds.right, lessThanOrEqualTo(headerBounds.right));
+              expect(textBounds.top, greaterThanOrEqualTo(headerBounds.top));
+              expect(textBounds.bottom, lessThanOrEqualTo(headerBounds.bottom));
+            }
+          } finally {
+            semantics.dispose();
+          }
+          expect(directionColors, hasLength(2));
           await tester.scrollUntilVisible(
             find.byKey(const ValueKey('classic-review-done')),
             200,
@@ -1470,6 +1516,19 @@ void main() {
             find.byKey(const ValueKey('classic-review-done')).hitTestable(),
             findsOneWidget,
           );
+          final done = find.byKey(const ValueKey('classic-review-done'));
+          final doneBounds = tester.getRect(done);
+          expect(doneBounds.width, greaterThanOrEqualTo(48));
+          expect(doneBounds.height, greaterThanOrEqualTo(48));
+          for (final label in tester.widgetList<Text>(
+            find.descendant(of: done, matching: find.byType(Text)),
+          )) {
+            final labelBounds = tester.getRect(find.byWidget(label));
+            expect(labelBounds.left, greaterThanOrEqualTo(doneBounds.left));
+            expect(labelBounds.right, lessThanOrEqualTo(doneBounds.right));
+            expect(labelBounds.top, greaterThanOrEqualTo(doneBounds.top));
+            expect(labelBounds.bottom, lessThanOrEqualTo(doneBounds.bottom));
+          }
           expect(tester.takeException(), isNull);
           await tester.pageBack();
           await tester.pumpAndSettle();

@@ -137,7 +137,7 @@ void main() {
         final snapshot = progress.board('classic');
         Future<void> review(LearningProgress current) async {
           final reviewAgain = tester
-              .widget<OutlinedButton>(
+              .widget<FilledButton>(
                 find.byKey(const ValueKey('classic-review-answers')),
               )
               .onPressed!;
