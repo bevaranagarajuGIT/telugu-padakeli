@@ -79,6 +79,150 @@ void main() {
     () async => puzzles = await const LocalPuzzleRepository().getPuzzles(),
   );
 
+  for (final finish in ['typing', 'hint', 'older saved board']) {
+    testWidgets(
+      'automatic $finish completion persists and never rewards replay twice',
+      (tester) async {
+        final progress = LearningProgress(
+          MemoryLearningStore(),
+          autoSave: false,
+        );
+        addTearDown(progress.dispose);
+        final puzzle = puzzles.first;
+        final cells = [
+          for (
+            var index = 0;
+            index < puzzle.gridSize * puzzle.gridSize;
+            index++
+          )
+            puzzle.isBlocked(index ~/ puzzle.gridSize, index % puzzle.gridSize)
+                ? ''
+                : puzzle.answerAt(
+                    index ~/ puzzle.gridSize,
+                    index % puzzle.gridSize,
+                  ),
+        ];
+        final last = cells.lastIndexWhere((value) => value.isNotEmpty);
+        if (finish != 'older saved board') cells[last] = '';
+        progress.saveBoard('classic', {
+          'id': puzzle.id,
+          'signature': puzzle.progressSignature,
+          'cells': cells,
+          'direction': 'across',
+          'clue': puzzle.acrossClues.last.number,
+          'cell': last,
+          'hints': 2,
+          'complete': false,
+        });
+        var homeCount = 0;
+        final screen = PadakeliScreen(
+          repository: _Repository(puzzles),
+          onBack: () => homeCount++,
+        );
+        await _mount(tester, progress, screen);
+        if (finish == 'typing') {
+          await _tap(
+            tester,
+            'akshara-${puzzle.answerAt(last ~/ puzzle.gridSize, last % puzzle.gridSize)}',
+          );
+        } else if (finish == 'hint') {
+          await _tap(tester, 'open-hints');
+          await _tap(tester, 'hint-reveal-cell');
+        }
+        await tester.pumpAndSettle();
+        expect(find.byType(Dialog), findsOneWidget);
+        expect(progress.board('classic')['complete'], true);
+        expect(progress.board('classic')['hints'], finish == 'hint' ? 3 : 2);
+        expect(progress.stars, 1);
+        final snapshot = progress.board('classic');
+        await tester.pump(const Duration(seconds: 5));
+        expect(progress.board('classic'), snapshot);
+        expect(find.byType(Dialog), findsOneWidget);
+        await _tap(tester, 'classic-completion-home');
+        await tester.pumpAndSettle();
+        expect(homeCount, 1);
+        expect(progress.board('classic'), snapshot);
+        final restored = await _reopen(tester, progress);
+        addTearDown(restored.dispose);
+        await _mount(
+          tester,
+          restored,
+          PadakeliScreen(repository: _Repository(puzzles)),
+        );
+        expect(find.byType(Dialog), findsNothing);
+        expect(
+          find.byKey(const ValueKey('classic-level-complete')),
+          findsOneWidget,
+        );
+        expect(restored.board('classic'), snapshot);
+        await _tap(tester, 'classic-replay');
+        await tester.pumpAndSettle();
+        expect(restored.board('classic')['complete'], false);
+        for (var index = 0; index < cells.length; index++) {
+          if (puzzle.isBlocked(
+            index ~/ puzzle.gridSize,
+            index % puzzle.gridSize,
+          )) {
+            continue;
+          }
+          await _tap(tester, 'crossword-cell-$index');
+          await _tap(
+            tester,
+            'akshara-${puzzle.answerAt(index ~/ puzzle.gridSize, index % puzzle.gridSize)}',
+          );
+        }
+        await tester.pumpAndSettle();
+        expect(find.byType(Dialog), findsOneWidget);
+        expect(restored.stars, 1);
+        expect(restored.board('classic')['complete'], true);
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+  }
+
+  testWidgets(
+    'a hidden Classic tab never opens completion over another screen',
+    (tester) async {
+      final progress = LearningProgress(MemoryLearningStore(), autoSave: false);
+      addTearDown(progress.dispose);
+      final puzzle = puzzles.first;
+      progress.saveBoard('classic', {
+        'id': puzzle.id,
+        'signature': puzzle.progressSignature,
+        'cells': [
+          for (
+            var index = 0;
+            index < puzzle.gridSize * puzzle.gridSize;
+            index++
+          )
+            puzzle.isBlocked(index ~/ puzzle.gridSize, index % puzzle.gridSize)
+                ? ''
+                : puzzle.answerAt(
+                    index ~/ puzzle.gridSize,
+                    index % puzzle.gridSize,
+                  ),
+        ],
+        'complete': false,
+      });
+      await _mount(
+        tester,
+        progress,
+        TickerMode(
+          enabled: false,
+          child: PadakeliScreen(repository: _Repository(puzzles)),
+        ),
+      );
+      expect(find.byType(Dialog), findsNothing);
+      expect(progress.board('classic')['complete'], true);
+      expect(
+        find.byKey(const ValueKey('classic-level-complete')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets(
     'Classic reopens actual cells, clue, direction, selection and hints; changed content is not reused',
     (tester) async {
@@ -312,8 +456,7 @@ void main() {
         PadakeliScreen(repository: repository, dailyDate: saved.today),
       );
       await _tap(tester, 'akshara-క');
-      await _tap(tester, 'classic-check');
-      await tester.pump(const Duration(milliseconds: 1100));
+      await tester.pumpAndSettle();
       expect(
         find.byKey(const ValueKey('daily-puzzle-complete')),
         findsOneWidget,
@@ -333,8 +476,7 @@ void main() {
       expect(restored.stars, 1);
       await _tap(tester, 'daily-replay');
       await _tap(tester, 'akshara-క');
-      await _tap(tester, 'classic-check');
-      await tester.pump(const Duration(milliseconds: 1100));
+      await tester.pumpAndSettle();
       expect(restored.stars, 1);
       now = DateTime(2026, 11, 11);
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
@@ -347,8 +489,7 @@ void main() {
         PadakeliScreen(repository: repository, dailyDate: restored.today),
       );
       await _tap(tester, 'akshara-క');
-      await _tap(tester, 'classic-check');
-      await tester.pump(const Duration(milliseconds: 1100));
+      await tester.pumpAndSettle();
       expect(restored.stars, 2);
       expect(restored.completedPuzzles, {'101'});
       expect(tester.takeException(), isNull);

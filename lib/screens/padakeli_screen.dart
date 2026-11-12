@@ -51,10 +51,8 @@ class _PadakeliScreenState extends State<PadakeliScreen>
   PuzzleClue? _selectedClue;
   int? _selectedCellIndex;
   final _scrollController = ScrollController();
-  Timer? _advanceTimer;
-  bool _isAdvancing = false;
   bool _isComplete = false;
-  bool? _wasCorrect;
+  bool _completionDialogOpen = false;
   final _incorrectCells = <int>{};
   int _hintCount = 0;
   bool _resetDialogOpen = false;
@@ -193,7 +191,6 @@ class _PadakeliScreenState extends State<PadakeliScreen>
   }
 
   void _openPuzzle(Puzzle puzzle, {Map<String, dynamic> saved = const {}}) {
-    _advanceTimer?.cancel();
     if (_puzzle != null) {
       _disposeControllers();
     }
@@ -205,9 +202,8 @@ class _PadakeliScreenState extends State<PadakeliScreen>
       _puzzle = puzzle;
       _selectedLevel = puzzle.level;
       _message = null;
-      _wasCorrect = null;
-      _isAdvancing = false;
       _isComplete = false;
+      _completionDialogOpen = false;
       _incorrectCells.clear();
       _hintCount = 0;
       _selectedDirection = PuzzleDirection.across;
@@ -284,6 +280,7 @@ class _PadakeliScreenState extends State<PadakeliScreen>
         controller.addListener(_persist);
       }
     }
+    if (!_isComplete) _validateCompletedWords();
     _persist();
     if (_scrollController.hasClients) _scrollController.jumpTo(0);
   }
@@ -297,7 +294,6 @@ class _PadakeliScreenState extends State<PadakeliScreen>
   }
 
   void _showDifficulties() {
-    _advanceTimer?.cancel();
     if (_puzzle != null) {
       _disposeControllers();
     }
@@ -307,15 +303,13 @@ class _PadakeliScreenState extends State<PadakeliScreen>
       _selectedClue = null;
       _selectedCellIndex = null;
       _message = null;
-      _wasCorrect = null;
-      _isAdvancing = false;
       _isComplete = false;
     });
   }
 
   void _selectClue(PuzzleClue clue, PuzzleDirection direction) {
     final puzzle = _puzzle;
-    if (puzzle == null || _isAdvancing || _isComplete) {
+    if (puzzle == null || _isComplete) {
       return;
     }
     setState(() {
@@ -338,7 +332,7 @@ class _PadakeliScreenState extends State<PadakeliScreen>
     bool preserveSelectedCell = false,
   }) {
     final puzzle = _puzzle;
-    if (puzzle == null || _isAdvancing || _isComplete) {
+    if (puzzle == null || _isComplete) {
       return;
     }
     final clues = _cluesFor(puzzle, direction);
@@ -379,7 +373,7 @@ class _PadakeliScreenState extends State<PadakeliScreen>
 
   void _selectCell(int index) {
     final puzzle = _puzzle;
-    if (puzzle == null || _isAdvancing || _isComplete) {
+    if (puzzle == null || _isComplete) {
       return;
     }
     if (_selectedCells.contains(index)) {
@@ -434,10 +428,7 @@ class _PadakeliScreenState extends State<PadakeliScreen>
   void _enterAkshara(String akshara) {
     final puzzle = _puzzle;
     final selectedIndex = _selectedCellIndex;
-    if (puzzle == null ||
-        selectedIndex == null ||
-        _isAdvancing ||
-        _isComplete) {
+    if (puzzle == null || selectedIndex == null || _isComplete) {
       return;
     }
     final row = selectedIndex ~/ puzzle.gridSize;
@@ -447,7 +438,6 @@ class _PadakeliScreenState extends State<PadakeliScreen>
     setState(() {
       _controllers[row][column].text = akshara;
       _incorrectCells.remove(selectedIndex);
-      _wasCorrect = null;
       _message = null;
       if (pathPosition >= 0 && pathPosition + 1 < path.length) {
         _selectedCellIndex =
@@ -458,13 +448,14 @@ class _PadakeliScreenState extends State<PadakeliScreen>
             selectedIndex;
       }
     });
+    _validateCompletedWords();
     _persist();
   }
 
   void _revealFirstAkshara() {
     final puzzle = _puzzle;
     final cells = _selectedCells;
-    if (puzzle == null || cells.isEmpty || _isAdvancing || _isComplete) {
+    if (puzzle == null || cells.isEmpty || _isComplete) {
       return;
     }
     final unsolved = _unsolvedSelectedCells;
@@ -482,15 +473,15 @@ class _PadakeliScreenState extends State<PadakeliScreen>
       _incorrectCells.remove(index);
       _hintCount++;
       _message = 'ఒక అక్షరం చూపించబడింది.';
-      _wasCorrect = null;
     });
+    _validateCompletedWords();
     _persist();
   }
 
   void _revealOneAkshara() {
     final puzzle = _puzzle;
     final cells = _selectedCells;
-    if (puzzle == null || cells.isEmpty || _isAdvancing || _isComplete) {
+    if (puzzle == null || cells.isEmpty || _isComplete) {
       return;
     }
     final unsolved = _unsolvedSelectedCells;
@@ -505,7 +496,7 @@ class _PadakeliScreenState extends State<PadakeliScreen>
   Future<void> _showHints() async {
     final clue = _selectedClue;
     final puzzle = _puzzle;
-    if (clue == null || _isAdvancing || _isComplete) {
+    if (clue == null || _isComplete) {
       return;
     }
     await showModalBottomSheet<void>(
@@ -540,7 +531,6 @@ class _PadakeliScreenState extends State<PadakeliScreen>
                 setState(() {
                   _hintCount++;
                   _message = clue.hint;
-                  _wasCorrect = null;
                 });
                 _persist();
               },
@@ -552,7 +542,6 @@ class _PadakeliScreenState extends State<PadakeliScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _calendarTimer?.cancel();
-    _advanceTimer?.cancel();
     _scrollController.dispose();
     if (_puzzle != null) {
       for (final row in _controllers) {
@@ -564,62 +553,71 @@ class _PadakeliScreenState extends State<PadakeliScreen>
     super.dispose();
   }
 
-  void _checkAnswer() {
+  void _validateCompletedWords() {
     final puzzle = _puzzle;
-    if (puzzle == null || _isAdvancing || _isComplete) {
-      return;
-    }
-
-    var isCorrect = true;
+    if (puzzle == null || _isComplete) return;
     _incorrectCells.clear();
-    for (var row = 0; row < puzzle.gridSize; row++) {
-      for (var column = 0; column < puzzle.gridSize; column++) {
-        if (puzzle.isBlocked(row, column)) {
-          continue;
+    for (final direction in PuzzleDirection.values) {
+      for (final clue in _cluesFor(puzzle, direction)) {
+        final cells = puzzle.cellsForClue(clue, direction);
+        if (cells.every(
+          (index) =>
+              _controllers[index ~/ puzzle.gridSize][index % puzzle.gridSize]
+                  .text
+                  .isNotEmpty,
+        )) {
+          _incorrectCells.addAll(
+            cells.where((index) => !_isCorrectCell(index)),
+          );
         }
-        if (!_isCorrectCell(row * puzzle.gridSize + column)) {
-          isCorrect = false;
-          if (_controllers[row][column].text.isNotEmpty) {
-            _incorrectCells.add(row * puzzle.gridSize + column);
+      }
+    }
+    final isCorrect = [
+      for (var index = 0; index < puzzle.gridSize * puzzle.gridSize; index++)
+        if (!puzzle.isBlocked(
+          index ~/ puzzle.gridSize,
+          index % puzzle.gridSize,
+        ))
+          index,
+    ].every(_isCorrectCell);
+    if (isCorrect && !_resetDialogOpen) {
+      setState(() {
+        _isComplete = true;
+        _message = null;
+        _completionDialogOpen = true;
+      });
+      _storage?.completePuzzle('${puzzle.id}', dailyDate: widget.dailyDate);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && identical(puzzle, _puzzle) && _isComplete) {
+          if (TickerMode.valuesOf(context).enabled) {
+            unawaited(_showCompletion(puzzle));
+          } else {
+            setState(() => _completionDialogOpen = false);
           }
         }
-      }
+      });
     }
-
-    setState(() {
-      _wasCorrect = isCorrect;
-      _isAdvancing = isCorrect;
-      _message = isCorrect
-          ? 'అద్భుతం! సమాధానం సరైనది.'
-          : 'ఇంకొంచెం ప్రయత్నించండి.';
-    });
-    if (isCorrect) {
-      _storage?.completePuzzle('${puzzle.id}', dailyDate: widget.dailyDate);
-      _scheduleAdvance(puzzle);
-    }
-    _persist();
   }
 
-  void _scheduleAdvance(Puzzle puzzle) {
-    _advanceTimer?.cancel();
-    _advanceTimer = Timer(const Duration(milliseconds: 1100), () {
-      if (!mounted || !identical(puzzle, _puzzle) || !_isAdvancing) return;
-      final nextIndex = _puzzleNumber;
-      if (widget.dailyDate == null && nextIndex < _levelPuzzles.length) {
-        _openPuzzle(_levelPuzzles[nextIndex]);
-      } else {
-        setState(() {
-          _isComplete = true;
-          _isAdvancing = false;
-        });
-        _persist();
-        if (_scrollController.hasClients) _scrollController.jumpTo(0);
-      }
-    });
+  Future<void> _showCompletion(Puzzle puzzle) async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => Dialog(
+        child: SingleChildScrollView(
+          child: _completion(dialogContext: dialogContext),
+        ),
+      ),
+    );
+    if (!mounted) return;
+    setState(() => _completionDialogOpen = false);
+    if (identical(puzzle, _puzzle) && _scrollController.hasClients) {
+      _scrollController.jumpTo(0);
+    }
   }
 
   void _clearCell({bool backspace = false}) {
-    if (_isAdvancing || _isComplete || _selectedCellIndex == null) return;
+    if (_isComplete || _selectedCellIndex == null) return;
     final puzzle = _puzzle!;
     var index = _selectedCellIndex!;
     final path = _selectedCells;
@@ -636,13 +634,13 @@ class _PadakeliScreenState extends State<PadakeliScreen>
       _selectedCellIndex = index;
       _incorrectCells.remove(index);
       _message = null;
-      _wasCorrect = null;
     });
+    _validateCompletedWords();
     _persist();
   }
 
   void _resetWord() {
-    if (_isAdvancing || _isComplete || _selectedCells.isEmpty) return;
+    if (_isComplete || _selectedCells.isEmpty) return;
     final puzzle = _puzzle!;
     setState(() {
       for (final index in _selectedCells) {
@@ -651,16 +649,14 @@ class _PadakeliScreenState extends State<PadakeliScreen>
       }
       _selectedCellIndex = _selectedCells.first;
       _message = null;
-      _wasCorrect = null;
     });
+    _validateCompletedWords();
     _persist();
   }
 
   Future<void> _confirmReset() async {
     if (_resetDialogOpen) return;
     final puzzle = _puzzle;
-    final wasAdvancing = _isAdvancing;
-    _advanceTimer?.cancel();
     _resetDialogOpen = true;
     final confirmed = await showDialog<bool>(
       context: context,
@@ -689,8 +685,6 @@ class _PadakeliScreenState extends State<PadakeliScreen>
     if (!mounted || !identical(puzzle, _puzzle)) return;
     if (confirmed == true) {
       _reset();
-    } else if (wasAdvancing && puzzle != null) {
-      _scheduleAdvance(puzzle);
     }
   }
 
@@ -699,7 +693,6 @@ class _PadakeliScreenState extends State<PadakeliScreen>
     if (puzzle == null) {
       return;
     }
-    _advanceTimer?.cancel();
     for (var row = 0; row < puzzle.gridSize; row++) {
       for (var column = 0; column < puzzle.gridSize; column++) {
         _controllers[row][column].clear();
@@ -707,8 +700,6 @@ class _PadakeliScreenState extends State<PadakeliScreen>
     }
     setState(() {
       _message = null;
-      _wasCorrect = null;
-      _isAdvancing = false;
       _isComplete = false;
       _incorrectCells.clear();
       _hintCount = 0;
@@ -787,11 +778,34 @@ class _PadakeliScreenState extends State<PadakeliScreen>
         ),
         actions: [
           IconButton(
+            key: const ValueKey('open-hints'),
             tooltip: 'Hints',
-            onPressed: _selectedClue == null || _isAdvancing || _isComplete
-                ? null
-                : _showHints,
+            onPressed: _selectedClue == null || _isComplete ? null : _showHints,
             icon: const Icon(Icons.lightbulb_rounded, color: AppColors.gold),
+          ),
+          PopupMenuButton<String>(
+            key: const ValueKey('classic-more'),
+            tooltip: 'మరిన్ని / More options',
+            onSelected: (action) {
+              if (action == 'clear-word') {
+                _resetWord();
+              } else {
+                unawaited(_confirmReset());
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                key: const ValueKey('classic-reset-word'),
+                value: 'clear-word',
+                enabled: !_isComplete && _selectedCells.isNotEmpty,
+                child: _controlLabel('పదం తీసేయి', 'Clear word'),
+              ),
+              PopupMenuItem(
+                key: const ValueKey('classic-reset'),
+                value: 'restart',
+                child: _controlLabel('మళ్లీ ఆడు', 'Restart'),
+              ),
+            ],
           ),
         ],
       ),
@@ -836,7 +850,7 @@ class _PadakeliScreenState extends State<PadakeliScreen>
                         ),
                       const SizedBox(height: 12),
                     ],
-                    _isComplete
+                    _isComplete && !_completionDialogOpen
                         ? _completion()
                         : puzzle == null
                         ? const CircularProgressIndicator()
@@ -874,11 +888,6 @@ class _PadakeliScreenState extends State<PadakeliScreen>
         }
       }
     }
-    final feedbackForeground = _wasCorrect == true
-        ? scheme.onTertiaryContainer
-        : _wasCorrect == false
-        ? scheme.onErrorContainer
-        : scheme.onSecondaryContainer;
     return Column(
       key: ValueKey('classic-puzzle-${puzzle.id}'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -927,7 +936,7 @@ class _PadakeliScreenState extends State<PadakeliScreen>
                 incorrectCells: _incorrectCells,
                 correctCells: correctCells,
                 onCellSelected: _selectCell,
-                enabled: !_isAdvancing,
+                enabled: !_isComplete,
               ),
             ),
           ),
@@ -974,7 +983,7 @@ class _PadakeliScreenState extends State<PadakeliScreen>
                       : scheme.outline,
                   width: _selectedDirection == direction ? 2 : 1,
                 ),
-                onSelected: _isAdvancing || _cluesFor(puzzle, direction).isEmpty
+                onSelected: _isComplete || _cluesFor(puzzle, direction).isEmpty
                     ? null
                     : (_) => _changeDirection(direction),
               ),
@@ -988,84 +997,38 @@ class _PadakeliScreenState extends State<PadakeliScreen>
           selectedDirection: _selectedDirection,
           correctClues: correctClues,
           onSelect: _selectClue,
-          enabled: !_isAdvancing && _selectedCellIndex != null,
+          enabled: !_isComplete && _selectedCellIndex != null,
         ),
         const SizedBox(height: 4),
         AksharaPalette(
           puzzle: puzzle,
           onSelected: _enterAkshara,
-          enabled: !_isAdvancing,
+          enabled: !_isComplete,
           label: _selectedDirection == PuzzleDirection.across
               ? '→ అడ్డం / Across · ${_selectedClue?.number ?? ''}'
               : '↓ నిలువు / Down · ${_selectedClue?.number ?? ''}',
         ),
         const SizedBox(height: 4),
         _editToolbar(context),
-        const SizedBox(height: 4),
-        Wrap(
-          alignment: WrapAlignment.center,
-          spacing: 8,
-          runSpacing: 4,
-          children: [
-            OutlinedButton.icon(
-              key: const ValueKey('open-hints'),
-              onPressed: _selectedClue == null || _isAdvancing
-                  ? null
-                  : _showHints,
-              style: _actionStyle(null, scheme.onSurface),
-              icon: const Icon(Icons.lightbulb_outline_rounded),
-              label: _controlLabel('సహాయం', 'Hints'),
-            ),
-            FilledButton.icon(
-              key: const ValueKey('classic-check'),
-              onPressed: _isAdvancing ? null : _checkAnswer,
-              style: _actionStyle(const Color(0xFF087F42), Colors.white),
-              icon: const Icon(Icons.check_rounded),
-              label: _controlLabel('సరిచూడు', 'Check'),
-            ),
-            TextButton.icon(
-              key: const ValueKey('classic-reset'),
-              onPressed: _confirmReset,
-              style: _actionStyle(null, scheme.onSurface),
-              icon: const Icon(Icons.refresh_rounded),
-              label: _controlLabel('మళ్లీ ఆడు', 'Restart'),
-            ),
-          ],
-        ),
         if (_message != null) ...[
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: _wasCorrect == true
-                  ? scheme.tertiaryContainer
-                  : _wasCorrect == false
-                  ? scheme.errorContainer
-                  : scheme.secondaryContainer,
+              color: scheme.secondaryContainer,
               borderRadius: BorderRadius.circular(18),
             ),
             child: Semantics(
               liveRegion: true,
               child: Column(
                 children: [
-                  if (_wasCorrect == true)
-                    Icon(Icons.celebration_rounded, color: feedbackForeground),
                   PremiumTeluguText(
                     _message!,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
-                      color: feedbackForeground,
+                      color: scheme.onSecondaryContainer,
                     ),
                   ),
-                  if (_isAdvancing)
-                    PremiumTeluguText(
-                      _puzzleNumber < _levelPuzzles.length
-                          ? 'తదుపరి పదకేళి తెరుచుకుంటోంది...'
-                          : 'స్థాయి పూర్తవుతోంది...',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: feedbackForeground,
-                      ),
-                    ),
                 ],
               ),
             ),
@@ -1081,7 +1044,7 @@ class _PadakeliScreenState extends State<PadakeliScreen>
   Widget _editToolbar(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final enabled = !_isAdvancing && _selectedCellIndex != null;
+    final enabled = !_isComplete && _selectedCellIndex != null;
     return Material(
       key: const ValueKey('classic-edit-toolbar'),
       color: Colors.transparent,
@@ -1121,15 +1084,6 @@ class _PadakeliScreenState extends State<PadakeliScreen>
                     scheme.secondaryContainer,
                     scheme.onSecondaryContainer,
                     () => _clearCell(backspace: true),
-                  ),
-                  (
-                    'classic-reset-word',
-                    'పదం తీసేయి',
-                    'Clear word',
-                    Icons.clear_all_rounded,
-                    scheme.tertiaryContainer,
-                    scheme.onTertiaryContainer,
-                    _resetWord,
                   ),
                 ])
               TapFeedback(
@@ -1196,17 +1150,27 @@ class _PadakeliScreenState extends State<PadakeliScreen>
     );
   }
 
-  ButtonStyle _actionStyle(Color? background, Color foreground) =>
-      TextButton.styleFrom(
-        backgroundColor: background,
-        foregroundColor: foreground,
-        minimumSize: const Size(48, 48),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      );
-
-  Widget _completion() {
+  Widget _completion({BuildContext? dialogContext}) {
     final theme = Theme.of(context);
+    final completedPuzzle = _puzzle;
+    void choose(VoidCallback action) {
+      if (!_isComplete || !identical(completedPuzzle, _puzzle)) return;
+      if (dialogContext != null) {
+        if (!_completionDialogOpen) return;
+        _completionDialogOpen = false;
+        Navigator.pop(dialogContext);
+      }
+      action();
+    }
+
+    void home() {
+      if (widget.onBack != null) {
+        widget.onBack!();
+      } else {
+        Navigator.maybePop(context);
+      }
+    }
+
     if (widget.dailyDate != null) {
       return Column(
         key: const ValueKey('daily-puzzle-complete'),
@@ -1224,12 +1188,12 @@ class _PadakeliScreenState extends State<PadakeliScreen>
           ),
           const SizedBox(height: 16),
           FilledButton(
-            onPressed: () => Navigator.maybePop(context),
+            onPressed: () => choose(home),
             child: _controlLabel('హోమ్‌కు వెళ్లు', 'Back to Home'),
           ),
           OutlinedButton(
             key: const ValueKey('daily-replay'),
-            onPressed: () => _openPuzzle(_puzzle!),
+            onPressed: () => choose(() => _openPuzzle(_puzzle!)),
             child: _controlLabel('మళ్లీ ఆడు', 'Practice again'),
           ),
         ],
@@ -1240,63 +1204,77 @@ class _PadakeliScreenState extends State<PadakeliScreen>
         .skip(Puzzle.levels.indexOf(_selectedLevel!) + 1)
         .where(availableLevels.contains)
         .firstOrNull;
-    return Card(
+    final hasNextPuzzle = _puzzleNumber < _levelPuzzles.length;
+    return Padding(
       key: const ValueKey('classic-level-complete'),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Icon(Icons.verified_rounded, size: 72, color: AppColors.teal),
-            const SizedBox(height: 16),
-            PremiumTeluguText(
-              'స్థాయి పూర్తయింది!',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Icon(Icons.verified_rounded, size: 72, color: AppColors.teal),
+          const SizedBox(height: 16),
+          PremiumTeluguText(
+            hasNextPuzzle ? 'పదకేళి పూర్తయింది!' : 'స్థాయి పూర్తయింది!',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w700,
             ),
-            PremiumTeluguText(
-              '${_levelPuzzles.length} / ${_levelPuzzles.length} పదకేళీలు పూర్తి చేశారు.',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyLarge,
-            ),
-            const SizedBox(height: 20),
-            if (nextLevel != null) ...[
-              FilledButton.icon(
-                key: const ValueKey('classic-next-level'),
-                onPressed: () => _loadPuzzle(nextLevel),
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size(48, 56),
-                  padding: const EdgeInsets.all(12),
-                ),
-                icon: const Icon(Icons.arrow_forward_rounded),
-                label: _controlLabel('తరువాతి స్థాయి', 'Next level'),
-              ),
-              const SizedBox(height: 8),
-            ],
-            OutlinedButton.icon(
-              key: const ValueKey('classic-replay'),
-              onPressed: () => _openPuzzle(_levelPuzzles.first),
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size(48, 56),
-                padding: const EdgeInsets.all(12),
-              ),
-              icon: const Icon(Icons.replay_rounded),
-              label: _controlLabel('మళ్లీ ఆడు', 'Play again'),
+          ),
+          PremiumTeluguText(
+            '$_puzzleNumber / ${_levelPuzzles.length} పదకేళీలు పూర్తి చేశారు.',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyLarge,
+          ),
+          const SizedBox(height: 20),
+          if (hasNextPuzzle) ...[
+            FilledButton.icon(
+              key: const ValueKey('classic-next-puzzle'),
+              onPressed: () =>
+                  choose(() => _openPuzzle(_levelPuzzles[_puzzleNumber])),
+              icon: const Icon(Icons.arrow_forward_rounded),
+              label: _controlLabel('తదుపరి పదకేళి', 'Next puzzle'),
             ),
             const SizedBox(height: 8),
-            OutlinedButton(
-              key: const ValueKey('classic-choose-level'),
-              onPressed: _showDifficulties,
-              style: OutlinedButton.styleFrom(
+          ] else if (nextLevel != null) ...[
+            FilledButton.icon(
+              key: const ValueKey('classic-next-level'),
+              onPressed: () => choose(() => _loadPuzzle(nextLevel)),
+              style: FilledButton.styleFrom(
                 minimumSize: const Size(48, 56),
                 padding: const EdgeInsets.all(12),
               ),
-              child: _controlLabel('స్థాయిని ఎంచుకోండి', 'Choose level'),
+              icon: const Icon(Icons.arrow_forward_rounded),
+              label: _controlLabel('తరువాతి స్థాయి', 'Next level'),
             ),
+            const SizedBox(height: 8),
           ],
-        ),
+          OutlinedButton.icon(
+            key: const ValueKey('classic-replay'),
+            onPressed: () => choose(() => _openPuzzle(_puzzle!)),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(48, 56),
+              padding: const EdgeInsets.all(12),
+            ),
+            icon: const Icon(Icons.replay_rounded),
+            label: _controlLabel('మళ్లీ ఆడు', 'Play again'),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton(
+            key: const ValueKey('classic-choose-level'),
+            onPressed: () => choose(_showDifficulties),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(48, 56),
+              padding: const EdgeInsets.all(12),
+            ),
+            child: _controlLabel('స్థాయిని ఎంచుకోండి', 'Choose level'),
+          ),
+          const SizedBox(height: 8),
+          TextButton(
+            key: const ValueKey('classic-completion-home'),
+            onPressed: () => choose(home),
+            child: _controlLabel('హోమ్‌కు వెళ్లు', 'Home'),
+          ),
+        ],
       ),
     );
   }
@@ -1335,7 +1313,7 @@ class _ClueList extends StatelessWidget {
       key: const ValueKey('classic-clue-list'),
       margin: EdgeInsets.zero,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 4),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1343,7 +1321,9 @@ class _ClueList extends StatelessWidget {
               ListTile(
                 key: ValueKey('clue-${direction.name}-${clue.number}'),
                 minTileHeight: 48,
-                minVerticalPadding: 4,
+                dense: true,
+                visualDensity: VisualDensity.standard,
+                minVerticalPadding: 0,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 10),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),

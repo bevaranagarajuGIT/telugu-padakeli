@@ -37,11 +37,9 @@ void main() {
       await tester.ensureVisible(akshara);
       await tester.tap(akshara);
     }
-    await tester.ensureVisible(find.byKey(const ValueKey('classic-check')));
-    await tester.tap(find.byKey(const ValueKey('classic-check')));
     await tester.pumpAndSettle();
-    expect(find.text('అద్భుతం! సమాధానం సరైనది.'), findsOneWidget);
-    await tester.tap(find.byTooltip('Change difficulty'));
+    expect(find.byType(Dialog), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('classic-choose-level')));
     await tester.pumpAndSettle();
     final beginnerDifficulty = find.byKey(
       const ValueKey('difficulty-Beginner'),

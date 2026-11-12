@@ -20,12 +20,16 @@ speech recognition, runtime font download or backend is required.
   row. Compact spacing retains 48-dp targets; arrow-marked Across/Down chips use
   a strong selected state, and the letter palette repeats the current direction
   and clue number so it stays clear when the board is scrolled out of view.
-  Play again starts the level with an empty first board, not the completed save;
+  Play again restarts the current puzzle with an empty board, not the completed save;
   ordinary Resume and difficulty re-selection still restore saved answers.
-  Correct checks advance within a level after 1.1 seconds; changing level is
-  explicit. Filled-cell percentage is not an accuracy claim.
-  Clear letter, Backspace and Clear word use distinct tonal icon buttons with
-  brief press feedback, equal normal-text targets and a large-text stacked
+  Completed words validate automatically, with checkmarks for correct words and
+  wrong-cell feedback only once a word is filled. Finishing every answer correctly
+  opens a success dialog with explicit Next puzzle/Next level, Play again, Home
+  and Choose level actions; no timer advances the board. Saved completions reopen
+  with these choices. Filled-cell percentage is not an accuracy claim.
+  Hint is available once in the top bar; Clear word and confirmed Restart live in
+  its More options menu. Clear letter and Backspace remain beside the palette with
+  distinct tonal icon buttons, brief press feedback, equal normal-text targets and a large-text stacked
   layout. Reduced motion disables the press animation; editing behavior is
   unchanged.
 - Kids offers three freely selectable Telugu-first learning paths: చిన్నారులు,
