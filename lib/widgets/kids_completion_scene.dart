@@ -46,9 +46,9 @@ class KidsCompletionScene extends StatelessWidget {
                   final size = constraints.biggest;
                   final hasCounter = totalStars != null || earnedStar;
                   final counter = Rect.fromLTWH(
-                    size.width - math.min(140.0, size.width / 2),
+                    size.width - math.min(140.0, size.width),
                     0,
-                    math.min(140.0, size.width / 2),
+                    math.min(140.0, size.width),
                     counterHeight,
                   );
                   return AnimatedBuilder(

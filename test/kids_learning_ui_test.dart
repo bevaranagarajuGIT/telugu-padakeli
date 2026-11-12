@@ -95,6 +95,33 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
+  testWidgets('builder editing buttons remain compact on a phone', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final settings = AppSettingsController();
+    final session = KidsActivitySession(
+      activities.firstWhere((activity) => activity.id == 'builder'),
+      () {},
+    );
+    addTearDown(settings.dispose);
+    addTearDown(session.dispose);
+    await tester.pumpWidget(
+      _host(KidsActivityScreen(session: session), settings),
+    );
+    await tester.pumpAndSettle();
+    for (final key in ['learning-undo', 'learning-clear']) {
+      expect(
+        tester.getSize(find.byKey(ValueKey(key))).height,
+        inInclusiveRange(48, 88),
+      );
+    }
+    expect(tester.takeException(), isNull);
+  });
+
   for (final dark in [false, true]) {
     testWidgets('next stays reachable on a small phone, dark=$dark', (
       tester,

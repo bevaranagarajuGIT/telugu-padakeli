@@ -34,18 +34,13 @@ Widget _host(
   ),
 );
 
-Widget _scene({
-  bool completed = true,
-  VoidCallback? onSkip,
-  Widget? character,
-}) => Scaffold(
+Widget _scene({bool completed = true, Widget? character}) => Scaffold(
   body: SingleChildScrollView(
     padding: const EdgeInsets.all(20),
     child: SpecialAchievementCelebration(
       completed: completed,
       earnedStar: true,
       totalStars: 1,
-      onSkip: onSkip,
       character: character,
       characterDescription: character == null ? null : 'Test illustration',
     ),
@@ -117,29 +112,21 @@ void main() {
     await tester.pump(const Duration(milliseconds: 900));
     expect(tester.binding.transientCallbackCount, 0);
     expect(
-      tester
-          .widget<TextButton>(
-            find.byKey(const ValueKey('special-celebration-skip')),
-          )
-          .onPressed,
-      isNull,
+      find.byKey(const ValueKey('special-celebration-skip')),
+      findsNothing,
     );
   });
 
-  testWidgets('skip snaps to completion once without changing reward data', (
+  testWidgets('celebration settles without a redundant skip control', (
     tester,
   ) async {
-    var skips = 0;
-    await tester.pumpWidget(_host(_scene(onSkip: () => skips++)));
+    await tester.pumpWidget(_host(_scene()));
     await tester.pump(const Duration(milliseconds: 200));
-    final skip = find.byKey(const ValueKey('special-celebration-skip'));
-    await tester.ensureVisible(skip);
-    await tester.pump();
-    final action = tester.widget<TextButton>(skip).onPressed!;
-    action();
-    action();
-    await tester.pump();
-    expect(skips, 1);
+    expect(
+      find.byKey(const ValueKey('special-celebration-skip')),
+      findsNothing,
+    );
+    await tester.pumpAndSettle();
     expect(
       find.byKey(const ValueKey('special-phase-completion')),
       findsOneWidget,
@@ -149,32 +136,28 @@ void main() {
     expect(tester.binding.transientCallbackCount, 0);
   });
 
-  testWidgets(
-    'native articulated character shares the completion and skip clock',
-    (tester) async {
-      await tester.pumpWidget(_host(_scene()));
-      final painter =
-          tester
-                  .widget<CustomPaint>(
-                    find.byKey(const ValueKey('bal-hanuman-character')),
-                  )
-                  .painter!
-              as BalHanumanPainter;
-      expect(painter.pose.armRaise, 0);
-      await tester.pump(const Duration(milliseconds: 850));
-      expect(painter.pose.armRaise, greaterThan(0));
-      expect(painter.pose.headTilt.abs(), greaterThan(0.01));
-      final skip = find.byKey(const ValueKey('special-celebration-skip'));
-      await tester.ensureVisible(skip);
-      tester.widget<TextButton>(skip).onPressed!();
-      await tester.pump();
-      expect(painter.progress.value, 1);
-      expect(painter.pose.armRaise, 1.9);
-      expect(painter.pose.tailSwing, closeTo(0, 1e-10));
-      expect(find.text('1'), findsOneWidget);
-      expect(tester.binding.transientCallbackCount, 0);
-    },
-  );
+  testWidgets('native articulated character shares the completion clock', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_host(_scene()));
+    final painter =
+        tester
+                .widget<CustomPaint>(
+                  find.byKey(const ValueKey('bal-hanuman-character')),
+                )
+                .painter!
+            as BalHanumanPainter;
+    expect(painter.pose.armRaise, 0);
+    await tester.pump(const Duration(milliseconds: 850));
+    expect(painter.pose.armRaise, greaterThan(0));
+    expect(painter.pose.headTilt.abs(), greaterThan(0.01));
+    await tester.pumpAndSettle();
+    expect(painter.progress.value, 1);
+    expect(painter.pose.armRaise, 1.9);
+    expect(painter.pose.tailSwing, closeTo(0, 1e-10));
+    expect(find.text('1'), findsOneWidget);
+    expect(tester.binding.transientCallbackCount, 0);
+  });
 
   testWidgets('an incomplete level has no celebration or controls', (
     tester,
@@ -387,10 +370,16 @@ void main() {
         );
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
-        final skip = find.byKey(const ValueKey('special-celebration-skip'));
-        await tester.ensureVisible(skip);
-        await tester.pumpAndSettle();
-        expect(tester.getSize(skip).height, greaterThanOrEqualTo(48));
+        expect(
+          find.byKey(const ValueKey('special-celebration-skip')),
+          findsNothing,
+        );
+        expect(
+          tester
+              .getSize(find.byKey(const ValueKey('bal-hanuman-character')))
+              .height,
+          greaterThan(0),
+        );
         expect(tester.takeException(), isNull);
       });
     }

@@ -880,7 +880,6 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
           key: const ValueKey('legacy-completion-motion'),
           completed: _isComplete,
           animate: _freshCompletion,
-          onSkip: () => _audio?.stop(),
         ),
         const SizedBox(height: 16),
         PremiumTeluguText(

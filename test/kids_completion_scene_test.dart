@@ -445,6 +445,64 @@ void main() {
   });
 
   for (final size in [
+    const Size(320, 640),
+    const Size(360, 740),
+    const Size(390, 844),
+  ]) {
+    testWidgets('phone completion needs no scrolling at $size', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final settings = AppSettingsController()..setEnglishHelper(true);
+      final learning = KidsLearningController();
+      addTearDown(settings.dispose);
+      addTearDown(learning.dispose);
+      final session = learning.sessionFor(_activity());
+      _finish(session);
+      await tester.pumpWidget(
+        _host(
+          KidsActivityScreen(
+            session: session,
+            learning: learning,
+            onNext: () {},
+          ),
+          settings,
+          reduced: true,
+        ),
+      );
+      await tester.pumpAndSettle();
+      final viewport = find.byKey(
+        const ValueKey('kids-activity-completion-scroll'),
+      );
+      final scroll = tester.state<ScrollableState>(
+        find.descendant(of: viewport, matching: find.byType(Scrollable)),
+      );
+      expect(scroll.position.maxScrollExtent, 0);
+      expect(
+        find.byKey(const ValueKey('special-celebration-skip')),
+        findsNothing,
+      );
+      expect(
+        tester
+            .getSize(find.byKey(const ValueKey('bal-hanuman-character')))
+            .height,
+        lessThanOrEqualTo(112),
+      );
+      for (final key in [
+        'learning-restart',
+        'learning-return',
+        'learning-next-activity',
+      ]) {
+        expect(find.byKey(ValueKey(key)).hitTestable(), findsOneWidget);
+      }
+      expect(learning.stars, 1);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  }
+
+  for (final size in [
     const Size(320, 568),
     const Size(430, 932),
     const Size(800, 1024),

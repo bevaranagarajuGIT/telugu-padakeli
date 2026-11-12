@@ -190,7 +190,7 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
                   ? 'kids-activity-completion-scroll'
                   : 'kids-activity-scroll',
             ),
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.all(session.complete ? 8 : 20),
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 640),
@@ -287,8 +287,8 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
                 ? AppColors.purple
                 : Theme.of(context).colorScheme.primary,
             foregroundColor: Colors.white,
-            minimumSize: const Size(48, 64),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            minimumSize: const Size(48, 56),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(18),
             ),
@@ -301,7 +301,7 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
                 ? (finalQuestion ? 'Finish activity' : 'Next question')
                 : 'Check answer',
             center: true,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
               color: Colors.white,
               fontWeight: FontWeight.w700,
             ),
@@ -328,8 +328,8 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
         style: FilledButton.styleFrom(
           backgroundColor: AppColors.gold,
           foregroundColor: AppColors.ink,
-          minimumSize: const Size(48, 64),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          minimumSize: const Size(48, 56),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(18),
           ),
@@ -340,7 +340,7 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
               ? 'Return to activities'
               : 'Next level',
           center: true,
-          style: theme.textTheme.titleMedium?.copyWith(
+          style: theme.textTheme.labelLarge?.copyWith(
             color: AppColors.ink,
             fontWeight: FontWeight.w700,
           ),
@@ -668,12 +668,12 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
               disabledBackgroundColor:
                   theme.colorScheme.surfaceContainerHighest,
               disabledForegroundColor: theme.colorScheme.onSurfaceVariant,
-              minimumSize: const Size(48, 104),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              minimumSize: const Size(48, 64),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               elevation: 2,
               shadowColor: background.withValues(alpha: 0.3),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(14),
               ),
               animationDuration: MediaQuery.disableAnimationsOf(context)
                   ? Duration.zero
@@ -700,23 +700,24 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
                 ),
               ),
             ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        child: Row(
           children: [
             Icon(
               undo ? Icons.undo_rounded : Icons.restart_alt_rounded,
-              size: 24,
+              size: 20,
             ),
-            const SizedBox(height: 8),
-            KidsLearningText.control(
-              undo ? 'చివరిది తీసేయి' : 'మళ్లీ అమర్చు',
-              english: undo ? 'Undo last tile' : 'Reset attempt',
-              center: true,
-              style: theme.textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: enabled
-                    ? foreground
-                    : theme.colorScheme.onSurfaceVariant,
+            const SizedBox(width: 8),
+            Expanded(
+              child: KidsLearningText.control(
+                undo ? 'చివరిది తీసేయి' : 'మళ్లీ అమర్చు',
+                english: undo ? 'Undo last tile' : 'Reset attempt',
+                center: true,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: enabled
+                      ? foreground
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
           ],
@@ -833,7 +834,7 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
               key: const ValueKey('learning-completion-heading'),
               english: 'Activity completed.',
               center: true,
-              style: theme.textTheme.headlineSmall?.copyWith(
+              style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -846,24 +847,19 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
           animate: _freshCompletion,
           earnedStar: session.earnedStarOnCompletion,
           totalStars: widget.learning?.stars,
-          onSkip: () => _audio?.stop(),
-          sceneHeight: (MediaQuery.sizeOf(context).height - 480).clamp(
-            (110.0 - MediaQuery.paddingOf(context).top).clamp(64.0, 110.0),
-            264,
-          ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 8),
         Container(
           key: const ValueKey('learning-completion-result'),
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             color: successBackground,
             borderRadius: BorderRadius.circular(20),
           ),
           child: Row(
             children: [
-              Icon(Icons.verified_rounded, color: successForeground, size: 36),
-              const SizedBox(width: 12),
+              Icon(Icons.verified_rounded, color: successForeground, size: 24),
+              const SizedBox(width: 8),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -872,7 +868,7 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
                       KidsLearningText(
                         'ఒక నక్షత్రం సంపాదించావు!',
                         english: 'You earned one star!',
-                        style: theme.textTheme.titleMedium?.copyWith(
+                        style: theme.textTheme.bodyMedium?.copyWith(
                           color: successForeground,
                           fontWeight: FontWeight.w700,
                         ),
@@ -880,7 +876,7 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
                     KidsLearningText(
                       '${session.score} / ${session.activity.questions.length} ప్రశ్నలు పూర్తి చేశావు.',
                       english: 'All questions completed!',
-                      style: theme.textTheme.bodyLarge?.copyWith(
+                      style: theme.textTheme.bodyMedium?.copyWith(
                         color: successForeground,
                       ),
                     ),
@@ -890,7 +886,7 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
             ],
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         KidsLearningText(
           'ఒక్కో ఆటకు ఒక నక్షత్రం. మీ పురోగతి ఈ పరికరంలో ఉంటుంది.',
           english:
@@ -900,49 +896,86 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
             color: scheme.onSurfaceVariant,
           ),
         ),
-        const SizedBox(height: 20),
-        TapFeedback(
-          child: OutlinedButton.icon(
-            key: const ValueKey('learning-restart'),
-            onPressed: _leavingCompletion ? null : session.restart,
-            icon: const Icon(Icons.replay_rounded),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: accent,
-              backgroundColor: Color.alphaBlend(
-                AppColors.purple.withValues(alpha: 0.06),
-                scheme.surface,
-              ),
-              side: BorderSide(color: accent.withValues(alpha: 0.5)),
-              minimumSize: const Size(48, 64),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
-              ),
-            ),
-            label: KidsLearningText.control(
-              'మళ్లీ ఆడుదాం',
-              english: 'Play again',
-              center: true,
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: accent,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ),
-        if (widget.onNext != null)
-          TextButton(
-            key: const ValueKey('learning-return'),
-            onPressed: _leavingCompletion
-                ? null
-                : () => _leaveCompletion(() => Navigator.of(context).pop()),
-            child: const KidsLearningText.control(
-              'ఆటలకు వెళ్లు',
-              english: 'Return to activities',
-              center: true,
-            ),
-          ),
+        const SizedBox(height: 8),
+        _completionActions(context, accent: accent),
       ],
+    );
+  }
+
+  Widget _completionActions(BuildContext context, {required Color accent}) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final labelSize = MediaQuery.textScalerOf(
+          context,
+        ).scale(theme.textTheme.labelLarge?.fontSize ?? 14);
+        final sideBySide =
+            widget.onNext != null &&
+            constraints.maxWidth >= 240 &&
+            labelSize <= 20;
+        final width = sideBySide
+            ? (constraints.maxWidth - 8) / 2
+            : constraints.maxWidth;
+        return Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            SizedBox(
+              width: width,
+              child: TapFeedback(
+                child: OutlinedButton(
+                  key: const ValueKey('learning-restart'),
+                  onPressed: _leavingCompletion ? null : session.restart,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: accent,
+                    backgroundColor: Color.alphaBlend(
+                      AppColors.purple.withValues(alpha: 0.06),
+                      scheme.surface,
+                    ),
+                    side: BorderSide(color: accent.withValues(alpha: 0.5)),
+                    minimumSize: const Size(48, 48),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                  ),
+                  child: KidsLearningText.control(
+                    'మళ్లీ ఆడుదాం',
+                    english: 'Play again',
+                    center: true,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: accent,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            if (widget.onNext != null)
+              SizedBox(
+                width: width,
+                child: TextButton(
+                  key: const ValueKey('learning-return'),
+                  onPressed: _leavingCompletion
+                      ? null
+                      : () =>
+                            _leaveCompletion(() => Navigator.of(context).pop()),
+                  child: KidsLearningText.control(
+                    'ఆటలకు వెళ్లు',
+                    english: 'Return to activities',
+                    center: true,
+                    style: theme.textTheme.labelLarge?.copyWith(color: accent),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }
