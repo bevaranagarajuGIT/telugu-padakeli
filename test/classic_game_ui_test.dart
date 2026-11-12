@@ -193,6 +193,48 @@ void main() {
   });
 
   for (final dark in [false, true]) {
+    testWidgets('active clue is distinct across direction changes dark=$dark', (
+      tester,
+    ) async {
+      await _open(tester, dark: dark);
+      for (final direction in ['across', 'down']) {
+        await _tap(
+          tester,
+          find.byKey(ValueKey('classic-direction-$direction')),
+        );
+        await _tap(tester, find.byKey(ValueKey('clue-$direction-1')));
+        final tile = tester.widget<ListTile>(
+          find.byKey(ValueKey('clue-$direction-1')),
+        );
+        expect(tile.selected, isTrue);
+        final label = tester.widget<Text>(
+          find.byKey(const ValueKey('selected-clue')),
+        );
+        final background = tile.selectedTileColor!;
+        final foreground = label.style!.color!;
+        final luminances = [
+          foreground.computeLuminance(),
+          background.computeLuminance(),
+        ]..sort();
+        expect(
+          (luminances.last + 0.05) / (luminances.first + 0.05),
+          greaterThanOrEqualTo(4.5),
+        );
+        final arrow = tester.widget<Icon>(
+          find.byKey(const ValueKey('active-clue-direction')),
+        );
+        expect(
+          arrow.icon,
+          direction == 'across'
+              ? Icons.arrow_forward_rounded
+              : Icons.arrow_downward_rounded,
+        );
+        final other = direction == 'across' ? 'down' : 'across';
+        expect(find.byKey(ValueKey('clue-$other-1')), findsNothing);
+      }
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets(
       'whole words confirm automatically and crossing edits recompute dark=$dark',
       (tester) async {

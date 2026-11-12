@@ -1580,6 +1580,8 @@ class _ClueList extends StatelessWidget {
     final correctForeground = dark
         ? AppColors.darkSuccessForeground
         : AppColors.successForeground;
+    bool isSelected(PuzzleClue clue) =>
+        identical(selectedClue, clue) && selectedDirection == direction;
     return Card(
       key: const ValueKey('classic-clue-list'),
       margin: EdgeInsets.zero,
@@ -1602,35 +1604,47 @@ class _ClueList extends StatelessWidget {
                 tileColor: correctClues.contains(clue)
                     ? correctBackground
                     : null,
-                selectedTileColor: correctClues.contains(clue)
-                    ? correctBackground
-                    : theme.colorScheme.secondaryContainer.withValues(
-                        alpha: 0.6,
-                      ),
+                selectedTileColor: AppColors.deepBlue,
+                selectedColor: Colors.white,
+                leading: isSelected(clue)
+                    ? Icon(
+                        direction == PuzzleDirection.across
+                            ? Icons.arrow_forward_rounded
+                            : Icons.arrow_downward_rounded,
+                        key: const ValueKey('active-clue-direction'),
+                        color: Colors.white,
+                        size: 20,
+                        semanticLabel: direction == PuzzleDirection.across
+                            ? 'ప్రస్తుత అడ్డం / Current Across'
+                            : 'ప్రస్తుత నిలువు / Current Down',
+                      )
+                    : null,
+                minLeadingWidth: 20,
+                horizontalTitleGap: 8,
                 trailing: correctClues.contains(clue)
                     ? Icon(
                         Icons.check_circle_rounded,
                         key: ValueKey(
                           'clue-correct-${direction.name}-${clue.number}',
                         ),
-                        color: correctForeground,
+                        color: isSelected(clue)
+                            ? Colors.white
+                            : correctForeground,
                         size: 20,
                         semanticLabel: 'సరైన సమాధానం / Correct answer',
                       )
                     : null,
                 enabled: enabled,
-                selected:
-                    identical(selectedClue, clue) &&
-                    selectedDirection == direction,
+                selected: isSelected(clue),
                 title: Text(
                   '${clue.number}. ${clue.clue} (${clue.aksharaCount})',
-                  key:
-                      identical(selectedClue, clue) &&
-                          selectedDirection == direction
+                  key: isSelected(clue)
                       ? const ValueKey('selected-clue')
                       : null,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: correctClues.contains(clue)
+                    color: isSelected(clue)
+                        ? Colors.white
+                        : correctClues.contains(clue)
                         ? correctForeground
                         : null,
                     fontFamily: PremiumTeluguText.fontFamily,
