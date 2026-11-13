@@ -178,6 +178,69 @@ void main() {
     );
   }
 
+  for (final (width, height, scale, dark) in [
+    (320.0, 568.0, 1.0, false),
+    (320.0, 568.0, 3.2, true),
+    (900.0, 600.0, 1.0, false),
+  ]) {
+    testWidgets(
+      'colourful Home shortcuts remain readable and actionable $width scale=$scale dark=$dark',
+      (tester) async {
+        tester.view.physicalSize = Size(width, height);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final opened = <String>[];
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: dark ? AppTheme.dark(1) : AppTheme.light(1),
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(scale),
+                disableAnimations: true,
+              ),
+              child: child!,
+            ),
+            home: HomeScreen(
+              onClassic: () {},
+              onLearn: () {},
+              onRiddles: () => opened.add('riddles'),
+              onDaily: () => opened.add('daily'),
+              onProgress: () => opened.add('progress'),
+              onSettings: () {},
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        for (final (key, english) in [
+          ('riddles', 'Telugu Riddles'),
+          ('daily', 'Daily Puzzle'),
+          ('progress', 'My Progress'),
+        ]) {
+          final target = find.byKey(ValueKey('home-$key'));
+          await tester.ensureVisible(target);
+          await tester.pumpAndSettle();
+          expect(target.hitTestable(), findsOneWidget);
+          expect(tester.getSize(target).height, greaterThanOrEqualTo(48));
+          final text = tester.widget<Text>(find.text(english));
+          final foreground = text.style!.color!.computeLuminance();
+          final background = tester
+              .widget<ListTile>(target)
+              .tileColor!
+              .computeLuminance();
+          final contrast = foreground > background
+              ? (foreground + 0.05) / (background + 0.05)
+              : (background + 0.05) / (foreground + 0.05);
+          expect(contrast, greaterThanOrEqualTo(4.5), reason: english);
+          await tester.tap(target);
+          await tester.pumpAndSettle();
+        }
+        expect(opened, ['riddles', 'daily', 'progress']);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
   testWidgets('app presets preserve the independent nonlinear system scaler', (
     tester,
   ) async {

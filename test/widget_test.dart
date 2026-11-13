@@ -171,7 +171,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('My Progress'));
     await tester.tap(find.text('My Progress'));
-    await tester.pumpAndSettle();
+    await tester.runAsync(() => tester.pumpAndSettle());
 
     expect(find.byKey(const ValueKey('progress-daily-goal')), findsOneWidget);
     expect(find.textContaining('No recorded learning yet.'), findsOneWidget);

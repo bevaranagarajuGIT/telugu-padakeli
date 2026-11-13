@@ -975,7 +975,7 @@ class _PadakeliScreenState extends State<PadakeliScreen>
     final separateActions =
         width < 380 ||
         MediaQuery.textScalerOf(context).scale(labelStyle.fontSize!) > 14.5;
-    final buttonWidth = separateActions ? (width.clamp(0, 720) - 32) / 2 : 88.0;
+    final buttonWidth = separateActions ? (width.clamp(0, 720) - 40) / 2 : 88.0;
     var actionsHeight = 48.0;
     for (final label in ['సహాయం\nHints', 'చర్యలు\nActions']) {
       final painter = TextPainter(
@@ -1055,40 +1055,44 @@ class _PadakeliScreenState extends State<PadakeliScreen>
         ),
         child: SafeArea(
           top: false,
-          child: SingleChildScrollView(
-            controller: _scrollController,
-            key: const ValueKey('classic-game-scroll'),
-            padding: const EdgeInsets.all(8),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 720),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (scrollActions) ...[
-                      _headerActions(buttonWidth, actionsHeight, labelStyle),
-                      const SizedBox(height: 8),
-                    ],
-                    if (widget.dailyDate != null) ...[
-                      Text(
-                        'నేటి పదకేళి / Daily · ${widget.dailyDate}\n'
-                        '${_storage?.daily(widget.dailyDate!)['repeat'] == true ? 'Practice repeat · ' : ''}'
-                        'Rotating ${_puzzles!.length}-puzzle offline pack; repeats are possible.',
-                        key: const ValueKey('daily-puzzle-label'),
-                        style: theme.textTheme.bodyMedium,
-                      ),
-                      if (_storage?.today != widget.dailyDate)
-                        const Text(
-                          'This is a saved past date. Return Home for today’s puzzle; your answers are kept.',
+          child: LayoutBuilder(
+            builder: (context, viewport) => SingleChildScrollView(
+              controller: _scrollController,
+              key: const ValueKey('classic-game-scroll'),
+              padding: const EdgeInsets.all(12),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: _isComplete ? 720 : 1100,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (scrollActions) ...[
+                        _headerActions(buttonWidth, actionsHeight, labelStyle),
+                        const SizedBox(height: 8),
+                      ],
+                      if (widget.dailyDate != null) ...[
+                        Text(
+                          'నేటి పదకేళి / Daily · ${widget.dailyDate}\n'
+                          '${_storage?.daily(widget.dailyDate!)['repeat'] == true ? 'Practice repeat · ' : ''}'
+                          'Rotating ${_puzzles!.length}-puzzle offline pack; repeats are possible.',
+                          key: const ValueKey('daily-puzzle-label'),
+                          style: theme.textTheme.bodyMedium,
                         ),
-                      const SizedBox(height: 12),
+                        if (_storage?.today != widget.dailyDate)
+                          const Text(
+                            'This is a saved past date. Return Home for today’s puzzle; your answers are kept.',
+                          ),
+                        const SizedBox(height: 12),
+                      ],
+                      _isComplete && !_completionDialogOpen
+                          ? _completion()
+                          : puzzle == null
+                          ? const CircularProgressIndicator()
+                          : _gameContent(puzzle, viewport),
                     ],
-                    _isComplete && !_completionDialogOpen
-                        ? _completion()
-                        : puzzle == null
-                        ? const CircularProgressIndicator()
-                        : _gameContent(puzzle),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -1098,7 +1102,7 @@ class _PadakeliScreenState extends State<PadakeliScreen>
     );
   }
 
-  Widget _gameContent(Puzzle puzzle) {
+  Widget _gameContent(Puzzle puzzle, BoxConstraints viewport) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final filled = _controllers
@@ -1121,8 +1125,31 @@ class _PadakeliScreenState extends State<PadakeliScreen>
         }
       }
     }
-    return Column(
-      key: ValueKey('classic-puzzle-${puzzle.id}'),
+    final occupiedColumns = [
+      for (var column = 0; column < puzzle.gridSize; column++)
+        if (puzzle.rows.any((row) => row[column] != '#')) column,
+    ];
+    final visibleColumns = occupiedColumns.last - occupiedColumns.first + 1;
+    final occupiedRows = [
+      for (var row = 0; row < puzzle.gridSize; row++)
+        if (puzzle.rows[row].any((cell) => cell != '#')) row,
+    ];
+    final visibleRows = occupiedRows.last - occupiedRows.first + 1;
+    final split =
+        viewport.maxWidth - 24 >= 700 &&
+        MediaQuery.textScalerOf(
+              context,
+            ).scale(theme.textTheme.bodyMedium!.fontSize!) <=
+            24;
+    final minimumCellExtent = CrosswordGrid.minimumCellExtent(context);
+    final maximumCellExtent = split
+        ? ((viewport.maxHeight - 52) / visibleRows).clamp(
+            minimumCellExtent,
+            minimumCellExtent > 72 ? minimumCellExtent : 72.0,
+          )
+        : 72.0;
+    final board = Column(
+      key: const ValueKey('classic-board-pane'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Semantics(
@@ -1134,15 +1161,11 @@ class _PadakeliScreenState extends State<PadakeliScreen>
             style: theme.textTheme.bodySmall,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 12),
         Align(
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              maxWidth: puzzle.gridSize > 3
-                  ? (puzzle.gridSize * 60.0).clamp(240, 720)
-                  : MediaQuery.sizeOf(context).width >= 600
-                  ? 360
-                  : 240,
+              maxWidth: visibleColumns * maximumCellExtent + 12,
             ),
             child: Container(
               padding: const EdgeInsets.all(4),
@@ -1162,6 +1185,7 @@ class _PadakeliScreenState extends State<PadakeliScreen>
                 ],
               ),
               child: CrosswordGrid(
+                maximumCellExtent: maximumCellExtent,
                 puzzle: puzzle,
                 controllers: _controllers,
                 selectedCellIndex: _selectedCellIndex,
@@ -1174,10 +1198,15 @@ class _PadakeliScreenState extends State<PadakeliScreen>
             ),
           ),
         ),
-        const SizedBox(height: 4),
+      ],
+    );
+    final controls = Column(
+      key: const ValueKey('classic-controls-pane'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
         Wrap(
           spacing: 8,
-          runSpacing: 4,
+          runSpacing: 8,
           alignment: WrapAlignment.center,
           children: [
             for (final (direction, label, color) in [
@@ -1229,7 +1258,7 @@ class _PadakeliScreenState extends State<PadakeliScreen>
               ),
           ],
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 12),
         _ClueList(
           clues: _cluesFor(puzzle, _selectedDirection),
           direction: _selectedDirection,
@@ -1239,7 +1268,7 @@ class _PadakeliScreenState extends State<PadakeliScreen>
           onSelect: _selectClue,
           enabled: !_isComplete && _selectedCellIndex != null,
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 16),
         AksharaPalette(
           puzzle: puzzle,
           onSelected: _enterAkshara,
@@ -1248,7 +1277,7 @@ class _PadakeliScreenState extends State<PadakeliScreen>
               ? '→ అడ్డం / Across · ${_selectedClue?.number ?? ''}'
               : '↓ నిలువు / Down · ${_selectedClue?.number ?? ''}',
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 12),
         _editToolbar(context),
         if (_message != null) ...[
           const SizedBox(height: 12),
@@ -1275,6 +1304,26 @@ class _PadakeliScreenState extends State<PadakeliScreen>
           ),
         ],
       ],
+    );
+    return LayoutBuilder(
+      key: ValueKey('classic-puzzle-${puzzle.id}'),
+      builder: (context, constraints) {
+        if (split) {
+          return Row(
+            key: const ValueKey('classic-split-layout'),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(flex: 5, child: board),
+              const SizedBox(width: 24),
+              Expanded(flex: 4, child: controls),
+            ],
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [board, const SizedBox(height: 16), controls],
+        );
+      },
     );
   }
 
@@ -1816,7 +1865,7 @@ class _ClueList extends StatelessWidget {
       key: const ValueKey('classic-clue-list'),
       margin: EdgeInsets.zero,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4),
+        padding: const EdgeInsets.all(8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1824,9 +1873,9 @@ class _ClueList extends StatelessWidget {
               ListTile(
                 key: ValueKey('clue-${direction.name}-${clue.number}'),
                 minTileHeight: 48,
-                dense: true,
+                dense: false,
                 visualDensity: VisualDensity.standard,
-                minVerticalPadding: 0,
+                minVerticalPadding: 8,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 10),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),

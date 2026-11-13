@@ -5,6 +5,7 @@ import '../../screens/home_screen.dart';
 import '../../screens/kids_learning_screen.dart';
 import '../../screens/padakeli_screen.dart';
 import '../../screens/progress_screen.dart';
+import '../../screens/riddles_screen.dart';
 import '../../screens/settings_screen.dart';
 import '../../core/learning_progress.dart';
 import '../../services/engagement_audio_manager.dart';
@@ -23,6 +24,7 @@ class _AppShellState extends State<AppShell> {
   final _visited = <int>{0};
   bool _settingsOpen = false;
   bool _dailyOpen = false;
+  bool _riddlesOpen = false;
   int _resumeRequest = 0;
   int _resetRevision = 0;
 
@@ -45,6 +47,8 @@ class _AppShellState extends State<AppShell> {
   void _resume() {
     final saved = context.read<LearningProgress?>();
     switch (saved?.lastDestination) {
+      case 'riddles':
+        _openRiddles(resume: true);
       case 'kids' || 'practice':
         setState(() => _resumeRequest++);
         _select(2);
@@ -52,6 +56,20 @@ class _AppShellState extends State<AppShell> {
         _openDaily(date: saved?.lastDailyDate);
       default:
         _select(1);
+    }
+  }
+
+  Future<void> _openRiddles({bool resume = false}) async {
+    if (_riddlesOpen) return;
+    context.read<EngagementAudioManager?>()?.stop();
+    context.read<PronunciationAudioManager?>()?.stop();
+    setState(() => _riddlesOpen = true);
+    try {
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute<void>(builder: (_) => RiddlesScreen(resume: resume)),
+      );
+    } finally {
+      if (mounted) setState(() => _riddlesOpen = false);
     }
   }
 
@@ -99,7 +117,11 @@ class _AppShellState extends State<AppShell> {
           index: _selectedIndex,
           children: [
             TickerMode(
-              enabled: _selectedIndex == 0 && !_settingsOpen && !_dailyOpen,
+              enabled:
+                  _selectedIndex == 0 &&
+                  !_settingsOpen &&
+                  !_dailyOpen &&
+                  !_riddlesOpen,
               child: HomeScreen(
                 hasActivePuzzle: saved?.hasClassic ?? false,
                 hasSavedLearning: saved?.lastDestination != null,
@@ -109,20 +131,27 @@ class _AppShellState extends State<AppShell> {
                 onProgress: () => _select(3),
                 onSettings: _openSettings,
                 onDaily: _openDaily,
+                onRiddles: _openRiddles,
                 onResume: _resume,
               ),
             ),
             _visited.contains(1)
                 ? TickerMode(
                     enabled:
-                        _selectedIndex == 1 && !_settingsOpen && !_dailyOpen,
+                        _selectedIndex == 1 &&
+                        !_settingsOpen &&
+                        !_dailyOpen &&
+                        !_riddlesOpen,
                     child: PadakeliScreen(onBack: () => _select(0)),
                   )
                 : const SizedBox.shrink(),
             _visited.contains(2)
                 ? TickerMode(
                     enabled:
-                        _selectedIndex == 2 && !_settingsOpen && !_dailyOpen,
+                        _selectedIndex == 2 &&
+                        !_settingsOpen &&
+                        !_dailyOpen &&
+                        !_riddlesOpen,
                     child: KidsLearningScreen(
                       onBack: () => _select(0),
                       resumeRequest: _resumeRequest,
@@ -132,10 +161,14 @@ class _AppShellState extends State<AppShell> {
             _visited.contains(3)
                 ? TickerMode(
                     enabled:
-                        _selectedIndex == 3 && !_settingsOpen && !_dailyOpen,
+                        _selectedIndex == 3 &&
+                        !_settingsOpen &&
+                        !_dailyOpen &&
+                        !_riddlesOpen,
                     child: ProgressScreen(
                       onResume: _resume,
                       onLearn: () => _select(2),
+                      onRiddles: _openRiddles,
                     ),
                   )
                 : const SizedBox.shrink(),

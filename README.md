@@ -47,6 +47,47 @@ speech recognition, runtime font download or backend is required.
   icon buttons, brief press feedback, equal normal-text targets and a large-text stacked
   layout. Reduced motion disables the press animation; editing behavior is
   unchanged.
+  Classic adapts to each board's occupied rows and columns, with readable cells
+  rather than shrinking letters to fit. Phones use spaced, vertically scrollable
+  board/clue/input sections; wide windows place the board beside the controls.
+  Enlarged text returns to the stacked layout. The letter palette has a separate
+  direction label and spaced, rounded-square targets; all clues remain available.
+- Home's Riddles, Daily Puzzle and My Progress shortcuts use distinct teal,
+  gold and blue surfaces with bilingual labels and full-row tap targets.
+- Home also opens పొడుపు కథలు / Telugu Riddles, an offline collection with twenty
+  **original draft riddles awaiting Telugu review**, not a verified traditional
+  collection. Each screen has four shuffled choices with balanced answer
+  positions, an optional hint, retry feedback, and an explanation after success.
+  Next is explicit; solved answers and used hints survive restart. Review lists
+  only solved riddles and never changes progress. The pilot does not award stars.
+  Riddle progress has its own saved section; Classic, Kids, and existing rewards
+  are preserved. Edited content invalidates only that riddle's old solution.
+  Completion highlights answer review above the final riddle. Review uses
+  numbered question/answer/explanation panels and keeps Done visible while
+  scrolling; enlarged text wraps without hiding that exit action.
+  The drafts form a sequential six-level adventure: మొదటి మెరుపు / First
+  spark (3), ఆలోచనల ఆట / Brainwave trail (3), పొడుపుల వీరుడు / Riddle hero
+  (2), ప్రకృతి పలుకులు / Nature whispers (4), చిట్టి రహస్యాలు / Little mysteries
+  (4), and పొడుపుల విజేత / Riddle champion (4). The twelve new riddles are appended;
+  the original eight retain their IDs, content signatures, order and level groups.
+  Completed original levels stay complete, with Nature whispers unlocked next.
+  Completing a level unlocks the next, brings its encouraging milestone
+  into view, and offers explicit Next level. Home opens the journey; Resume returns to the saved
+  riddle, and Back returns to the journey. Unlocks derive from valid saved answers,
+  so the original pilot's solved answers carry over without reset or new rewards.
+  Level placement is excluded from content signatures; editing actual riddle
+  content still invalidates its answer and rechecks access to later levels.
+  Draft review status stays in the content metadata and documentation, without
+  displaying a review-pending notice on player-facing screens.
+  Completed levels also offer Play again: a fresh practice round with its own
+  choices and hints. Replays never overwrite saved answers, the saved current
+  riddle, unlocks or rewards. Review still shows the original solved answers;
+  leaving the level or restarting the app ends the temporary practice round.
+  The journey highlights the next available level and uses compact completed
+  stops, with overall riddle and level totals. My Progress shows the same
+  content-validated totals, the next unfinished level and a View journey action.
+  Riddle totals do not change daily goals, first-attempt accuracy, streaks or stars,
+  and temporary replays never increase these totals.
 - Kids offers three freely selectable Telugu-first learning paths: చిన్నారులు,
   బాల మిత్రులు and పద వీరులు. Picture, letter, missing-akshara, word-builder and
   meaning games retain retries and explicit continuation. Original practice is

@@ -6,14 +6,24 @@ import '../app/theme/app_colors.dart';
 import '../core/learning_progress.dart';
 import '../core/kids_learning_controller.dart';
 import '../models/kids_learning.dart';
+import '../models/riddle.dart';
 import '../services/kids_learning_service.dart';
+import '../services/riddle_repository.dart';
 import '../widgets/app_page.dart';
 import '../widgets/kids_learning_text.dart';
 
 class ProgressScreen extends StatefulWidget {
-  const ProgressScreen({this.onResume, this.onLearn, super.key});
+  const ProgressScreen({
+    this.onResume,
+    this.onLearn,
+    this.onRiddles,
+    this.riddleRepository = const LocalRiddleRepository(),
+    super.key,
+  });
   final VoidCallback? onResume;
   final VoidCallback? onLearn;
+  final VoidCallback? onRiddles;
+  final RiddleRepository riddleRepository;
 
   @override
   State<ProgressScreen> createState() => _ProgressScreenState();
@@ -22,14 +32,37 @@ class ProgressScreen extends StatefulWidget {
 class _ProgressScreenState extends State<ProgressScreen>
     with WidgetsBindingObserver {
   Timer? _calendarRefresh;
+  List<Riddle>? _riddles;
+  bool _riddleLoadFailed = false;
 
   @override
   void initState() {
     super.initState();
+    _loadRiddles();
     WidgetsBinding.instance.addObserver(this);
     _calendarRefresh = Timer.periodic(const Duration(minutes: 1), (_) {
       if (mounted && TickerMode.valuesOf(context).enabled) setState(() {});
     });
+  }
+
+  Future<void> _loadRiddles() async {
+    setState(() {
+      _riddleLoadFailed = false;
+      _riddles = null;
+    });
+    try {
+      final riddles = await widget.riddleRepository.load();
+      if (mounted) setState(() => _riddles = riddles);
+    } on Exception catch (error, stack) {
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stack,
+          library: 'Riddle progress',
+        ),
+      );
+      if (mounted) setState(() => _riddleLoadFailed = true);
+    }
   }
 
   @override
@@ -52,6 +85,9 @@ class _ProgressScreenState extends State<ProgressScreen>
     final goal = saved?.dailyGoal ?? 3;
     final checked = saved?.checkedQuestions ?? 0;
     final first = saved?.firstAttemptCorrect ?? 0;
+    final riddleProgress = _riddles == null
+        ? null
+        : RiddleProgress(_riddles!, savedMap(saved?.riddles['answers']));
     final activities = const KidsLearningService().getActivities();
     final canResume = saved?.lastDestination != null && widget.onResume != null;
     ColorScheme metricColors(Color seed) =>
@@ -87,7 +123,9 @@ class _ProgressScreenState extends State<ProgressScreen>
               ),
             ),
           ],
-          if (checked == 0 && (saved?.completedPuzzles.isEmpty ?? true))
+          if (checked == 0 &&
+              (saved?.completedPuzzles.isEmpty ?? true) &&
+              riddleProgress?.solvedCount == 0)
             const Padding(
               padding: EdgeInsets.only(top: 16),
               child: KidsLearningText.control(
@@ -176,6 +214,8 @@ class _ProgressScreenState extends State<ProgressScreen>
               );
             },
           ),
+          const SizedBox(height: 28),
+          _riddleSummary(context, riddleProgress),
           const SizedBox(height: 28),
           _heading(context, 'మొదటి ప్రయత్నం', 'First attempts'),
           const SizedBox(height: 12),
@@ -377,6 +417,12 @@ class _ProgressScreenState extends State<ProgressScreen>
               ),
               SizedBox(height: 12),
               Text(
+                'Riddle totals count saved answers that still match the current '
+                'content and completed levels. Practice replays do not add to '
+                'these totals, daily goals, first-attempt accuracy, streaks or stars.',
+              ),
+              SizedBox(height: 12),
+              Text(
                 'A streak counts consecutive local calendar days with a '
                 'correct answer or completion, not consecutive answers. '
                 'Today may be empty while yesterday’s streak stays available. '
@@ -412,6 +458,148 @@ class _ProgressScreenState extends State<ProgressScreen>
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _riddleSummary(BuildContext context, RiddleProgress? progress) {
+    final theme = Theme.of(context);
+    final colors = ColorScheme.fromSeed(
+      seedColor: AppColors.teal,
+      brightness: theme.brightness,
+    );
+    return _surface(
+      key: const ValueKey('progress-riddles'),
+      colors: colors,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _heading(
+              context,
+              'పొడుపుల యాత్ర',
+              'Riddle journey',
+              color: colors.onPrimaryContainer,
+            ),
+            const SizedBox(height: 16),
+            if (_riddleLoadFailed) ...[
+              const KidsLearningText.control(
+                'పొడుపుల పురోగతి తెరవలేకపోయాం.',
+                english: 'Could not load riddle progress.',
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                key: const ValueKey('progress-riddles-retry'),
+                onPressed: _loadRiddles,
+                icon: const Icon(Icons.refresh_rounded),
+                label: const KidsLearningText.control(
+                  'మళ్లీ ప్రయత్నించండి',
+                  english: 'Retry',
+                  center: true,
+                ),
+              ),
+            ] else if (progress == null)
+              const KidsLearningText.control(
+                'పొడుపుల పురోగతి తెరుస్తున్నాం…',
+                english: 'Loading riddle progress…',
+              )
+            else ...[
+              Wrap(
+                spacing: 28,
+                runSpacing: 16,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${progress.solvedCount} / ${progress.riddles.length}',
+                        key: const ValueKey('progress-riddles-solved'),
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          color: colors.onPrimaryContainer,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      KidsLearningText.control(
+                        'సాధించిన పొడుపులు',
+                        english: 'Solved riddles',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colors.onPrimaryContainer,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${progress.completedLevelCount} / ${progress.levels.length}',
+                        key: const ValueKey('progress-riddles-levels'),
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          color: colors.onPrimaryContainer,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      KidsLearningText.control(
+                        'పూర్తి చేసిన స్థాయులు',
+                        english: 'Completed levels',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colors.onPrimaryContainer,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _bar(
+                context,
+                value: progress.riddles.isEmpty
+                    ? 0
+                    : progress.solvedCount / progress.riddles.length,
+                label:
+                    '${progress.solvedCount} of ${progress.riddles.length} riddles solved. '
+                    '${progress.completedLevelCount} of ${progress.levels.length} levels completed.',
+                foreground: colors.primary,
+                background: colors.primary.withValues(alpha: 0.16),
+              ),
+              const SizedBox(height: 16),
+              KidsLearningText.control(
+                progress.nextLevel == null
+                    ? 'భలే! యాత్ర పూర్తయింది!'
+                    : 'తరువాతి స్థాయి: ${progress.nextLevel!.title}',
+                english: progress.nextLevel == null
+                    ? 'Collection complete!'
+                    : 'Next level: ${progress.nextLevel!.englishTitle}',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colors.onPrimaryContainer,
+                ),
+              ),
+              if (widget.onRiddles != null) ...[
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  key: const ValueKey('progress-riddles-open'),
+                  onPressed: widget.onRiddles,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: colors.primary,
+                    foregroundColor: colors.onPrimary,
+                    minimumSize: const Size.fromHeight(52),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                  ),
+                  icon: const Icon(Icons.arrow_forward_rounded),
+                  label: const KidsLearningText.control(
+                    'యాత్రను చూడండి',
+                    english: 'View journey',
+                    center: true,
+                  ),
+                ),
+              ],
+            ],
+          ],
+        ),
       ),
     );
   }

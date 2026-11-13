@@ -17,6 +17,7 @@ class CrosswordGrid extends StatefulWidget {
     this.enabled = true,
     this.incorrectCells = const {},
     this.correctCells = const {},
+    this.maximumCellExtent = 72,
     super.key,
   });
 
@@ -28,6 +29,18 @@ class CrosswordGrid extends StatefulWidget {
   final bool enabled;
   final Set<int> incorrectCells;
   final Set<int> correctCells;
+  final double maximumCellExtent;
+
+  static double minimumCellExtent(BuildContext context) {
+    final theme = Theme.of(context);
+    final scaler = MediaQuery.textScalerOf(context);
+    return math.max(
+      48.0,
+      scaler.scale(theme.textTheme.titleLarge!.fontSize!) * 1.6 +
+          scaler.scale(theme.textTheme.labelSmall!.fontSize! * 0.82) +
+          12,
+    );
+  }
 
   @override
   State<CrosswordGrid> createState() => _CrosswordGridState();
@@ -111,7 +124,6 @@ class _CrosswordGridState extends State<CrosswordGrid> {
       );
     }
 
-    final scaler = MediaQuery.textScalerOf(context);
     final letterStyle = theme.textTheme.titleLarge!.copyWith(
       fontFamily: PremiumTeluguText.fontFamily,
       fontWeight: FontWeight.w700,
@@ -121,16 +133,14 @@ class _CrosswordGridState extends State<CrosswordGrid> {
       fontSize: theme.textTheme.labelSmall!.fontSize! * 0.82,
       height: 1,
     );
-    final minimumCell = math.max(
-      48.0,
-      scaler.scale(letterStyle.fontSize!) * 1.6 +
-          scaler.scale(numberStyle.fontSize!) +
-          12,
-    );
+    final minimumCell = CrosswordGrid.minimumCellExtent(context);
     return LayoutBuilder(
       builder: (context, constraints) {
         final cellExtent = math.max(
-          constraints.maxWidth / puzzle.gridSize,
+          math.min(
+            constraints.maxWidth / visibleColumns,
+            widget.maximumCellExtent,
+          ),
           minimumCell,
         );
         final width = visibleColumns * cellExtent;
@@ -328,11 +338,9 @@ class AksharaPalette extends StatelessWidget {
     return Card(
       margin: EdgeInsets.zero,
       child: Padding(
-        padding: const EdgeInsets.all(4),
-        child: Wrap(
-          spacing: 4,
-          runSpacing: 4,
-          crossAxisAlignment: WrapCrossAlignment.center,
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
               label,
@@ -341,21 +349,31 @@ class AksharaPalette extends StatelessWidget {
                 context,
               ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700),
             ),
-            for (final akshara in aksharas)
-              OutlinedButton(
-                key: ValueKey('akshara-$akshara'),
-                onPressed: enabled ? () => onSelected(akshara) : null,
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(48, 48),
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                ),
-                child: PremiumTeluguText(
-                  akshara,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final akshara in aksharas)
+                  OutlinedButton(
+                    key: ValueKey('akshara-$akshara'),
+                    onPressed: enabled ? () => onSelected(akshara) : null,
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(52, 52),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: PremiumTeluguText(
+                      akshara,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
-                ),
-              ),
+              ],
+            ),
           ],
         ),
       ),

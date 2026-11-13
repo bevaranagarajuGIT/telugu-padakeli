@@ -69,6 +69,7 @@ class LearningProgress extends ChangeNotifier {
           'rewards',
           'achievements',
           'practice',
+          'riddles',
         ]) {
           if (decoded.containsKey(section) &&
               decoded[section] is! Map<String, dynamic>) {
@@ -119,6 +120,7 @@ class LearningProgress extends ChangeNotifier {
   Map<String, dynamic> get settings => savedMap(_data['settings']);
   Map<String, dynamic> get sessions => savedMap(_data['sessions']);
   Map<String, dynamic> get practice => savedMap(_data['practice']);
+  Map<String, dynamic> get riddles => savedMap(_data['riddles']);
   Map<String, dynamic> board(String slot) => savedMap(_section('boards')[slot]);
   Map<String, dynamic> daily(String day) => savedMap(_section('daily')[day]);
   String? get lastDestination => _data['lastDestination'] is String
@@ -182,6 +184,16 @@ class LearningProgress extends ChangeNotifier {
   void savePractice(Map<String, dynamic> value) {
     _data['practice'] = value;
     _data['lastDestination'] = 'practice';
+    _changed();
+  }
+
+  void saveRiddles(Map<String, dynamic> value) {
+    if (contentSignature(riddles) == contentSignature(value) &&
+        lastDestination == 'riddles') {
+      return;
+    }
+    _data['riddles'] = value;
+    _data['lastDestination'] = 'riddles';
     _changed();
   }
 

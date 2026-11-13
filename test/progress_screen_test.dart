@@ -3,9 +3,23 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:telugu_padakeli/core/app_theme.dart';
 import 'package:telugu_padakeli/core/learning_progress.dart';
+import 'package:telugu_padakeli/models/riddle.dart';
 import 'package:telugu_padakeli/screens/progress_screen.dart';
 import 'package:telugu_padakeli/services/kids_learning_service.dart';
 import 'package:telugu_padakeli/services/learning_store.dart';
+import 'package:telugu_padakeli/services/riddle_repository.dart';
+
+class _RiddleRepository implements RiddleRepository {
+  _RiddleRepository(this.riddles);
+  final List<Riddle> riddles;
+  bool fail = true;
+
+  @override
+  Future<List<Riddle>> load() async {
+    if (fail) throw const FormatException('Test riddle content unavailable');
+    return riddles;
+  }
+}
 
 LearningProgress _progress({bool populated = false}) {
   final saved = LearningProgress(
@@ -43,6 +57,8 @@ Future<void> _open(
   bool reducedMotion = true,
   VoidCallback? onResume,
   VoidCallback? onLearn,
+  VoidCallback? onRiddles,
+  RiddleRepository riddleRepository = const LocalRiddleRepository(),
 }) async {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = Size(width, height);
@@ -61,13 +77,18 @@ Future<void> _open(
           child: child!,
         ),
         home: Scaffold(
-          body: ProgressScreen(onResume: onResume, onLearn: onLearn),
+          body: ProgressScreen(
+            onResume: onResume,
+            onLearn: onLearn,
+            onRiddles: onRiddles,
+            riddleRepository: riddleRepository,
+          ),
           bottomNavigationBar: const SizedBox(height: 80),
         ),
       ),
     ),
   );
-  await tester.pumpAndSettle();
+  await tester.runAsync(() => tester.pumpAndSettle());
 }
 
 Finder _within(String key, String text) => find.descendant(
@@ -77,6 +98,86 @@ Finder _within(String key, String text) => find.descendant(
 );
 
 void main() {
+  late List<Riddle> riddles;
+  setUpAll(() async {
+    riddles = await const LocalRiddleRepository().load();
+  });
+
+  testWidgets(
+    'riddle progress counts valid saved content without changing other metrics',
+    (tester) async {
+      final saved = _progress();
+      addTearDown(saved.dispose);
+      saved.saveRiddles({
+        'current': riddles[8].id,
+        'answers': {
+          for (final riddle in riddles.take(8))
+            riddle.id: {
+              'signature': riddle.signature,
+              'solved': true,
+              'hint': true,
+              'tried': riddle.choices,
+            },
+          riddles[8].id: {'signature': 'old content', 'solved': true},
+          'removed-riddle': {'signature': 'removed content', 'solved': true},
+        },
+      });
+      final snapshot = contentSignature(saved.riddles);
+      var opened = 0;
+      await _open(tester, saved, onRiddles: () => opened++);
+      expect(_within('progress-riddles-solved', '8 / 20'), findsOneWidget);
+      expect(_within('progress-riddles-levels', '3 / 6'), findsOneWidget);
+      expect(find.text('Next level: Nature whispers'), findsOneWidget);
+      expect(find.textContaining('No recorded learning yet.'), findsNothing);
+      expect(_within('progress-today-count', '0'), findsOneWidget);
+      expect(_within('progress-first-percentage', '—'), findsOneWidget);
+      expect(_within('progress-stat-stars', '0'), findsOneWidget);
+      final open = find.byKey(const ValueKey('progress-riddles-open'));
+      await tester.ensureVisible(open);
+      await tester.pumpAndSettle();
+      await tester.tap(open);
+      expect(opened, 1);
+      expect(contentSignature(saved.riddles), snapshot);
+
+      saved.saveRiddles({
+        'current': riddles.last.id,
+        'answers': {
+          for (final riddle in riddles)
+            riddle.id: {'signature': riddle.signature, 'solved': true},
+        },
+      });
+      await tester.pumpAndSettle();
+      expect(_within('progress-riddles-solved', '20 / 20'), findsOneWidget);
+      expect(_within('progress-riddles-levels', '6 / 6'), findsOneWidget);
+      expect(find.text('Collection complete!'), findsOneWidget);
+      expect(saved.stars, 0);
+      expect(saved.currentStreak, 0);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('riddle progress load errors are visible and retryable', (
+    tester,
+  ) async {
+    final saved = _progress();
+    addTearDown(saved.dispose);
+    final repository = _RiddleRepository(riddles);
+    final snapshot = contentSignature(saved.riddles);
+    await _open(tester, saved, riddleRepository: repository);
+    expect(tester.takeException(), isA<FormatException>());
+    expect(find.text('Could not load riddle progress.'), findsOneWidget);
+    expect(find.byKey(const ValueKey('progress-riddles-solved')), findsNothing);
+    repository.fail = false;
+    final retry = find.byKey(const ValueKey('progress-riddles-retry'));
+    await tester.ensureVisible(retry);
+    await tester.pumpAndSettle();
+    await tester.tap(retry);
+    await tester.runAsync(() => tester.pumpAndSettle());
+    expect(_within('progress-riddles-solved', '0 / 20'), findsOneWidget);
+    expect(contentSignature(saved.riddles), snapshot);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'daily summary preserves over-goal counts without inflating the bar',
     (tester) async {
@@ -182,6 +283,7 @@ void main() {
               addTearDown(saved.dispose);
               var resumed = 0;
               var explored = 0;
+              var riddlesOpened = 0;
               await _open(
                 tester,
                 saved,
@@ -193,6 +295,7 @@ void main() {
                 reducedMotion: reducedMotion,
                 onResume: () => resumed++,
                 onLearn: () => explored++,
+                onRiddles: () => riddlesOpened++,
               );
               expect(tester.takeException(), isNull);
               final resume = find.byKey(const ValueKey('progress-resume'));
@@ -222,6 +325,7 @@ void main() {
               }
               for (final key in [
                 'progress-stat-streak',
+                'progress-riddles-solved',
                 'progress-first-percentage',
                 'progress-path-champions',
                 'progress-achievement-three-learning-days',
@@ -230,6 +334,19 @@ void main() {
                 await tester.pumpAndSettle();
                 expect(tester.takeException(), isNull);
               }
+
+              final riddleJourney = find.byKey(
+                const ValueKey('progress-riddles-open'),
+              );
+              await tester.ensureVisible(riddleJourney);
+              await tester.pumpAndSettle();
+              expect(riddleJourney.hitTestable(), findsOneWidget);
+              expect(
+                tester.getSize(riddleJourney).height,
+                greaterThanOrEqualTo(48),
+              );
+              await tester.tap(riddleJourney);
+              expect(riddlesOpened, 1);
 
               final details = find.byKey(const ValueKey('progress-details'));
               final detailsTitle = find.text('How progress is counted');

@@ -12,6 +12,7 @@ class HomeScreen extends StatelessWidget {
     required this.onProgress,
     required this.onSettings,
     this.onDaily,
+    this.onRiddles,
     this.onResume,
     this.hasActivePuzzle = false,
     this.hasSavedLearning = false,
@@ -24,6 +25,7 @@ class HomeScreen extends StatelessWidget {
   final VoidCallback onProgress;
   final VoidCallback onSettings;
   final VoidCallback? onDaily;
+  final VoidCallback? onRiddles;
   final VoidCallback? onResume;
   final bool hasActivePuzzle;
   final bool hasSavedLearning;
@@ -137,21 +139,38 @@ class HomeScreen extends StatelessWidget {
                         },
                       ),
                       const SizedBox(height: 20),
+                      if (onRiddles != null) ...[
+                        _secondary(
+                          context,
+                          keyName: 'home-riddles',
+                          title: 'పొడుపు కథలు',
+                          english: 'Telugu Riddles',
+                          icon: Icons.psychology_alt_rounded,
+                          background: AppColors.teal,
+                          foreground: AppColors.ink,
+                          onTap: onRiddles!,
+                        ),
+                        const SizedBox(height: 12),
+                      ],
                       _secondary(
                         context,
                         keyName: 'home-daily',
                         title: 'నేటి పదకేళి',
                         english: 'Daily Puzzle',
                         icon: Icons.today_rounded,
+                        background: AppColors.gold,
+                        foreground: AppColors.ink,
                         onTap: onDaily ?? onClassic,
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 12),
                       _secondary(
                         context,
                         keyName: 'home-progress',
                         title: 'నా పురోగతి',
                         english: 'My Progress',
                         icon: Icons.insights_rounded,
+                        background: AppColors.deepBlue,
+                        foreground: Colors.white,
                         onTap: onProgress,
                       ),
                       if (!hasActivePuzzle && !hasSavedLearning)
@@ -180,15 +199,35 @@ class HomeScreen extends StatelessWidget {
     required String title,
     required String english,
     required IconData icon,
+    required Color background,
+    required Color foreground,
     required VoidCallback onTap,
   }) => ListTile(
     key: ValueKey(keyName),
-    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-    leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
-    title: KidsLearningText.control(title, english: english),
-    trailing: const Icon(Icons.chevron_right_rounded),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+    minVerticalPadding: 16,
+    horizontalTitleGap: 14,
+    leading: Container(
+      width: 48,
+      height: 48,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: foreground.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Icon(icon, size: 28, color: foreground),
+    ),
+    title: KidsLearningText.control(
+      title,
+      english: english,
+      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+        color: foreground,
+        fontWeight: FontWeight.w700,
+      ),
+    ),
+    trailing: Icon(Icons.arrow_forward_rounded, color: foreground),
     onTap: onTap,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-    tileColor: Theme.of(context).colorScheme.surfaceContainerLow,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+    tileColor: background,
   );
 }

@@ -169,6 +169,8 @@ void main() {
       ('classic-backspace', 'వెనక్కి', 'Backspace'),
     ]) {
       final button = find.byKey(ValueKey(key));
+      await tester.ensureVisible(button);
+      await tester.pumpAndSettle();
       expect(
         find.descendant(of: button, matching: find.text(telugu)),
         findsOneWidget,
@@ -482,7 +484,7 @@ void main() {
           tilesHeight += height;
         }
         final list = find.byKey(const ValueKey('classic-clue-list'));
-        expect(tester.getSize(list).height, closeTo(tilesHeight, 0.1));
+        expect(tester.getSize(list).height, closeTo(tilesHeight + 16, 0.1));
         expect(tester.takeException(), isNull);
       },
     );
@@ -615,6 +617,93 @@ void main() {
     }
     await _tap(tester, find.byKey(const ValueKey('akshara-ఆ')));
     expect(find.text('1. మన పైన నీలంగా కనిపించేది (3)'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  for (final size in [const Size(390, 844), const Size(900, 600)]) {
+    testWidgets('Classic adapts every level to window $size', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      for (final puzzle in _puzzles) {
+        await _open(
+          tester,
+          level: '${puzzle.level[0].toUpperCase()}${puzzle.level.substring(1)}',
+          puzzles: [puzzle],
+        );
+        final board = tester.getRect(
+          find.byKey(const ValueKey('classic-board-pane')),
+        );
+        final controls = tester.getRect(
+          find.byKey(const ValueKey('classic-controls-pane')),
+        );
+        if (size.width >= 700) {
+          expect(
+            find.byKey(const ValueKey('classic-split-layout')),
+            findsOneWidget,
+          );
+          expect(controls.left - board.right, greaterThanOrEqualTo(24));
+          expect(controls.top, closeTo(board.top, 0.1));
+        } else {
+          expect(controls.top - board.bottom, greaterThanOrEqualTo(16));
+        }
+        final label = tester.getRect(
+          find.byKey(const ValueKey('classic-input-direction')),
+        );
+        final letter = tester.getRect(
+          find
+              .descendant(
+                of: find.byType(AksharaPalette),
+                matching: find.byType(OutlinedButton),
+              )
+              .first,
+        );
+        expect(letter.top - label.bottom, greaterThanOrEqualTo(12));
+        expect(letter.width, greaterThanOrEqualTo(52));
+        expect(letter.height, greaterThanOrEqualTo(52));
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox.shrink());
+      }
+    });
+  }
+
+  testWidgets('wide Classic stacks sections for enlarged text', (tester) async {
+    tester.view.physicalSize = const Size(900, 600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await _open(tester, systemScale: 3.2);
+    expect(find.byKey(const ValueKey('classic-split-layout')), findsNothing);
+    await _tap(tester, find.byKey(const ValueKey('classic-direction-down')));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('short landscape fits the board without shrinking text', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(873, 393);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await _open(
+      tester,
+      level: 'Hard',
+      puzzles: [_puzzles.firstWhere((puzzle) => puzzle.id == 10)],
+      navigationHeight: 88,
+    );
+    final board = tester.getRect(
+      find.byKey(const ValueKey('crossword-visible-board')),
+    );
+    expect(board.bottom, lessThanOrEqualTo(393 - 88));
+    expect(board.height / 3, greaterThanOrEqualTo(48));
+    expect(
+      tester
+          .widget<Text>(find.byKey(const ValueKey('crossword-cell-value-0')))
+          .style!
+          .fontSize,
+      AppTheme.light(1).textTheme.titleLarge!.fontSize,
+    );
     expect(tester.takeException(), isNull);
   });
 
