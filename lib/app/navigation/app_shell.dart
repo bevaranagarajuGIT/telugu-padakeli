@@ -10,6 +10,7 @@ import '../../screens/settings_screen.dart';
 import '../../core/learning_progress.dart';
 import '../../services/engagement_audio_manager.dart';
 import '../../services/pronunciation_audio_manager.dart';
+import '../../services/diagnostics.dart';
 import '../../shared/widgets/bottom_navigation.dart';
 
 class AppShell extends StatefulWidget {
@@ -27,8 +28,20 @@ class _AppShellState extends State<AppShell> {
   bool _riddlesOpen = false;
   int _resumeRequest = 0;
   int _resetRevision = 0;
+  final _tabLevels = <int, int?>{};
+  final _tabScreens = <int, DiagnosticScreen>{};
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<Diagnostics?>()?.location(DiagnosticScreen.home);
+  }
 
   Future<void> _openDaily({String? date}) async {
+    final diagnostics = context.read<Diagnostics?>();
+    final previous = diagnostics?.screen;
+    final level = diagnostics?.level;
+    diagnostics?.location(DiagnosticScreen.daily);
     final saved = context.read<LearningProgress?>();
     setState(() => _dailyOpen = true);
     try {
@@ -41,6 +54,7 @@ class _AppShellState extends State<AppShell> {
       );
     } finally {
       if (mounted) setState(() => _dailyOpen = false);
+      if (previous != null) diagnostics?.location(previous, level: level);
     }
   }
 
@@ -61,6 +75,10 @@ class _AppShellState extends State<AppShell> {
 
   Future<void> _openRiddles({bool resume = false}) async {
     if (_riddlesOpen) return;
+    final diagnostics = context.read<Diagnostics?>();
+    final previous = diagnostics?.screen;
+    final level = diagnostics?.level;
+    diagnostics?.location(DiagnosticScreen.riddles);
     context.read<EngagementAudioManager?>()?.stop();
     context.read<PronunciationAudioManager?>()?.stop();
     setState(() => _riddlesOpen = true);
@@ -70,6 +88,7 @@ class _AppShellState extends State<AppShell> {
       );
     } finally {
       if (mounted) setState(() => _riddlesOpen = false);
+      if (previous != null) diagnostics?.location(previous, level: level);
     }
   }
 
@@ -85,7 +104,22 @@ class _AppShellState extends State<AppShell> {
   }
 
   void _select(int index) {
+    final diagnostics = context.read<Diagnostics?>();
     if (_selectedIndex != index) {
+      _tabLevels[_selectedIndex] = diagnostics?.level;
+      if (diagnostics != null) {
+        _tabScreens[_selectedIndex] = diagnostics.screen;
+        diagnostics.location(
+          _tabScreens[index] ??
+              [
+                DiagnosticScreen.home,
+                DiagnosticScreen.classic,
+                DiagnosticScreen.kids,
+                DiagnosticScreen.progress,
+              ][index],
+          level: _tabLevels[index],
+        );
+      }
       context.read<EngagementAudioManager?>()?.stop();
       context.read<PronunciationAudioManager?>()?.stop();
       FocusScope.of(context).unfocus();

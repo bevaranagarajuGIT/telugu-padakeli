@@ -13,10 +13,17 @@ import 'services/learning_store.dart';
 import 'services/onboarding_store.dart';
 import 'services/engagement_audio_manager.dart';
 import 'services/pronunciation_audio_manager.dart';
+import 'services/diagnostics.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final progress = LearningProgress(PreferencesLearningStore());
+  final diagnostics = Diagnostics(PreferencesDiagnosticStore());
+  await diagnostics.load();
+  installDiagnosticErrorHooks(diagnostics);
+  final progress = LearningProgress(
+    PreferencesLearningStore(),
+    diagnostics: diagnostics,
+  );
   await progress.load();
   LicenseRegistry.addLicense(() async* {
     final license = await rootBundle.loadString('assets/fonts/OFL.txt');
@@ -39,7 +46,7 @@ Future<void> main() async {
       'Original vocabulary illustrations',
     ], vocabularyNotice);
   });
-  runApp(TeluguPadakeliApp(progress: progress));
+  runApp(TeluguPadakeliApp(progress: progress, diagnostics: diagnostics));
 }
 
 class TeluguPadakeliApp extends StatelessWidget {
@@ -47,17 +54,22 @@ class TeluguPadakeliApp extends StatelessWidget {
     this.onboardingStore = const PreferencesOnboardingStore(),
     this.waitForFirstFrame = waitForLaunchFrame,
     this.progress,
+    this.diagnostics,
     super.key,
   });
 
   final OnboardingStore onboardingStore;
   final Future<void> Function() waitForFirstFrame;
   final LearningProgress? progress;
+  final Diagnostics? diagnostics;
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(
+          create: (_) => diagnostics ?? Diagnostics(MemoryDiagnosticStore()),
+        ),
         ChangeNotifierProvider(
           create: (_) =>
               progress ??
@@ -121,6 +133,7 @@ class _PersistenceLifecycleState extends State<_PersistenceLifecycle>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) {
       unawaited(context.read<LearningProgress>().flush());
+      unawaited(context.read<Diagnostics>().flush());
     }
   }
 

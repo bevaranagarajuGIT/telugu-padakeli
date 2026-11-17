@@ -6,15 +6,54 @@ import '../core/learning_progress.dart';
 import '../services/pronunciation_audio_manager.dart';
 import '../widgets/app_page.dart';
 import '../widgets/section_title.dart';
+import '../services/diagnostics.dart';
+import 'report_problem_screen.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  Diagnostics? _diagnostics;
+  DiagnosticScreen? _previousScreen;
+  int? _previousLevel;
+  bool _diagnosticBusy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _diagnostics = context.read<Diagnostics?>();
+    _previousScreen = _diagnostics?.screen;
+    _previousLevel = _diagnostics?.level;
+    _diagnostics?.location(DiagnosticScreen.settings);
+  }
+
+  @override
+  void dispose() {
+    if (_previousScreen != null) {
+      _diagnostics?.location(_previousScreen!, level: _previousLevel);
+    }
+    super.dispose();
+  }
+
+  Future<void> _diagnosticAction(Future<void> Function() action) async {
+    setState(() => _diagnosticBusy = true);
+    try {
+      await action();
+    } finally {
+      if (mounted) setState(() => _diagnosticBusy = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<AppSettingsController>();
     final progress = context.watch<LearningProgress?>();
     final pronunciation = context.watch<PronunciationAudioManager?>();
+    final diagnostics = context.watch<Diagnostics?>();
     return AppPage(
       title: 'సెట్టింగ్స్',
       child: Column(
@@ -30,6 +69,90 @@ class SettingsScreen extends StatelessWidget {
             'No account or network is needed.',
           ),
           const SizedBox(height: 20),
+          if (diagnostics != null) ...[
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SectionTitle('సహాయం / Help'),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'సమస్యను వివరించి, పంపే ముందు నివేదిక చూడండి.\n'
+                      'Describe a problem and review your report before sharing. '
+                      'No automatic uploads or analytics.',
+                    ),
+                    const SizedBox(height: 12),
+                    FilledButton.icon(
+                      key: const ValueKey('report-problem-setting'),
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(48),
+                      ),
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const ReportProblemScreen(),
+                        ),
+                      ),
+                      icon: const Icon(Icons.bug_report_outlined),
+                      label: const Text(
+                        'సమస్యను తెలియజేయండి / Report a problem',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SwitchListTile(
+                      key: const ValueKey('diagnostics-setting'),
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('స్థానిక చరిత్ర / Local diagnostics'),
+                      subtitle: const Text(
+                        'Up to 100 screen/level and error-category events for '
+                        '7 days on this device. No answers or personal details. '
+                        'Turning off clears history; sharing is always optional.',
+                      ),
+                      value: diagnostics.enabled,
+                      onChanged: _diagnosticBusy || !diagnostics.available
+                          ? null
+                          : (value) => _diagnosticAction(
+                              () => diagnostics.setEnabled(value),
+                            ),
+                    ),
+                    OutlinedButton(
+                      key: const ValueKey('diagnostics-clear'),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(48),
+                      ),
+                      onPressed: _diagnosticBusy
+                          ? null
+                          : () => _diagnosticAction(diagnostics.clear),
+                      child: const Text(
+                        'చరిత్ర తొలగించు / Clear diagnostic history',
+                      ),
+                    ),
+                    if (diagnostics.storageError != null) ...[
+                      const SizedBox(height: 12),
+                      Semantics(
+                        liveRegion: true,
+                        child: Text(
+                          diagnostics.storageError!,
+                          key: const ValueKey('diagnostics-error'),
+                        ),
+                      ),
+                      TextButton(
+                        key: const ValueKey('diagnostics-retry'),
+                        onPressed: _diagnosticBusy
+                            ? null
+                            : () => _diagnosticAction(diagnostics.retry),
+                        child: const Text(
+                          'మళ్లీ ప్రయత్నించండి / Retry diagnostics',
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
           Card(
             child: Padding(
               padding: const EdgeInsets.all(14),

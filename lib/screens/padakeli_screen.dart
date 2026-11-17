@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import '../services/diagnostics.dart';
 
 import '../app/theme/app_colors.dart';
 import '../core/learning_progress.dart';
@@ -115,6 +116,15 @@ class _PadakeliScreenState extends State<PadakeliScreen>
   void _persist() {
     final puzzle = _puzzle;
     if (puzzle == null || _storage == null) return;
+    if (TickerMode.valuesOf(context).enabled &&
+        (ModalRoute.isCurrentOf(context) ?? true)) {
+      context.read<Diagnostics?>()?.location(
+        widget.dailyDate == null
+            ? DiagnosticScreen.classic
+            : DiagnosticScreen.daily,
+        level: Puzzle.levels.indexOf(puzzle.level) + 1,
+      );
+    }
     final snapshot = <String, dynamic>{
       'id': puzzle.id,
       'signature': puzzle.progressSignature,

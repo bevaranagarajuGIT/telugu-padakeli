@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import '../services/diagnostics.dart';
 
 import '../app/theme/app_colors.dart';
 import '../core/learning_progress.dart';
@@ -115,19 +116,34 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
             'Practice content changed. A fresh attempt starts; your earned rewards are kept.';
       }
     }
+    if (TickerMode.valuesOf(context).enabled) {
+      context.read<Diagnostics?>()?.location(
+        DiagnosticScreen.practice,
+        level: _levelIndex + 1,
+      );
+    }
   }
 
-  void _save() => _storage?.savePractice({
-    'signature': _signature,
-    'level': _currentLevel.name,
-    'question': _currentQuestion.prompt,
-    'score': _score,
-    'choice': _selectedAnswer,
-    'scored': _hasScored,
-    'complete': _isComplete,
-    'levelComplete': _isLevelComplete,
-    'answerOrderSeed': _answerOrderSeed,
-  });
+  void _save() {
+    if (TickerMode.valuesOf(context).enabled &&
+        (ModalRoute.isCurrentOf(context) ?? true)) {
+      context.read<Diagnostics?>()?.location(
+        DiagnosticScreen.practice,
+        level: _levelIndex + 1,
+      );
+    }
+    _storage?.savePractice({
+      'signature': _signature,
+      'level': _currentLevel.name,
+      'question': _currentQuestion.prompt,
+      'score': _score,
+      'choice': _selectedAnswer,
+      'scored': _hasScored,
+      'complete': _isComplete,
+      'levelComplete': _isLevelComplete,
+      'answerOrderSeed': _answerOrderSeed,
+    });
+  }
 
   void _play(EngagementCue cue) => _audio?.play(
     cue,

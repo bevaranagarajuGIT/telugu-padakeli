@@ -4,6 +4,31 @@ An offline, Telugu-first Flutter learning and crossword app for children,
 families, students and older adults. No account, analytics, ads, live AI,
 speech recognition, runtime font download or backend is required.
 
+## Reporting problems
+
+Settings > Report a problem opens a bilingual description form. Diagnostic
+attachment is **optional and unchecked**. Preview shows the exact report before
+Share opens the device's share menu with a UTF-8 text file. The user chooses
+their developer contact or helper and finishes sending in that app; there is no
+configured support inbox, automatic upload, or delivery confirmation.
+Descriptions are not saved in gameplay or diagnostic preferences. Users should
+not include private information; children should ask a parent or guardian.
+Temporary report files may remain in sharing caches, and already-shared copies
+cannot be recalled by clearing local history.
+
+Local diagnostics are separate from learning progress. Settings provides an
+on/off switch (off also clears history), Clear diagnostic history, and visible
+storage-failure/retry handling. History is capped at 100 events and seven days,
+pruned on startup, changes, export and expiry while the app runs. It records
+only UTC timestamps, allowlisted screen names, bounded level numbers when
+available, and fixed Flutter/platform/storage error categories. Repeated
+answers do not create an event unless the screen/level changes. Raw errors,
+stacks, saved answers, user identifiers, screenshots and device identifiers are
+never added. There is no remote analytics SDK. Recent error categories may help
+identify the affected flow, but this is not native crash/ANR reporting or
+guaranteed crash-time persistence. Flutter's original error reporting is kept.
+Diagnostic failures never block gameplay or change learning/recovery data.
+
 ## Current features
 
 - Tirumala opening on every fresh launch; family Welcome appears once. Warm

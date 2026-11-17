@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../services/diagnostics.dart';
 
 import '../app/theme/app_colors.dart';
 import '../core/kids_learning_controller.dart';
@@ -102,6 +103,7 @@ class _KidsLearningScreenState extends State<KidsLearningScreen> {
           ? path[index + 1]
           : null;
       final session = _learning.sessionFor(activity);
+      context.read<Diagnostics?>()?.location(DiagnosticScreen.kids);
       final advance = await Navigator.of(context).push<bool>(
         MaterialPageRoute<bool>(
           builder: (routeContext) => KidsActivityScreen(
@@ -118,10 +120,16 @@ class _KidsLearningScreenState extends State<KidsLearningScreen> {
       }
       activity = next;
     }
-    if (mounted) setState(() {});
+    if (mounted) {
+      context.read<Diagnostics?>()?.location(DiagnosticScreen.kids);
+      setState(() {});
+    }
   }
 
   void _showLegacy(bool open) {
+    context.read<Diagnostics?>()?.location(
+      open ? DiagnosticScreen.practice : DiagnosticScreen.kids,
+    );
     context.read<EngagementAudioManager?>()?.stop();
     setState(() {
       if (open) _legacyVisited = true;

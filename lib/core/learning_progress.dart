@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
 import '../services/learning_store.dart';
+import '../services/diagnostics.dart';
 
 Map<String, dynamic> savedMap(Object? value) =>
     value is Map<String, dynamic> ? Map.of(value) : {};
@@ -21,9 +22,11 @@ class LearningProgress extends ChangeNotifier {
     this.store, {
     DateTime Function()? clock,
     this.autoSave = true,
+    this.diagnostics,
   }) : clock = clock ?? DateTime.now;
 
   final LearningStore store;
+  final Diagnostics? diagnostics;
   final bool autoSave;
   final DateTime Function() clock;
   Map<String, dynamic> _data = {'version': 1};
@@ -109,6 +112,7 @@ class LearningProgress extends ChangeNotifier {
             'You can start again; onboarding has not been reset.';
       }
     } on Exception catch (error) {
+      diagnostics?.issue(DiagnosticIssue.storageRead);
       _blocked = true;
       storageError =
           'Saved data could not be opened. Play is temporary; the original '
@@ -360,6 +364,7 @@ class LearningProgress extends ChangeNotifier {
         await store.write(snapshot);
         storageError = null;
       } on Exception catch (error) {
+        diagnostics?.issue(DiagnosticIssue.storageWrite);
         _dirty = true;
         storageError = 'Changes are not saved yet. Retry saving in Settings.';
         debugPrint('Learning storage write failed: ${error.runtimeType}');

@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../services/diagnostics.dart';
 
 import '../app/theme/app_colors.dart';
 import '../core/learning_progress.dart';
@@ -127,6 +128,10 @@ class _RiddlesScreenState extends State<RiddlesScreen> {
   }
 
   void _persist() {
+    context.read<Diagnostics?>()?.location(
+      DiagnosticScreen.riddles,
+      level: _showJourney ? null : _current.level.index + 1,
+    );
     if (_replaying) return;
     _storage?.saveRiddles({
       'current': _current.id,
@@ -240,6 +245,7 @@ class _RiddlesScreenState extends State<RiddlesScreen> {
       _replayAnswers.clear();
       _showJourney = true;
     });
+    context.read<Diagnostics?>()?.location(DiagnosticScreen.riddles);
   }
 
   void _nextLevel(Riddle riddle) {
