@@ -39,7 +39,11 @@ void main() {
     }
     await tester.pumpAndSettle();
     expect(find.byType(Dialog), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('classic-choose-level')));
+    final chooseLevel = find.byKey(const ValueKey('classic-choose-level'));
+    await tester.ensureVisible(chooseLevel);
+    await tester.pumpAndSettle();
+    expect(chooseLevel.hitTestable(), findsOneWidget);
+    await tester.tap(chooseLevel);
     await tester.pumpAndSettle();
     final beginnerDifficulty = find.byKey(
       const ValueKey('difficulty-Beginner'),

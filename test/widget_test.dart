@@ -2,11 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 import 'package:telugu_padakeli/app/navigation/app_shell.dart';
 import 'package:telugu_padakeli/app/theme/app_colors.dart';
 import 'package:telugu_padakeli/core/app_settings_controller.dart';
 import 'helpers/returning_user_app.dart';
 import 'package:telugu_padakeli/screens/home_screen.dart';
+import 'package:telugu_padakeli/screens/padakeli_screen.dart';
+import 'package:telugu_padakeli/screens/riddles_screen.dart';
+import 'package:telugu_padakeli/screens/settings_screen.dart';
+import 'package:telugu_padakeli/services/diagnostics.dart';
 import 'package:telugu_padakeli/shared/widgets/app_buttons.dart';
 import 'package:telugu_padakeli/shared/widgets/bottom_navigation.dart';
 import 'package:telugu_padakeli/shared/widgets/feature_card.dart';
@@ -53,6 +58,60 @@ void main() {
     expect(find.text('My Progress'), findsOneWidget);
     expect(find.byTooltip('Settings'), findsOneWidget);
   });
+
+  for (final (destination, screenType) in [
+    ('Daily', PadakeliScreen),
+    ('Settings', SettingsScreen),
+    ('Riddles', RiddlesScreen),
+  ]) {
+    testWidgets(
+      'repeated $destination activation opens once and can reopen after Back',
+      (tester) async {
+        addTearDown(() {
+          rootBundle.evict('assets/data/sample_puzzles.json');
+          rootBundle.evict('assets/data/riddles.json');
+        });
+        await pumpReturningUserApp(tester);
+        await tester.pumpAndSettle();
+        final diagnostics = tester
+            .element(find.byType(HomeScreen))
+            .read<Diagnostics>();
+        final routes = find.byType(screenType, skipOffstage: false);
+
+        for (var visit = 0; visit < 2; visit++) {
+          final home = tester.widget<HomeScreen>(find.byType(HomeScreen));
+          final open = switch (destination) {
+            'Daily' => home.onDaily!,
+            'Settings' => home.onSettings,
+            _ => home.onRiddles!,
+          };
+          await tester.runAsync(() async {
+            open();
+            open();
+            await tester.pumpAndSettle();
+            expect(routes, findsOneWidget);
+
+            open();
+            await tester.pumpAndSettle();
+            expect(routes, findsOneWidget);
+
+            await tester.binding.handlePopRoute();
+            await tester.pumpAndSettle();
+          });
+          await tester.pumpAndSettle();
+          expect(routes, findsNothing);
+          expect(find.byType(HomeScreen), findsOneWidget);
+          expect(
+            TickerMode.valuesOf(
+              tester.element(find.byType(HomeScreen)),
+            ).enabled,
+            isTrue,
+          );
+          expect(diagnostics.screen, DiagnosticScreen.home);
+        }
+      },
+    );
+  }
 
   testWidgets('correct answers advance; next level waits for a tap', (
     tester,

@@ -38,6 +38,7 @@ class _AppShellState extends State<AppShell> {
   }
 
   Future<void> _openDaily({String? date}) async {
+    if (_dailyOpen) return;
     final diagnostics = context.read<Diagnostics?>();
     final previous = diagnostics?.screen;
     final level = diagnostics?.level;
@@ -93,6 +94,7 @@ class _AppShellState extends State<AppShell> {
   }
 
   Future<void> _openSettings() async {
+    if (_settingsOpen) return;
     setState(() => _settingsOpen = true);
     try {
       await Navigator.of(

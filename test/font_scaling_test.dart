@@ -113,7 +113,11 @@ void main() {
         if (dark) {
           await tester.tap(find.byTooltip('Settings'));
           await tester.pumpAndSettle();
-          await tester.tap(find.widgetWithText(SwitchListTile, 'డార్క్ మోడ్'));
+          final darkMode = find.widgetWithText(SwitchListTile, 'డార్క్ మోడ్');
+          await tester.ensureVisible(darkMode);
+          await tester.pumpAndSettle();
+          expect(darkMode.hitTestable(), findsOneWidget);
+          await tester.tap(darkMode);
           await tester.pumpAndSettle();
           await tester.pageBack();
           await tester.pumpAndSettle();
