@@ -21,8 +21,30 @@ No external reference image was supplied. The sheet mango.png is retained.
 
 The new mango replaces the earlier UI-card crop, not the Tirumala/family art.
 Existing opening/home illustration attribution remains applicable separately.
-The Hanuman celebration is still the existing original articulated Flutter
-vector character; these assets are supporting vocabulary, not a replacement.
+Level completion still uses the existing articulated Flutter Hanuman.
+
+hanuman-answer-wave.png is a separate correct-answer celebration, approved by
+the user on 2026-11-18. It derives from a user-supplied baby-Hanuman reference
+animated with Dreamina Seedance 1.0 Mini (5 seconds, 960x960). The reference's
+corner logo and the generated branding are retained, not removed or covered.
+The user approved a richer local color/contrast/sharpness pass, then selected a
+short wave excerpt so Practice retains its existing automatic advance.
+The atlas contains 18 full, square frames sampled at 20 fps from 2.2-3.1 seconds
+of that approved clip, resized proportionally to 384x384 and tiled 6 by 3
+(2304x1152 RGBA PNG). Border-connected neutral white backdrop pixels become
+transparent for compositing; colored artwork, enclosed white details and corner
+branding remain unchanged. No frame or identifying detail is cropped.
+Flutter shows each complete cell in a responsive screen-level celebration over
+dimmed gameplay, with code-drawn gold rays and praise. It plays once over 900 ms,
+then disappears. Reduced motion skips the decorative popup; restored and
+incorrect answers have no character. The regular feedback stays available.
+No video player, remote requests, sound, new rewards or timing changes are added.
+
+This reference-derived asset is not asserted to be original or commercially
+cleared. Reference ownership, logo/trademark rights and applicable Dreamina
+generation/distribution terms remain unverified. It is included for the user's
+local app evaluation; obtain rights clearance or an approved licensed
+replacement before public/commercial distribution.
 
 Limitations: generated pixels can have small edge artifacts. Object/answer
 matching has been visually inspected, but Telugu educator, cultural, anatomical,

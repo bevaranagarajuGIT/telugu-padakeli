@@ -3,113 +3,223 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../app/theme/app_colors.dart';
+import 'premium_telugu_text.dart';
 
 enum EngagementMoment { correct, retry, completion }
 
-class AnswerStarBurst extends StatelessWidget {
-  const AnswerStarBurst({required this.child, this.animate = true, super.key});
+class AnswerCharacterCelebration extends StatefulWidget {
+  const AnswerCharacterCelebration({
+    required this.child,
+    this.animate = true,
+    super.key,
+  });
 
   final Widget child;
   final bool animate;
+  static const artwork = AssetImage(
+    'assets/artwork/kids/hanuman-answer-wave.png',
+  );
+
+  @override
+  State<AnswerCharacterCelebration> createState() =>
+      _AnswerCharacterCelebrationState();
+}
+
+class _AnswerCharacterCelebrationState
+    extends State<AnswerCharacterCelebration> {
+  final _portal = OverlayPortalController()..show();
 
   @override
   Widget build(BuildContext context) {
-    if (!animate) return child;
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        child,
-        Positioned(
-          left: 0,
-          right: 0,
-          top: -72,
-          height: 88,
-          child: IgnorePointer(
-            child: ExcludeSemantics(
-              child: RepaintBoundary(
-                child: EngagementTimeline(
-                  duration: const Duration(milliseconds: 900),
-                  builder: (context, motion) => CustomPaint(
-                    key: const ValueKey('answer-star-particles'),
-                    painter: _AnswerStars(motion),
+    if (!widget.animate) return widget.child;
+    return EngagementTimeline(
+      duration: const Duration(milliseconds: 900),
+      builder: (context, motion) => OverlayPortal(
+        controller: _portal,
+        overlayLocation: OverlayChildLocation.rootOverlay,
+        overlayChildBuilder: (context) => AnimatedBuilder(
+          animation: motion,
+          builder: (context, _) {
+            if (motion.value >= 1) return const SizedBox.shrink();
+            final entrance = Curves.easeOutCubic.transform(
+              (motion.value / 0.18).clamp(0.0, 1.0),
+            );
+            final exit = ((1 - motion.value) / 0.12).clamp(0.0, 1.0);
+            final frame = math.min(17, (motion.value * 18).floor());
+            return Positioned.fill(
+              child: IgnorePointer(
+                child: ExcludeSemantics(
+                  child: Opacity(
+                    opacity: exit,
+                    child: ColoredBox(
+                      key: const ValueKey('answer-celebration-popup'),
+                      color: Colors.black.withValues(alpha: 0.76 * entrance),
+                      child: SafeArea(
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Transform.scale(
+                                scale: 0.86 + 0.14 * entrance,
+                                child: SizedBox(
+                                  width: 340,
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const PremiumTeluguText(
+                                        'శభాష్!',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 46,
+                                          fontWeight: FontWeight.w900,
+                                          color: AppColors.gold,
+                                          shadows: [
+                                            Shadow(
+                                              color: Colors.black54,
+                                              offset: Offset(0, 3),
+                                              blurRadius: 8,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      SizedBox.square(
+                                        dimension: 340,
+                                        child: Stack(
+                                          fit: StackFit.expand,
+                                          children: [
+                                            CustomPaint(
+                                              painter: _AnswerSunburst(
+                                                motion.value,
+                                              ),
+                                            ),
+                                            ClipRect(
+                                              child: Stack(
+                                                children: [
+                                                  Positioned(
+                                                    key: const ValueKey(
+                                                      'answer-hanuman-sprite',
+                                                    ),
+                                                    left: -(frame % 6) * 340.0,
+                                                    top: -(frame ~/ 6) * 340.0,
+                                                    width: 2040,
+                                                    height: 1020,
+                                                    child: Image(
+                                                      image:
+                                                          AnswerCharacterCelebration
+                                                              .artwork,
+                                                      key: const ValueKey(
+                                                        'answer-hanuman-artwork',
+                                                      ),
+                                                      fit: BoxFit.fill,
+                                                      filterQuality:
+                                                          FilterQuality.medium,
+                                                      excludeFromSemantics:
+                                                          true,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      const Text(
+                                        'Well done!',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 26,
+                                          fontWeight: FontWeight.w800,
+                                          color: Colors.white,
+                                          decoration: TextDecoration.none,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
-          ),
+            );
+          },
         ),
-      ],
+        child: widget.child,
+      ),
     );
   }
 }
 
-class _AnswerStars extends CustomPainter {
-  _AnswerStars(this.progress) : super(repaint: progress);
-
-  final Animation<double> progress;
+class _AnswerSunburst extends CustomPainter {
+  const _AnswerSunburst(this.progress);
+  final double progress;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final time = progress.value;
-    if (time <= 0 || time >= 1) return;
-    const colors = [
-      AppColors.gold,
-      AppColors.gold,
-      AppColors.pink,
-      AppColors.purple,
-      AppColors.teal,
-    ];
-    for (var i = 0; i < 14; i++) {
-      final delay = (i % 3) * 0.035;
-      final t = ((time - delay) / (1 - delay)).clamp(0.0, 1.0);
-      if (t <= 0) continue;
-      final travel = Curves.easeOutCubic.transform(t);
-      final pop = Curves.easeOutCubic.transform((t / 0.18).clamp(0.0, 1.0));
-      final fade =
-          1 - Curves.easeIn.transform(((t - 0.55) / 0.45).clamp(0.0, 1.0));
-      final angle = -math.pi + (i % 7) * math.pi / 6;
-      final origin = Offset(
-        size.width * (i < 7 ? 0.24 : 0.76),
-        size.height - 12,
-      );
+    final center = size.center(Offset.zero);
+    final radius = size.shortestSide / 2;
+    final bounds = Rect.fromCircle(center: center, radius: radius);
+    canvas.drawCircle(
+      center,
+      radius,
+      Paint()
+        ..shader = RadialGradient(
+          colors: [
+            AppColors.gold.withValues(alpha: 0.58),
+            AppColors.gold.withValues(alpha: 0),
+          ],
+        ).createShader(bounds),
+    );
+    final rays = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          AppColors.gold.withValues(alpha: 0.55),
+          AppColors.gold.withValues(alpha: 0),
+        ],
+      ).createShader(bounds);
+    for (var i = 0; i < 12; i++) {
+      final angle = i * math.pi / 6 + progress * 0.12;
+      final path = Path()
+        ..moveTo(center.dx, center.dy)
+        ..lineTo(
+          center.dx + math.cos(angle - 0.11) * radius,
+          center.dy + math.sin(angle - 0.11) * radius,
+        )
+        ..lineTo(
+          center.dx + math.cos(angle + 0.11) * radius,
+          center.dy + math.sin(angle + 0.11) * radius,
+        )
+        ..close();
+      canvas.drawPath(path, rays);
+    }
+    for (var i = 0; i < 7; i++) {
+      final angle = i * 2.4;
+      final distance = radius * (0.65 + 0.25 * progress);
       final point =
-          origin +
-          Offset(
-            math.cos(angle) * size.width * 0.18 * travel,
-            math.sin(angle) * (38 + (i % 3) * 10) * travel + 10 * t * t,
-          );
-      final radius = (7 + (i % 3) * 2.5) * pop;
-      final star = Path();
-      for (var corner = 0; corner < 10; corner++) {
-        final rotation =
-            -math.pi / 2 + corner * math.pi / 5 + t * (i.isEven ? 1 : -1);
-        final length = radius * (corner.isEven ? 1 : 0.45);
-        final vertex =
-            point + Offset(math.cos(rotation), math.sin(rotation)) * length;
-        if (corner == 0) {
-          star.moveTo(vertex.dx, vertex.dy);
-        } else {
-          star.lineTo(vertex.dx, vertex.dy);
-        }
-      }
-      star.close();
+          center +
+          Offset(math.cos(angle) * distance, math.sin(angle) * distance);
+      final length = 4 + 3 * math.sin(math.pi * progress);
       canvas.drawPath(
-        star,
-        Paint()
-          ..color = Colors.white.withValues(alpha: fade)
-          ..style = PaintingStyle.stroke
-          ..strokeJoin = StrokeJoin.round
-          ..strokeWidth = 3,
-      );
-      canvas.drawPath(
-        star,
-        Paint()..color = colors[i % colors.length].withValues(alpha: fade),
+        Path()
+          ..moveTo(point.dx, point.dy - length)
+          ..lineTo(point.dx + length / 3, point.dy)
+          ..lineTo(point.dx, point.dy + length)
+          ..lineTo(point.dx - length / 3, point.dy)
+          ..close(),
+        Paint()..color = AppColors.gold,
       );
     }
   }
 
   @override
-  bool shouldRepaint(_AnswerStars oldDelegate) =>
+  bool shouldRepaint(_AnswerSunburst oldDelegate) =>
       oldDelegate.progress != progress;
 }
 

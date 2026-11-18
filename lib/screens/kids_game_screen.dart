@@ -70,6 +70,9 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (!MediaQuery.disableAnimationsOf(context)) {
+      unawaited(precacheImage(AnswerCharacterCelebration.artwork, context));
+    }
     _audio = context.read<EngagementAudioManager?>();
     _storage = context.read<LearningProgress?>();
     if (!_restored) {
@@ -815,8 +818,8 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
           const SizedBox(height: 12),
           KeyedSubtree(
             key: _feedbackAnchor,
-            child: AnswerStarBurst(
-              key: ValueKey('practice-stars-$_feedbackRevision'),
+            child: AnswerCharacterCelebration(
+              key: ValueKey('practice-celebration-$_feedbackRevision'),
               animate: _wasCorrect == true,
               child: _feedback(),
             ),

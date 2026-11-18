@@ -87,7 +87,9 @@ void main() {
             expectFeedbackVisible(tester, 'kids-feedback-neutral');
             expect(
               tester
-                  .widget<AnswerStarBurst>(find.byType(AnswerStarBurst))
+                  .widget<AnswerCharacterCelebration>(
+                    find.byType(AnswerCharacterCelebration),
+                  )
                   .animate,
               isFalse,
             );
@@ -108,7 +110,9 @@ void main() {
             expectFeedbackVisible(tester, 'kids-feedback-error');
             expect(
               tester
-                  .widget<AnswerStarBurst>(find.byType(AnswerStarBurst))
+                  .widget<AnswerCharacterCelebration>(
+                    find.byType(AnswerCharacterCelebration),
+                  )
                   .animate,
               isFalse,
             );
@@ -122,7 +126,9 @@ void main() {
             expectFeedbackVisible(tester, 'kids-feedback-success');
             expect(
               tester
-                  .widget<AnswerStarBurst>(find.byType(AnswerStarBurst))
+                  .widget<AnswerCharacterCelebration>(
+                    find.byType(AnswerCharacterCelebration),
+                  )
                   .animate,
               isTrue,
             );

@@ -357,7 +357,9 @@ void main() {
           );
           expect(
             tester
-                .widget<AnswerStarBurst>(find.byType(AnswerStarBurst))
+                .widget<AnswerCharacterCelebration>(
+                  find.byType(AnswerCharacterCelebration),
+                )
                 .animate,
             correct,
           );
@@ -366,6 +368,10 @@ void main() {
           );
           expect(feedback.top, greaterThanOrEqualTo(viewport.top - 0.01));
           expect(feedback.top, lessThan(viewport.bottom));
+          expect(
+            find.byKey(const ValueKey('answer-celebration-popup')),
+            findsNothing,
+          );
           if (feedback.height <= viewport.height) {
             expect(feedback.bottom, lessThanOrEqualTo(viewport.bottom + 0.01));
           } else {
@@ -452,15 +458,19 @@ void main() {
     expect(session.index, 0);
     expect(session.score, 1);
     expect(
-      tester.widget<AnswerStarBurst>(find.byType(AnswerStarBurst)).animate,
+      tester
+          .widget<AnswerCharacterCelebration>(
+            find.byType(AnswerCharacterCelebration),
+          )
+          .animate,
       isFalse,
     );
-    expect(find.byKey(const ValueKey('answer-star-particles')), findsNothing);
+    expect(find.byKey(const ValueKey('answer-hanuman-artwork')), findsNothing);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  testWidgets('Next works during the correct-answer star burst', (
+  testWidgets('Next works during the correct-answer character wave', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(411, 914);
@@ -486,7 +496,10 @@ void main() {
     session.check();
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 250));
-    expect(find.byKey(const ValueKey('answer-star-particles')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('answer-hanuman-artwork')),
+      findsOneWidget,
+    );
     expect(session.score, 1);
     final next = find.byKey(const ValueKey('learning-next'));
     expect(next.hitTestable(), findsOneWidget);
@@ -494,7 +507,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(session.index, 1);
     expect(session.score, 1);
-    expect(find.byKey(const ValueKey('answer-star-particles')), findsNothing);
+    expect(find.byKey(const ValueKey('answer-hanuman-artwork')), findsNothing);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
   });

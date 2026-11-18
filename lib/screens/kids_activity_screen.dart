@@ -64,6 +64,9 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (!MediaQuery.disableAnimationsOf(context)) {
+      unawaited(precacheImage(AnswerCharacterCelebration.artwork, context));
+    }
     _audio = context.read<EngagementAudioManager?>();
     _pronunciation = context.read<PronunciationAudioManager?>();
   }
@@ -279,9 +282,9 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
                               const SizedBox(height: 12),
                             ],
                           if (session.answerState != KidsAnswerState.ready) ...[
-                            AnswerStarBurst(
+                            AnswerCharacterCelebration(
                               key: ValueKey(
-                                'learning-stars-$_feedbackRevision',
+                                'learning-celebration-$_feedbackRevision',
                               ),
                               animate:
                                   _freshFeedback &&

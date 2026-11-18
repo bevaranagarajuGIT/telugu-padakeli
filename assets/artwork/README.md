@@ -18,8 +18,30 @@ prompt and provenance are preserved in `kids/mango-v2.md`. The sheet's
 `kids/ATTRIBUTION.txt` records the source ID, transformation, use, missing audio
 and unresolved human art/rights review. It is bundled in the application's
 licenses. These are original supporting illustrations, not third-party stock,
-commercially cleared final artwork or a replacement for the existing articulated
-Flutter Hanuman. Existing home and opening artwork remains unchanged.
+commercially cleared final artwork. Existing home, opening and level-completion
+artwork remains unchanged.
+
+## Correct-answer character
+
+Learn and Practice use `kids/hanuman-answer-wave.png` instead of per-answer star
+bursts. This is the user's approved, color-enhanced Dreamina baby-Hanuman clip,
+sampled from 2.2-3.1 seconds into an 18-frame, 6x3 atlas of 384px square frames.
+Only border-connected neutral white backdrop pixels become transparent; the
+complete frame, colored artwork, enclosed white details and branding remain.
+Only the 1,404,933-byte static atlas is bundled, not the five-second video or a
+video-player dependency. A screen-level popup shows the centered character with
+gold rays and praise over dimmed gameplay, then disappears after 900ms. It scales
+down on small/landscape screens, adds no space to inline feedback and intercepts
+no controls. Practice retains its 1100ms advance; Learn retains its Next action.
+Reduced motion skips the decorative popup, leaving normal feedback visible.
+Lifecycle/route/TickerMode changes dismiss it without replay; restored, neutral
+and error feedback omit it. The overlay is owned by its feedback widget and
+cannot outlive it.
+Both screens precache the atlas while the question is visible so the first
+correct answer does not start with an empty character frame.
+The artwork's source rights and Dreamina terms remain unverified. It is for local
+evaluation, not cleared for public/commercial distribution; see the bundled
+`kids/ATTRIBUTION.txt`. No branding has been removed.
 
 ## App icon
 
