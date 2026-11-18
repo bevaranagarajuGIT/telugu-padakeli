@@ -25,12 +25,18 @@ class PadakeliScreen extends StatefulWidget {
     this.repository = const LocalPuzzleRepository(),
     this.onBack,
     this.dailyDate,
+    this.onNextPuzzle,
+    this.initialPuzzleId,
+    this.puzzleRequest = 0,
     super.key,
   });
 
   final PuzzleRepository repository;
   final VoidCallback? onBack;
   final String? dailyDate;
+  final ValueChanged<int>? onNextPuzzle;
+  final int? initialPuzzleId;
+  final int puzzleRequest;
 
   @override
   State<PadakeliScreen> createState() => _PadakeliScreenState();
@@ -104,6 +110,16 @@ class _PadakeliScreenState extends State<PadakeliScreen>
   }
 
   @override
+  void didUpdateWidget(covariant PadakeliScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.dailyDate == null &&
+        (widget.puzzleRequest != oldWidget.puzzleRequest ||
+            widget.initialPuzzleId != oldWidget.initialPuzzleId)) {
+      _loadPuzzles();
+    }
+  }
+
+  @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     _persist();
     if (state != AppLifecycleState.resumed) {
@@ -149,6 +165,7 @@ class _PadakeliScreenState extends State<PadakeliScreen>
   }
 
   Future<void> _loadPuzzles() async {
+    final request = widget.puzzleRequest;
     setState(() => _loadError = null);
     try {
       final puzzles = await widget.repository.getPuzzles();
@@ -158,7 +175,7 @@ class _PadakeliScreenState extends State<PadakeliScreen>
       for (final puzzle in puzzles) {
         puzzle.validate();
       }
-      if (!mounted) return;
+      if (!mounted || request != widget.puzzleRequest) return;
       setState(() => _puzzles = puzzles);
       final saved = _storage?.board(_slot) ?? <String, dynamic>{};
       if (widget.dailyDate != null && _storage != null) {
@@ -170,6 +187,32 @@ class _PadakeliScreenState extends State<PadakeliScreen>
           ),
           saved: saved,
         );
+      } else if (widget.initialPuzzleId != null) {
+        final next = puzzles
+            .where((puzzle) => puzzle.id == widget.initialPuzzleId)
+            .firstOrNull;
+        if (next == null) {
+          throw const FormatException('The next puzzle is not available.');
+        }
+        final levelSave =
+            _storage?.board('classic:${next.level}') ?? <String, dynamic>{};
+        for (final previous in [levelSave, saved]) {
+          final id = previous['id'];
+          if (id is int && id != next.id) {
+            _storage?.saveBoard('classic:puzzle:$id', previous, active: false);
+          }
+        }
+        final resume = [
+          saved,
+          levelSave,
+        ].where((snapshot) => snapshot['id'] == next.id).firstOrNull;
+        _openPuzzle(
+          next,
+          saved:
+              resume ??
+              _storage?.board('classic:puzzle:${next.id}') ??
+              const {},
+        );
       } else {
         final previous = puzzles
             .where((puzzle) => puzzle.id == saved['id'])
@@ -178,7 +221,7 @@ class _PadakeliScreenState extends State<PadakeliScreen>
       }
     } catch (error, stack) {
       debugPrint('Local crossword loading failed: $error\n$stack');
-      if (!mounted) return;
+      if (!mounted || request != widget.puzzleRequest) return;
       setState(
         () => _loadError = 'పదకేళిని లోడ్ చేయలేకపోయాము. మళ్ళీ ప్రయత్నించండి.',
       );
@@ -1697,40 +1740,6 @@ class _PadakeliScreenState extends State<PadakeliScreen>
       }
     }
 
-    if (widget.dailyDate != null) {
-      return Column(
-        key: const ValueKey('daily-puzzle-complete'),
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Icon(Icons.verified_rounded, color: AppColors.teal, size: 64),
-          const SizedBox(height: 12),
-          Text(
-            'నేటి పదకేళి పూర్తయింది! / Daily completed',
-            style: theme.textTheme.headlineSmall,
-          ),
-          Text(
-            '${widget.dailyDate} · One daily completion reward per saved date. '
-            'Replaying never awards another daily star.',
-          ),
-          const SizedBox(height: 16),
-          FilledButton(
-            onPressed: () => choose(home),
-            child: _controlLabel('హోమ్‌కు వెళ్లు', 'Back to Home'),
-          ),
-          OutlinedButton(
-            key: const ValueKey('daily-replay'),
-            onPressed: () => choose(() => _openPuzzle(_puzzle!)),
-            child: _controlLabel('మళ్లీ ఆడు', 'Practice again'),
-          ),
-        ],
-      );
-    }
-    final availableLevels = _puzzles!.map((puzzle) => puzzle.level).toSet();
-    final nextLevel = Puzzle.levels
-        .skip(Puzzle.levels.indexOf(_selectedLevel!) + 1)
-        .where(availableLevels.contains)
-        .firstOrNull;
-    final hasNextPuzzle = _puzzleNumber < _levelPuzzles.length;
     ButtonStyle filledStyle(Color background, Color foreground) =>
         FilledButton.styleFrom(
           backgroundColor: background,
@@ -1744,6 +1753,111 @@ class _PadakeliScreenState extends State<PadakeliScreen>
           ),
         );
 
+    final availableLevels = _puzzles!.map((puzzle) => puzzle.level).toSet();
+    final nextLevel = Puzzle.levels
+        .skip(Puzzle.levels.indexOf(_selectedLevel!) + 1)
+        .where(availableLevels.contains)
+        .firstOrNull;
+    final hasNextPuzzle = _puzzleNumber < _levelPuzzles.length;
+
+    if (widget.dailyDate != null) {
+      final nextPuzzle = hasNextPuzzle
+          ? _levelPuzzles[_puzzleNumber]
+          : _puzzles!.where((puzzle) => puzzle.level == nextLevel).firstOrNull;
+      return Padding(
+        key: const ValueKey('daily-puzzle-complete'),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                width: 80,
+                height: 80,
+                decoration: const BoxDecoration(
+                  color: AppColors.gold,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.verified_rounded,
+                  size: 56,
+                  color: AppColors.successForeground,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            KidsLearningText.control(
+              'నేటి పదకేళి పూర్తయింది!',
+              english: 'Daily completed',
+              center: true,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+              englishStyle: theme.textTheme.bodyLarge?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              widget.dailyDate!,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'One daily completion reward per saved date. '
+              'Replaying never awards another daily star.',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 24),
+            if (widget.onNextPuzzle != null && nextPuzzle != null) ...[
+              FilledButton.icon(
+                key: const ValueKey('daily-next-level'),
+                onPressed: () =>
+                    choose(() => widget.onNextPuzzle!(nextPuzzle.id)),
+                style: filledStyle(AppColors.deepBlue, Colors.white),
+                icon: const Icon(Icons.arrow_forward_rounded),
+                label: _controlLabel('తరువాతి స్థాయి', 'Next level'),
+              ),
+              const SizedBox(height: 12),
+            ],
+            OutlinedButton.icon(
+              key: const ValueKey('daily-replay'),
+              onPressed: () => choose(() => _openPuzzle(_puzzle!)),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(48, 56),
+                padding: const EdgeInsets.all(12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              icon: const Icon(Icons.replay_rounded),
+              label: _controlLabel('మళ్లీ ఆడు', 'Practice again'),
+            ),
+            const SizedBox(height: 12),
+            TextButton.icon(
+              key: const ValueKey('daily-completion-home'),
+              onPressed: () => choose(home),
+              style: TextButton.styleFrom(
+                minimumSize: const Size(48, 56),
+                padding: const EdgeInsets.all(12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              icon: const Icon(Icons.home_rounded),
+              label: _controlLabel('హోమ్‌కు వెళ్లు', 'Back to Home'),
+            ),
+          ],
+        ),
+      );
+    }
     return Padding(
       key: const ValueKey('classic-level-complete'),
       padding: const EdgeInsets.all(24),

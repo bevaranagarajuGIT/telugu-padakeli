@@ -27,6 +27,8 @@ class _AppShellState extends State<AppShell> {
   bool _dailyOpen = false;
   bool _riddlesOpen = false;
   int _resumeRequest = 0;
+  int? _classicPuzzleId;
+  int _classicPuzzleRequest = 0;
   int _resetRevision = 0;
   final _tabLevels = <int, int?>{};
   final _tabScreens = <int, DiagnosticScreen>{};
@@ -44,18 +46,31 @@ class _AppShellState extends State<AppShell> {
     final level = diagnostics?.level;
     diagnostics?.location(DiagnosticScreen.daily);
     final saved = context.read<LearningProgress?>();
+    int? nextPuzzleId;
     setState(() => _dailyOpen = true);
     try {
       await Navigator.of(context).push(
         MaterialPageRoute<void>(
           builder: (_) => PadakeliScreen(
             dailyDate: date ?? saved?.today ?? calendarDay(DateTime.now()),
+            onNextPuzzle: (id) {
+              if (nextPuzzleId != null) return;
+              nextPuzzleId = id;
+              Navigator.of(context).pop();
+            },
           ),
         ),
       );
     } finally {
       if (mounted) setState(() => _dailyOpen = false);
       if (previous != null) diagnostics?.location(previous, level: level);
+    }
+    if (mounted && nextPuzzleId != null) {
+      setState(() {
+        _classicPuzzleId = nextPuzzleId;
+        _classicPuzzleRequest++;
+      });
+      _select(1);
     }
   }
 
@@ -138,6 +153,8 @@ class _AppShellState extends State<AppShell> {
     if (saved != null && saved.resetRevision != _resetRevision) {
       _resetRevision = saved.resetRevision;
       _selectedIndex = 0;
+      _classicPuzzleId = null;
+      _classicPuzzleRequest = 0;
       _visited
         ..clear()
         ..add(0);
@@ -178,7 +195,11 @@ class _AppShellState extends State<AppShell> {
                         !_settingsOpen &&
                         !_dailyOpen &&
                         !_riddlesOpen,
-                    child: PadakeliScreen(onBack: () => _select(0)),
+                    child: PadakeliScreen(
+                      onBack: () => _select(0),
+                      initialPuzzleId: _classicPuzzleId,
+                      puzzleRequest: _classicPuzzleRequest,
+                    ),
                   )
                 : const SizedBox.shrink(),
             _visited.contains(2)

@@ -111,6 +111,30 @@ void main() {
       }
     }
   }
+  final riddles =
+      jsonDecode(
+            File(
+              'assets${Platform.pathSeparator}data${Platform.pathSeparator}riddles.json',
+            ).readAsStringSync(),
+          )
+          as Map<String, dynamic>;
+  for (final riddle in riddles['riddles'] as List) {
+    add({
+      'id': 'riddle:${riddle['id']}',
+      'category': riddle['level'],
+      'prompt': riddle['question'],
+      'answer': riddle['answer'],
+      'distractors': (riddle['choices'] as List)
+          .where((choice) => choice != riddle['answer'])
+          .toList(),
+      'hint': riddle['hint'],
+      'explanation': riddle['explanation'],
+      'englishHelper': null,
+      'picture': null,
+      'audio': null,
+      'recordingScript': riddle['answer'],
+    });
+  }
   final words = <String, List<String>>{};
   for (final item in items) {
     final word = TeluguAkshara.normalize(

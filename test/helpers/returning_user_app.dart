@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:telugu_padakeli/main.dart' as app;
 import 'package:telugu_padakeli/services/onboarding_store.dart';
@@ -7,6 +8,13 @@ import 'package:telugu_padakeli/shared/widgets/opening_artwork.dart';
 
 Future<void> pumpReturningUserApp(WidgetTester tester) async {
   addTearDown(() => tester.pumpWidget(const SizedBox.shrink()));
+  // Large bundled packs decode on an isolate, outside the fake widget clock.
+  await tester.runAsync(
+    () => Future.wait([
+      rootBundle.loadString('assets/data/sample_puzzles.json'),
+      rootBundle.loadString('assets/data/riddles.json'),
+    ]),
+  );
   await tester.pumpWidget(const TeluguPadakeliApp());
   await tester.runAsync(() async {
     await precacheImage(

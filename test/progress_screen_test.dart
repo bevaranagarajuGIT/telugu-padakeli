@@ -125,8 +125,14 @@ void main() {
       final snapshot = contentSignature(saved.riddles);
       var opened = 0;
       await _open(tester, saved, onRiddles: () => opened++);
-      expect(_within('progress-riddles-solved', '8 / 20'), findsOneWidget);
-      expect(_within('progress-riddles-levels', '3 / 6'), findsOneWidget);
+      expect(
+        _within('progress-riddles-solved', '8 / ${riddles.length}'),
+        findsOneWidget,
+      );
+      expect(
+        _within('progress-riddles-levels', '3 / ${RiddleLevel.values.length}'),
+        findsOneWidget,
+      );
       expect(find.text('Next level: Nature whispers'), findsOneWidget);
       expect(find.textContaining('No recorded learning yet.'), findsNothing);
       expect(_within('progress-today-count', '0'), findsOneWidget);
@@ -147,8 +153,20 @@ void main() {
         },
       });
       await tester.pumpAndSettle();
-      expect(_within('progress-riddles-solved', '20 / 20'), findsOneWidget);
-      expect(_within('progress-riddles-levels', '6 / 6'), findsOneWidget);
+      expect(
+        _within(
+          'progress-riddles-solved',
+          '${riddles.length} / ${riddles.length}',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        _within(
+          'progress-riddles-levels',
+          '${RiddleLevel.values.length} / ${RiddleLevel.values.length}',
+        ),
+        findsOneWidget,
+      );
       expect(find.text('Collection complete!'), findsOneWidget);
       expect(saved.stars, 0);
       expect(saved.currentStreak, 0);
@@ -173,7 +191,10 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(retry);
     await tester.runAsync(() => tester.pumpAndSettle());
-    expect(_within('progress-riddles-solved', '0 / 20'), findsOneWidget);
+    expect(
+      _within('progress-riddles-solved', '0 / ${riddles.length}'),
+      findsOneWidget,
+    );
     expect(contentSignature(saved.riddles), snapshot);
     expect(tester.takeException(), isNull);
   });

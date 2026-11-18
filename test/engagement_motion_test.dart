@@ -30,12 +30,14 @@ double _scale(WidgetTester tester, Finder parent) => tester
     .transform
     .storage[0];
 
-Future<int> _paintedPixels(WidgetTester tester) async {
+Future<int> _paintedPixels(WidgetTester tester, {Finder? parent}) async {
   final painter = tester
       .widget<CustomPaint>(
         find.descendant(
-          of: find.byType(EngagementReaction),
-          matching: find.byType(CustomPaint),
+          of: parent ?? find.byType(EngagementReaction),
+          matching: parent == null
+              ? find.byType(CustomPaint)
+              : find.byKey(const ValueKey('answer-star-particles')),
         ),
       )
       .painter!;
@@ -61,6 +63,103 @@ void main() {
     moment: EngagementMoment.correct,
     child: Icon(Icons.star_rounded),
   );
+
+  testWidgets('answer stars visibly pop once without blocking the child', (
+    tester,
+  ) async {
+    var taps = 0;
+    await tester.pumpWidget(
+      _host(
+        AnswerStarBurst(
+          child: SizedBox(
+            width: 300,
+            height: 100,
+            child: FilledButton(
+              onPressed: () => taps++,
+              child: const Text('Next question'),
+            ),
+          ),
+        ),
+      ),
+    );
+    final burst = find.byType(AnswerStarBurst);
+    final initialSize = tester.getSize(burst);
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(await _paintedPixels(tester, parent: burst), greaterThan(200));
+    await tester.tap(find.text('Next question'));
+    expect(taps, 1);
+    expect(tester.getSize(burst), initialSize);
+    await tester.pump(const Duration(milliseconds: 700));
+    expect(await _paintedPixels(tester, parent: burst), 0);
+    await tester.pumpWidget(
+      _host(
+        AnswerStarBurst(
+          child: SizedBox(
+            width: 300,
+            height: 100,
+            child: FilledButton(
+              onPressed: () => taps++,
+              child: const Text('Next question'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(await _paintedPixels(tester, parent: burst), 0);
+    await tester.pumpAndSettle();
+    expect(tester.binding.transientCallbackCount, 0);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('reduced motion and non-fresh answers do not pop stars', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _host(
+        const AnswerStarBurst(child: SizedBox(width: 300, height: 100)),
+        reduced: true,
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(
+      await _paintedPixels(tester, parent: find.byType(AnswerStarBurst)),
+      0,
+    );
+    await tester.pumpWidget(
+      _host(
+        const AnswerStarBurst(
+          animate: false,
+          child: SizedBox(width: 300, height: 100),
+        ),
+      ),
+    );
+    expect(find.byKey(const ValueKey('answer-star-particles')), findsNothing);
+    expect(tester.binding.transientCallbackCount, 0);
+  });
+
+  testWidgets('background cancels answer stars without replay on resume', (
+    tester,
+  ) async {
+    addTearDown(
+      () => tester.binding.handleAppLifecycleStateChanged(
+        AppLifecycleState.resumed,
+      ),
+    );
+    await tester.pumpWidget(
+      _host(const AnswerStarBurst(child: SizedBox(width: 300, height: 100))),
+    );
+    final burst = find.byType(AnswerStarBurst);
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(await _paintedPixels(tester, parent: burst), greaterThan(200));
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    await tester.pump();
+    expect(await _paintedPixels(tester, parent: burst), 0);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(await _paintedPixels(tester, parent: burst), 0);
+    expect(tester.binding.transientCallbackCount, 0);
+  });
 
   testWidgets('correct star pulses and stops within its 420ms budget', (
     tester,

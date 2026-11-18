@@ -9,6 +9,7 @@ class KidsLearningText extends StatelessWidget {
     this.telugu, {
     this.english,
     this.style,
+    this.englishStyle,
     this.center = false,
     super.key,
   }) : _isControl = false;
@@ -17,6 +18,7 @@ class KidsLearningText extends StatelessWidget {
     this.telugu, {
     required String this.english,
     this.style,
+    this.englishStyle,
     this.center = false,
     super.key,
   }) : _isControl = true;
@@ -24,6 +26,7 @@ class KidsLearningText extends StatelessWidget {
   final String telugu;
   final String? english;
   final TextStyle? style;
+  final TextStyle? englishStyle;
   final bool center;
   final bool _isControl;
 
@@ -50,12 +53,14 @@ class KidsLearningText extends StatelessWidget {
           Text(
             english!,
             textAlign: center ? TextAlign.center : TextAlign.start,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color:
-                  style?.color ??
-                  DefaultTextStyle.of(context).style.color ??
-                  Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
+            style: Theme.of(context).textTheme.bodySmall
+                ?.copyWith(
+                  color:
+                      style?.color ??
+                      DefaultTextStyle.of(context).style.color ??
+                      Theme.of(context).colorScheme.onSurfaceVariant,
+                )
+                .merge(englishStyle),
           ),
         ],
       ],

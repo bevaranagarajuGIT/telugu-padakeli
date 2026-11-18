@@ -144,13 +144,17 @@ void main() {
   ) async {
     await pumpReturningUserApp(tester);
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('nav-classic')));
-    await tester.pumpAndSettle();
+    await tester.runAsync(() async {
+      await tester.tap(find.byKey(const ValueKey('nav-classic')));
+      await tester.pumpAndSettle();
+    });
     await tester.tap(find.byTooltip('Back to Home'));
     await tester.pumpAndSettle();
     expect(find.text('Classic Padakeli'), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('nav-classic')));
-    await tester.pumpAndSettle();
+    await tester.runAsync(() async {
+      await tester.tap(find.byKey(const ValueKey('nav-classic')));
+      await tester.pumpAndSettle();
+    });
     await tester.ensureVisible(find.text('Easy'));
     await tester.tap(find.text('Easy'));
     await tester.pumpAndSettle();

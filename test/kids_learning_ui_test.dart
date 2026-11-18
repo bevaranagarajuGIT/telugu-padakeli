@@ -13,6 +13,7 @@ import 'package:telugu_padakeli/screens/kids_activity_screen.dart';
 import 'package:telugu_padakeli/screens/kids_learning_screen.dart';
 import 'package:telugu_padakeli/screens/settings_screen.dart';
 import 'package:telugu_padakeli/services/kids_learning_service.dart';
+import 'package:telugu_padakeli/widgets/engagement_motion.dart';
 import 'package:telugu_padakeli/widgets/premium_telugu_text.dart';
 import 'helpers/returning_user_app.dart';
 
@@ -22,6 +23,7 @@ Widget _host(
   bool dark = false,
   double systemScale = 1,
   double appScale = 1,
+  bool reducedMotion = true,
 }) => ChangeNotifierProvider.value(
   value: settings,
   child: MaterialApp(
@@ -29,7 +31,7 @@ Widget _host(
     builder: (context, child) => MediaQuery(
       data: MediaQuery.of(context).copyWith(
         textScaler: TextScaler.linear(systemScale),
-        disableAnimations: true,
+        disableAnimations: reducedMotion,
       ),
       child: child!,
     ),
@@ -122,7 +124,133 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  for (final (category, id) in [
+    (LearningCategory.early, 'letters-4'),
+    (LearningCategory.explorers, 'builder-3'),
+    (LearningCategory.champions, 'meanings-3'),
+    (LearningCategory.early, 'pictures-discover'),
+    (LearningCategory.early, 'pictures-nature'),
+    (LearningCategory.early, 'pictures-notice'),
+    (LearningCategory.early, 'letters-food'),
+    (LearningCategory.early, 'letters-outdoors'),
+    (LearningCategory.explorers, 'builder-home'),
+    (LearningCategory.explorers, 'builder-journey'),
+    (LearningCategory.explorers, 'completion-everyday'),
+    (LearningCategory.explorers, 'situations-school'),
+    (LearningCategory.explorers, 'science-observe'),
+    (LearningCategory.champions, 'words-context'),
+    (LearningCategory.champions, 'nature-care'),
+    (LearningCategory.champions, 'traditions-arts'),
+    (LearningCategory.champions, 'digital-choices'),
+    (LearningCategory.champions, 'practical-reasoning'),
+  ]) {
+    testWidgets('new $id activity opens from its path and accepts an answer', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(320, 568);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final settings = AppSettingsController()..setEnglishHelper(true);
+      addTearDown(settings.dispose);
+      await tester.pumpWidget(
+        _host(KidsLearningScreen(onBack: () {}), settings),
+      );
+      await tester.pumpAndSettle();
+      await _tap(
+        tester,
+        find.byKey(ValueKey('kids-category-${category.name}')),
+      );
+      await _tap(tester, find.byKey(ValueKey('kids-activity-$id')));
+      final session = tester
+          .widget<KidsActivityScreen>(find.byType(KidsActivityScreen))
+          .session;
+      expect(session.activity.id, id);
+      expect(find.text(session.question.englishPrompt), findsOneWidget);
+      if (session.activity.type == KidsActivityType.builder) {
+        final unused = List.generate(session.question.tiles.length, (i) => i);
+        for (final akshara in TeluguAkshara.split(session.question.answer)) {
+          final index = unused.firstWhere(
+            (i) => session.question.tiles[i] == akshara,
+          );
+          unused.remove(index);
+          await _tap(tester, find.byKey(ValueKey('learning-tile-$index')));
+        }
+      } else {
+        await _tap(
+          tester,
+          find.byKey(ValueKey('learning-choice-${session.question.answer}')),
+        );
+      }
+      if (session.answerState != KidsAnswerState.correct) {
+        await _tap(tester, find.byKey(const ValueKey('learning-check')));
+      }
+      expect(session.answerState, KidsAnswerState.correct);
+      await _tap(tester, find.byKey(const ValueKey('learning-next')));
+      expect(session.index, 1);
+      expect(session.score, 1);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  }
+
   for (final dark in [false, true]) {
+    testWidgets(
+      'expanded phrase choices and feedback fit enlarged text, dark=$dark',
+      (tester) async {
+        tester.view.physicalSize = const Size(320, 568);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final settings = AppSettingsController()..setEnglishHelper(true);
+        final session = KidsActivitySession(
+          activities.firstWhere((activity) => activity.id == 'digital-choices'),
+          () {},
+        );
+        addTearDown(settings.dispose);
+        addTearDown(session.dispose);
+        await tester.pumpWidget(
+          _host(
+            KidsActivityScreen(session: session),
+            settings,
+            dark: dark,
+            appScale: 1.4,
+            systemScale: 3.2,
+          ),
+        );
+        await tester.pumpAndSettle();
+        for (final question in session.activity.questions) {
+          final wrong = question.choices.firstWhere(
+            (choice) => choice.telugu != question.answer,
+          );
+          await _tap(
+            tester,
+            find.byKey(ValueKey('learning-choice-${wrong.telugu}')),
+          );
+          await _tap(tester, find.byKey(const ValueKey('learning-check')));
+          expect(session.answerState, KidsAnswerState.incorrect);
+          await _tap(
+            tester,
+            find.byKey(ValueKey('learning-choice-${question.answer}')),
+          );
+          await _tap(tester, find.byKey(const ValueKey('learning-check')));
+          expect(session.answerState, KidsAnswerState.correct);
+          expect(find.text(question.englishExplanation), findsOneWidget);
+          settings.setEnglishHelper(false);
+          await tester.pumpAndSettle();
+          expect(find.text(question.englishExplanation), findsNothing);
+          expect(find.text(question.explanation), findsOneWidget);
+          await _tap(tester, find.byKey(const ValueKey('learning-next')));
+          settings.setEnglishHelper(true);
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull, reason: question.id);
+        }
+        expect(session.complete, isTrue);
+        expect(session.score, 7);
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+
     testWidgets('next stays reachable on a small phone, dark=$dark', (
       tester,
     ) async {
@@ -182,6 +310,194 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     });
   }
+
+  for (final (size, appScale, systemScale, dark, reduced) in [
+    (const Size(411, 914), 1.0, 1.0, false, false),
+    (const Size(320, 568), 1.0, 1.0, true, true),
+    (const Size(390, 844), 1.4, 1.3, true, false),
+    (const Size(568, 320), 1.0, 1.0, false, true),
+  ]) {
+    testWidgets(
+      'answer feedback reveals itself above Next at $size app=$appScale system=$systemScale',
+      (tester) async {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final settings = AppSettingsController()..setEnglishHelper(true);
+        final session = KidsActivitySession(
+          activities.firstWhere((activity) => activity.id == 'letters-4'),
+          () {},
+        );
+        addTearDown(settings.dispose);
+        addTearDown(session.dispose);
+        await tester.pumpWidget(
+          _host(
+            KidsActivityScreen(session: session),
+            settings,
+            appScale: appScale,
+            systemScale: systemScale,
+            dark: dark,
+            reducedMotion: reduced,
+          ),
+        );
+        await tester.pumpAndSettle();
+        for (final correct in [false, true]) {
+          final choice = session.choices.firstWhere(
+            (choice) => (choice.telugu == session.question.answer) == correct,
+          );
+          await _tap(
+            tester,
+            find.byKey(ValueKey('learning-choice-${choice.telugu}')),
+          );
+          final feedback = tester.getRect(
+            find.byKey(
+              ValueKey(correct ? 'learning-correct' : 'learning-retry'),
+            ),
+          );
+          expect(
+            tester
+                .widget<AnswerStarBurst>(find.byType(AnswerStarBurst))
+                .animate,
+            correct,
+          );
+          final viewport = tester.getRect(
+            find.byKey(const ValueKey('kids-activity-scroll')),
+          );
+          expect(feedback.top, greaterThanOrEqualTo(viewport.top - 0.01));
+          expect(feedback.top, lessThan(viewport.bottom));
+          if (feedback.height <= viewport.height) {
+            expect(feedback.bottom, lessThanOrEqualTo(viewport.bottom + 0.01));
+          } else {
+            await Scrollable.ensureVisible(
+              tester.element(find.text(session.question.englishExplanation)),
+              alignment: 1,
+            );
+            await tester.pumpAndSettle();
+            expect(
+              find.text(session.question.englishExplanation).hitTestable(),
+              findsOneWidget,
+            );
+          }
+          expect(session.index, 0);
+        }
+        final footer = tester.getRect(
+          find.byKey(const ValueKey('learning-action-footer')),
+        );
+        expect(
+          find.byKey(const ValueKey('learning-next')).hitTestable(),
+          findsOneWidget,
+        );
+        expect(
+          tester
+              .getRect(find.byKey(const ValueKey('kids-activity-scroll')))
+              .bottom,
+          lessThanOrEqualTo(footer.top),
+        );
+        await _tap(tester, find.byKey(const ValueKey('learning-next')));
+        expect(session.index, 1);
+        final scroll = tester.state<ScrollableState>(
+          find.descendant(
+            of: find.byKey(const ValueKey('kids-activity-scroll')),
+            matching: find.byType(Scrollable),
+          ),
+        );
+        expect(scroll.position.pixels, 0);
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+  }
+
+  testWidgets('restored correct answer reveals its full feedback above Next', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final settings = AppSettingsController()..setEnglishHelper(true);
+    final session = KidsActivitySession(
+      activities.firstWhere((activity) => activity.id == 'letters-4'),
+      () {},
+    );
+    addTearDown(settings.dispose);
+    addTearDown(session.dispose);
+    session.selectChoice(session.question.answer);
+    session.check();
+    await tester.pumpWidget(
+      _host(
+        KidsActivityScreen(session: session),
+        settings,
+        reducedMotion: false,
+      ),
+    );
+    await tester.pumpAndSettle();
+    final viewport = tester.getRect(
+      find.byKey(const ValueKey('kids-activity-scroll')),
+    );
+    final feedback = tester.getRect(
+      find.byKey(const ValueKey('learning-correct')),
+    );
+    expect(feedback.top, greaterThanOrEqualTo(viewport.top));
+    expect(feedback.bottom, lessThanOrEqualTo(viewport.bottom));
+    expect(
+      find.text(session.question.englishExplanation).hitTestable(),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('learning-next')).hitTestable(),
+      findsOneWidget,
+    );
+    expect(session.index, 0);
+    expect(session.score, 1);
+    expect(
+      tester.widget<AnswerStarBurst>(find.byType(AnswerStarBurst)).animate,
+      isFalse,
+    );
+    expect(find.byKey(const ValueKey('answer-star-particles')), findsNothing);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('Next works during the correct-answer star burst', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(411, 914);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final settings = AppSettingsController();
+    final session = KidsActivitySession(
+      activities.firstWhere((activity) => activity.id == 'letters-4'),
+      () {},
+    );
+    addTearDown(settings.dispose);
+    addTearDown(session.dispose);
+    await tester.pumpWidget(
+      _host(
+        KidsActivityScreen(session: session),
+        settings,
+        reducedMotion: false,
+      ),
+    );
+    await tester.pumpAndSettle();
+    session.selectChoice(session.question.answer);
+    session.check();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(find.byKey(const ValueKey('answer-star-particles')), findsOneWidget);
+    expect(session.score, 1);
+    final next = find.byKey(const ValueKey('learning-next'));
+    expect(next.hitTestable(), findsOneWidget);
+    await tester.tap(next);
+    await tester.pumpAndSettle();
+    expect(session.index, 1);
+    expect(session.score, 1);
+    expect(find.byKey(const ValueKey('answer-star-particles')), findsNothing);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
 
   testWidgets('kids welcome leaves room for the activities', (tester) async {
     tester.view.physicalSize = const Size(390, 844);

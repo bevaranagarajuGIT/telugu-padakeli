@@ -125,14 +125,14 @@ void main() {
   });
 
   test(
-    'all five activity types and 74 reviewed-pending questions validate',
+    'all five activity types and 179 reviewed-pending questions validate',
     () {
       expect(
         activities.map((a) => a.type).toSet(),
         KidsActivityType.values.toSet(),
       );
-      expect(activities, hasLength(12));
-      expect(activities.expand((a) => a.questions).length, 74);
+      expect(activities, hasLength(30));
+      expect(activities.expand((a) => a.questions).length, 179);
       expect(() => KidsLearningService.validate(activities), returnsNormally);
       for (final question in activities.expand((a) => a.questions)) {
         expect(question.reviewStatus, 'pending-human-review');
@@ -162,11 +162,44 @@ void main() {
     }
   });
 
+  test(
+    'context choices allow Telugu phrases but still reject invalid syllables',
+    () {
+      KidsLearningQuestion question(String answer) => KidsLearningQuestion(
+        id: 'phrase-check',
+        prompt: 'మిత్రుని వస్తువు వాడే ముందు ఏం చేయాలి?',
+        englishPrompt: 'What should we do before borrowing?',
+        answer: answer,
+        explanation: 'ముందుగా అనుమతి అడగాలి.',
+        englishExplanation: 'Ask permission first.',
+        choices: [
+          KidsChoice(answer),
+          const KidsChoice('చెప్పకుండా తీసుకోవాలి'),
+          const KidsChoice('దాచిపెట్టాలి'),
+        ],
+      );
+      expect(
+        () => question('అనుమతి అడగాలి').validate(KidsActivityType.meaning),
+        returnsNormally,
+      );
+      for (final invalid in ['అనుమతి  అడగాలి', 'అనుమతి ి', 'అనుమతి ask']) {
+        expect(
+          () => question(invalid).validate(KidsActivityType.meaning),
+          throwsFormatException,
+        );
+      }
+      expect(
+        () => question('అనుమతి అడగాలి').validate(KidsActivityType.builder),
+        throwsFormatException,
+      );
+    },
+  );
+
   test('age paths grow gradually without lengthening preschool rounds', () {
     for (final (category, sizes) in [
-      (LearningCategory.early, [5, 5, 5, 5]),
-      (LearningCategory.explorers, [5, 5, 5, 5, 7]),
-      (LearningCategory.champions, [5, 5, 7, 7, 10, 10]),
+      (LearningCategory.early, [5, 5, 5, 5, 5, 5, 5, 5, 5, 5]),
+      (LearningCategory.explorers, [5, 5, 5, 5, 7, 5, 6, 6, 6, 6, 6]),
+      (LearningCategory.champions, [5, 5, 7, 7, 10, 10, 5, 7, 7, 7, 7, 7]),
     ]) {
       expect(
         activities
@@ -176,6 +209,58 @@ void main() {
       );
     }
   });
+
+  for (final oldCount in [12, 15]) {
+    test(
+      'new activities start fresh while $oldCount completed packs and practice survive reopening',
+      () async {
+        final store = MemoryLearningStore();
+        final saved = LearningProgress(store, autoSave: false);
+        addTearDown(saved.dispose);
+        for (final activity in activities.take(oldCount)) {
+          saved.saveSession(activity.id, {
+            'questionId': activity.questions.last.id,
+            'complete': true,
+            'solved': {
+              for (final question in activity.questions)
+                question.id: question.progressSignature,
+            },
+          });
+          saved.completeActivity(activity.id);
+        }
+        saved.savePractice({
+          'level': 'Beginner',
+          'question': 'కమ_',
+          'choice': 'లం',
+        });
+        final sessions = contentSignature(saved.sessions);
+        final practice = contentSignature(saved.practice);
+        await saved.flush();
+
+        final restored = LearningProgress(store, autoSave: false);
+        addTearDown(restored.dispose);
+        await restored.load();
+        final learning = KidsLearningController(storage: restored);
+        addTearDown(learning.dispose);
+        for (final activity in activities.take(oldCount)) {
+          final session = learning.sessionFor(activity);
+          expect(session.complete, isTrue, reason: activity.id);
+          expect(session.score, activity.questions.length);
+          expect(session.earnedStarOnCompletion, isFalse);
+        }
+        for (final activity in activities.skip(oldCount)) {
+          final session = learning.sessionFor(activity);
+          expect(session.complete, isFalse, reason: activity.id);
+          expect(session.index, 0);
+          expect(session.score, 0);
+          expect(learning.completed(activity.id), isFalse);
+        }
+        expect(contentSignature(restored.sessions), sessions);
+        expect(contentSignature(restored.practice), practice);
+        expect(restored.stars, oldCount);
+      },
+    );
+  }
 
   test(
     'every expanded round completes once; replay and category changes cannot duplicate rewards',

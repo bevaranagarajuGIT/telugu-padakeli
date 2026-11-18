@@ -1,0 +1,10 @@
+Refined Home illustrations
+
+classic-refined.png, learn-refined.png, riddles-refined.png,
+parrot-refined.png, daily-refined.png, progress-refined.png
+
+Decorative artwork extracted from the AI-generated "A Refined - With Parrot
+Riddles" concept approved and supplied by the user in this Copilot session.
+Backgrounds were removed and transparent padding added locally. No new
+external artwork service was used. UI labels and controls remain real Flutter
+widgets; the full reference screenshot is not embedded in the application.

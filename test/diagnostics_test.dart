@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:telugu_padakeli/core/learning_progress.dart';
+import 'package:telugu_padakeli/models/riddle.dart';
 import 'package:telugu_padakeli/services/diagnostics.dart';
 import 'package:telugu_padakeli/services/learning_store.dart';
 import 'package:telugu_padakeli/services/problem_report.dart';
@@ -63,6 +64,42 @@ void main() {
       await disabled.clear();
       expect(disabled.events, isEmpty);
       expect(jsonDecode(store.value!)['events'], isEmpty);
+    },
+  );
+
+  test(
+    'expanded riddle level locations persist without blocking diagnostic history',
+    () async {
+      final store = MemoryDiagnosticStore();
+      final diagnostics = Diagnostics(store);
+      addTearDown(diagnostics.dispose);
+      for (final level in RiddleLevel.values) {
+        diagnostics.location(DiagnosticScreen.riddles, level: level.index + 1);
+      }
+      await diagnostics.flush();
+      final restored = Diagnostics(store);
+      addTearDown(restored.dispose);
+      await restored.load();
+      expect(restored.available, isTrue);
+      expect(restored.storageError, isNull);
+      expect(
+        restored.events.map((event) => event.level),
+        RiddleLevel.values.map((level) => level.index + 1),
+      );
+      for (final invalid in [0, Diagnostics.maxLevel + 1]) {
+        expect(
+          DiagnosticEvent.parse({
+            'time': DateTime.now().toUtc().toIso8601String(),
+            'screen': 'riddles',
+            'level': invalid,
+          }),
+          isNull,
+        );
+        expect(
+          () => diagnostics.location(DiagnosticScreen.riddles, level: invalid),
+          throwsA(anyOf(isA<AssertionError>(), isA<ArgumentError>())),
+        );
+      }
     },
   );
 

@@ -6,6 +6,113 @@ import '../app/theme/app_colors.dart';
 
 enum EngagementMoment { correct, retry, completion }
 
+class AnswerStarBurst extends StatelessWidget {
+  const AnswerStarBurst({required this.child, this.animate = true, super.key});
+
+  final Widget child;
+  final bool animate;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!animate) return child;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        child,
+        Positioned(
+          left: 0,
+          right: 0,
+          top: -72,
+          height: 88,
+          child: IgnorePointer(
+            child: ExcludeSemantics(
+              child: RepaintBoundary(
+                child: EngagementTimeline(
+                  duration: const Duration(milliseconds: 900),
+                  builder: (context, motion) => CustomPaint(
+                    key: const ValueKey('answer-star-particles'),
+                    painter: _AnswerStars(motion),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AnswerStars extends CustomPainter {
+  _AnswerStars(this.progress) : super(repaint: progress);
+
+  final Animation<double> progress;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final time = progress.value;
+    if (time <= 0 || time >= 1) return;
+    const colors = [
+      AppColors.gold,
+      AppColors.gold,
+      AppColors.pink,
+      AppColors.purple,
+      AppColors.teal,
+    ];
+    for (var i = 0; i < 14; i++) {
+      final delay = (i % 3) * 0.035;
+      final t = ((time - delay) / (1 - delay)).clamp(0.0, 1.0);
+      if (t <= 0) continue;
+      final travel = Curves.easeOutCubic.transform(t);
+      final pop = Curves.easeOutCubic.transform((t / 0.18).clamp(0.0, 1.0));
+      final fade =
+          1 - Curves.easeIn.transform(((t - 0.55) / 0.45).clamp(0.0, 1.0));
+      final angle = -math.pi + (i % 7) * math.pi / 6;
+      final origin = Offset(
+        size.width * (i < 7 ? 0.24 : 0.76),
+        size.height - 12,
+      );
+      final point =
+          origin +
+          Offset(
+            math.cos(angle) * size.width * 0.18 * travel,
+            math.sin(angle) * (38 + (i % 3) * 10) * travel + 10 * t * t,
+          );
+      final radius = (7 + (i % 3) * 2.5) * pop;
+      final star = Path();
+      for (var corner = 0; corner < 10; corner++) {
+        final rotation =
+            -math.pi / 2 + corner * math.pi / 5 + t * (i.isEven ? 1 : -1);
+        final length = radius * (corner.isEven ? 1 : 0.45);
+        final vertex =
+            point + Offset(math.cos(rotation), math.sin(rotation)) * length;
+        if (corner == 0) {
+          star.moveTo(vertex.dx, vertex.dy);
+        } else {
+          star.lineTo(vertex.dx, vertex.dy);
+        }
+      }
+      star.close();
+      canvas.drawPath(
+        star,
+        Paint()
+          ..color = Colors.white.withValues(alpha: fade)
+          ..style = PaintingStyle.stroke
+          ..strokeJoin = StrokeJoin.round
+          ..strokeWidth = 3,
+      );
+      canvas.drawPath(
+        star,
+        Paint()..color = colors[i % colors.length].withValues(alpha: fade),
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_AnswerStars oldDelegate) =>
+      oldDelegate.progress != progress;
+}
+
 bool _motionAllowed(BuildContext context, bool foreground) =>
     foreground &&
     !MediaQuery.disableAnimationsOf(context) &&

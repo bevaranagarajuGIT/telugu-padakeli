@@ -24,6 +24,7 @@ class FeatureCard extends StatefulWidget {
     required this.onTap,
     this.artwork,
     this.status,
+    this.gradient,
     super.key,
   });
 
@@ -35,6 +36,7 @@ class FeatureCard extends StatefulWidget {
   final VoidCallback onTap;
   final FeatureCardArtwork? artwork;
   final String? status;
+  final Gradient? gradient;
 
   @override
   State<FeatureCard> createState() => _FeatureCardState();
@@ -48,7 +50,7 @@ class _FeatureCardState extends State<FeatureCard> {
     final textTheme = Theme.of(context).textTheme;
     final reducedMotion = MediaQuery.disableAnimationsOf(context);
     final border = RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(26),
+      borderRadius: BorderRadius.circular(18),
     );
     return AnimatedScale(
       scale: _pressed && !reducedMotion ? 0.975 : 1,
@@ -67,7 +69,7 @@ class _FeatureCardState extends State<FeatureCard> {
         child: Material(
           color: widget.background,
           shape: border,
-          elevation: _pressed ? 1 : 5,
+          elevation: 0,
           child: InkWell(
             customBorder: border,
             excludeFromSemantics: true,
@@ -78,101 +80,97 @@ class _FeatureCardState extends State<FeatureCard> {
             child: ExcludeSemantics(
               child: Ink(
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      widget.background,
-                      Color.lerp(widget.background, Colors.black, 0.08)!,
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                  gradient:
+                      widget.gradient ??
+                      LinearGradient(
+                        colors: [
+                          widget.background,
+                          Color.lerp(widget.background, Colors.black, 0.08)!,
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
                   borderRadius: border.borderRadius,
                 ),
                 child: Container(
-                  constraints: const BoxConstraints(minHeight: 172),
-                  padding: const EdgeInsets.all(18),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final statusInline =
-                          widget.status != null && constraints.maxWidth >= 220;
-                      final statusBadge = widget.status == null
-                          ? null
-                          : Container(
-                              constraints: const BoxConstraints(maxWidth: 132),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 9,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: widget.foreground.withValues(
-                                  alpha: 0.13,
-                                ),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: PremiumTeluguText(
-                                widget.status!,
-                                style: textTheme.labelSmall?.copyWith(
-                                  color: widget.foreground,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            );
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                  constraints: const BoxConstraints(minHeight: 204),
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 56,
-                                height: 56,
-                                decoration: BoxDecoration(
-                                  color: widget.foreground.withValues(
-                                    alpha: 0.14,
+                          SizedBox(
+                            height: 104,
+                            child: widget.artwork == null
+                                ? Icon(
+                                    widget.icon,
+                                    size: 48,
+                                    color: widget.foreground,
+                                  )
+                                : Image.asset(
+                                    widget.artwork!.asset,
+                                    fit: BoxFit.contain,
+                                    excludeFromSemantics: true,
+                                    cacheWidth: 456,
                                   ),
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: widget.artwork == null
-                                    ? Icon(
-                                        widget.icon,
-                                        size: 29,
-                                        color: widget.foreground,
-                                      )
-                                    : Image.asset(
-                                        widget.artwork!.asset,
-                                        fit: BoxFit.contain,
-                                        excludeFromSemantics: true,
-                                        cacheWidth: 168,
-                                      ),
-                              ),
-                              if (statusInline) ...[
-                                const Spacer(),
-                                statusBadge!,
-                              ],
-                            ],
                           ),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 8),
                           PremiumTeluguText(
                             widget.title,
-                            style: textTheme.titleLarge?.copyWith(
+                            style: textTheme.titleMedium?.copyWith(
+                              fontSize:
+                                  (textTheme.bodyLarge?.fontSize ?? 16) * 1.125,
                               color: widget.foreground,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
-                          PremiumTeluguText(
-                            widget.subtitle,
-                            style: textTheme.bodyMedium?.copyWith(
-                              color: widget.foreground,
-                              fontWeight: FontWeight.w600,
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: PremiumTeluguText(
+                              widget.subtitle,
+                              style: textTheme.bodyLarge?.copyWith(
+                                color: widget.foreground,
+                                fontFamily: 'Roboto',
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
-                          if (widget.status != null && !statusInline) ...[
-                            const SizedBox(height: 6),
-                            statusBadge!,
-                          ],
+                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            color: widget.foreground,
+                            size: 20,
+                          ),
                         ],
-                      );
-                    },
+                      ),
+                      if (widget.status != null) ...[
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: widget.foreground.withValues(alpha: 0.13),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: PremiumTeluguText(
+                            widget.status!,
+                            style: textTheme.labelSmall?.copyWith(
+                              color: widget.foreground,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ),

@@ -1,21 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:telugu_padakeli/screens/padakeli_screen.dart';
 import 'package:telugu_padakeli/widgets/crossword_grid.dart';
 
 void main() {
+  setUpAll(() => rootBundle.loadString('assets/data/sample_puzzles.json'));
+
   testWidgets('Classic Easy sample puzzle is selectable and checkable', (
     tester,
   ) async {
-    await tester.pumpWidget(const MaterialApp(home: PadakeliScreen()));
-    for (
-      var frame = 0;
-      frame < 100 && find.text('స్థాయిని ఎంచుకోండి').evaluate().isEmpty;
-      frame++
-    ) {
-      await tester.pump(const Duration(milliseconds: 100));
-    }
-    await tester.pump();
+    await tester.runAsync(() async {
+      await tester.pumpWidget(const MaterialApp(home: PadakeliScreen()));
+      await tester.pumpAndSettle();
+    });
 
     expect(find.byKey(const ValueKey('difficulty-Beginner')), findsOneWidget);
     expect(find.byKey(const ValueKey('difficulty-Easy')), findsOneWidget);

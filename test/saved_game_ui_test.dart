@@ -27,8 +27,10 @@ class _Repository implements PuzzleRepository {
 Future<void> _mount(
   WidgetTester tester,
   LearningProgress progress,
-  Widget screen,
-) async {
+  Widget screen, {
+  double systemScale = 1,
+  bool dark = false,
+}) async {
   await tester.pumpWidget(
     MultiProvider(
       providers: [
@@ -38,9 +40,12 @@ Future<void> _mount(
         ),
       ],
       child: MaterialApp(
-        theme: AppTheme.light(1),
+        theme: dark ? AppTheme.dark(1) : AppTheme.light(1),
         builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(context).copyWith(disableAnimations: true),
+          data: MediaQuery.of(context).copyWith(
+            disableAnimations: true,
+            textScaler: TextScaler.linear(systemScale),
+          ),
           child: child!,
         ),
         home: screen,
@@ -475,6 +480,363 @@ void main() {
       expect(find.bySemanticsLabel('స్కోరు: 1'), findsOneWidget);
       expect(restored.attempts, 1);
       expect(restored.stars, 0);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  for (final (size, scale, dark) in [
+    (const Size(411, 914), 1.0, false),
+    (const Size(320, 568), 1.3, true),
+    (const Size(568, 320), 2.0, false),
+  ]) {
+    testWidgets(
+      'Daily completion has inset spaced actions at $size scale=$scale dark=$dark',
+      (tester) async {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final saved = LearningProgress(
+          MemoryLearningStore(),
+          autoSave: false,
+          clock: () => DateTime(2026, 11, 17),
+        );
+        addTearDown(saved.dispose);
+        final puzzle = puzzles.first;
+        saved.saveBoard('daily:${saved.today}', {
+          'id': puzzle.id,
+          'signature': puzzle.progressSignature,
+          'cells': [
+            for (var row = 0; row < puzzle.gridSize; row++)
+              for (var column = 0; column < puzzle.gridSize; column++)
+                puzzle.isBlocked(row, column)
+                    ? ''
+                    : puzzle.answerAt(row, column),
+          ],
+          'complete': false,
+        });
+        var homeCount = 0;
+        var continueCount = 0;
+        saved.chooseDaily(saved.today, {
+          'id': puzzle.id,
+          'repeat': false,
+          'poolSize': puzzles.length,
+        });
+        await _mount(
+          tester,
+          saved,
+          PadakeliScreen(
+            repository: _Repository(puzzles),
+            dailyDate: saved.today,
+            onBack: () => homeCount++,
+            onNextPuzzle: (id) {
+              expect(
+                id,
+                puzzles
+                    .where((item) => item.level == puzzle.level)
+                    .elementAt(1)
+                    .id,
+              );
+              continueCount++;
+            },
+          ),
+          systemScale: scale,
+          dark: dark,
+        );
+        expect(find.byType(Dialog), findsOneWidget);
+        final completion = tester.getRect(
+          find.byKey(const ValueKey('daily-puzzle-complete')),
+        );
+        final title = tester.getRect(find.text('నేటి పదకేళి పూర్తయింది!'));
+        final home = find.byKey(const ValueKey('daily-completion-home'));
+        final replay = find.byKey(const ValueKey('daily-replay'));
+        final next = find.byKey(const ValueKey('daily-next-level'));
+        final homeRect = tester.getRect(home);
+        final replayRect = tester.getRect(replay);
+        final nextRect = tester.getRect(next);
+        expect(title.left - completion.left, greaterThanOrEqualTo(24));
+        expect(completion.right - title.right, greaterThanOrEqualTo(24));
+        expect(homeRect.left - completion.left, greaterThanOrEqualTo(24));
+        expect(completion.right - homeRect.right, greaterThanOrEqualTo(24));
+        expect(homeRect.height, greaterThanOrEqualTo(56));
+        expect(replayRect.height, greaterThanOrEqualTo(56));
+        expect(nextRect.height, greaterThanOrEqualTo(56));
+        expect(replayRect.top - nextRect.bottom, greaterThanOrEqualTo(12));
+        expect(homeRect.top - replayRect.bottom, greaterThanOrEqualTo(12));
+        expect(saved.stars, 1);
+        final action = scale == 1
+            ? 'daily-next-level'
+            : scale == 1.3
+            ? 'daily-replay'
+            : 'daily-completion-home';
+        await _tap(tester, action);
+        await tester.pumpAndSettle();
+        expect(find.byType(Dialog), findsNothing);
+        expect(homeCount, action == 'daily-completion-home' ? 1 : 0);
+        expect(continueCount, action == 'daily-next-level' ? 1 : 0);
+        expect(saved.stars, 1);
+        if (action == 'daily-replay') {
+          expect(
+            find.byKey(const ValueKey('daily-puzzle-complete')),
+            findsNothing,
+          );
+          expect(saved.board('daily:${saved.today}')['complete'], false);
+        }
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+  }
+
+  for (final visitedClassic in [false, true]) {
+    testWidgets(
+      'Daily next level opens board 9 after 8 and checkpoints Classic visited=$visitedClassic',
+      (tester) async {
+        final saved = LearningProgress(
+          MemoryLearningStore(),
+          autoSave: false,
+          clock: () => DateTime(2026, 11, 17),
+        );
+        addTearDown(saved.dispose);
+        final levelPuzzles = puzzles
+            .where((item) => item.level == puzzles.first.level)
+            .toList();
+        final puzzle = levelPuzzles[7];
+        final nextPuzzle = levelPuzzles[8];
+        final cells = [
+          for (var row = 0; row < puzzle.gridSize; row++)
+            for (var column = 0; column < puzzle.gridSize; column++)
+              puzzle.isBlocked(row, column) ? '' : puzzle.answerAt(row, column),
+        ];
+        final previousPuzzle = levelPuzzles.first;
+        if (visitedClassic) {
+          saved.saveBoard('classic', {
+            'id': previousPuzzle.id,
+            'signature': previousPuzzle.progressSignature,
+            'cells': [
+              for (var row = 0; row < previousPuzzle.gridSize; row++)
+                for (var column = 0; column < previousPuzzle.gridSize; column++)
+                  row == previousPuzzle.acrossClues.first.row &&
+                          column == previousPuzzle.acrossClues.first.column
+                      ? previousPuzzle.answerAt(row, column)
+                      : '',
+            ],
+            'direction': 'across',
+            'clue': previousPuzzle.acrossClues.first.number,
+            'cell':
+                previousPuzzle.acrossClues.first.row * previousPuzzle.gridSize +
+                previousPuzzle.acrossClues.first.column,
+            'hints': 2,
+            'complete': false,
+          });
+        }
+        saved.chooseDaily(saved.today, {
+          'id': puzzle.id,
+          'repeat': false,
+          'poolSize': puzzles.length,
+        });
+        saved.saveBoard('daily:${saved.today}', {
+          'id': puzzle.id,
+          'signature': puzzle.progressSignature,
+          'cells': cells,
+          'complete': true,
+        });
+        saved.completePuzzle('${puzzle.id}', dailyDate: saved.today);
+        await _mount(tester, saved, const AppShell());
+        await tester.runAsync(() async {
+          if (visitedClassic) {
+            await _tap(tester, 'nav-classic');
+            await tester.pumpAndSettle();
+            await _tap(tester, 'nav-home');
+            await tester.pumpAndSettle();
+          }
+          final classicSave = saved.board('classic');
+          await _tap(tester, 'home-daily');
+          await tester.pumpAndSettle();
+          final dailySave = saved.board('daily:${saved.today}');
+          final nextLevel = tester
+              .widget<FilledButton>(
+                find.byKey(const ValueKey('daily-next-level')),
+              )
+              .onPressed!;
+          expect(find.text('Next level'), findsOneWidget);
+          expect(find.text('Continue in Classic'), findsNothing);
+          await _tap(tester, 'daily-next-level');
+          nextLevel();
+          await tester.pumpAndSettle();
+          expect(find.byType(PadakeliScreen), findsOneWidget);
+          expect(
+            tester
+                .widget<PadakeliScreen>(find.byType(PadakeliScreen))
+                .dailyDate,
+            isNull,
+          );
+          expect(
+            tester
+                .widget<NavigationBar>(find.byType(NavigationBar))
+                .selectedIndex,
+            1,
+          );
+          expect(
+            find.byKey(const ValueKey('daily-puzzle-label')),
+            findsNothing,
+          );
+          expect(saved.board('classic')['id'], nextPuzzle.id);
+          expect(saved.board('classic')['complete'], false);
+          expect(saved.board('daily:${saved.today}'), dailySave);
+          expect(saved.stars, 1);
+          expect(find.byType(CrosswordGrid), findsOneWidget);
+          if (visitedClassic) {
+            expect(
+              saved.board('classic:puzzle:${previousPuzzle.id}'),
+              classicSave,
+            );
+          }
+          await _tap(tester, 'nav-home');
+          await tester.pumpAndSettle();
+          await _tap(tester, 'home-daily');
+          await tester.pumpAndSettle();
+          expect(
+            find.byKey(const ValueKey('daily-next-level')),
+            findsOneWidget,
+          );
+          expect(saved.stars, 1);
+          await _tap(tester, 'daily-next-level');
+          await tester.pumpAndSettle();
+          expect(saved.board('classic')['id'], nextPuzzle.id);
+          expect(saved.stars, 1);
+        });
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+  }
+
+  for (final lastBoard in [false, true]) {
+    testWidgets(
+      'Daily next level handles difficulty boundary lastBoard=$lastBoard',
+      (tester) async {
+        final saved = LearningProgress(MemoryLearningStore(), autoSave: false);
+        addTearDown(saved.dispose);
+        final level = lastBoard ? Puzzle.levels.last : Puzzle.levels.first;
+        final puzzle = puzzles.where((item) => item.level == level).last;
+        saved.chooseDaily(saved.today, {
+          'id': puzzle.id,
+          'repeat': false,
+          'poolSize': puzzles.length,
+        });
+        saved.saveBoard('daily:${saved.today}', {
+          'id': puzzle.id,
+          'signature': puzzle.progressSignature,
+          'cells': [
+            for (var row = 0; row < puzzle.gridSize; row++)
+              for (var column = 0; column < puzzle.gridSize; column++)
+                puzzle.isBlocked(row, column)
+                    ? ''
+                    : puzzle.answerAt(row, column),
+          ],
+          'complete': true,
+        });
+        saved.completePuzzle('${puzzle.id}', dailyDate: saved.today);
+        int? nextId;
+        await _mount(
+          tester,
+          saved,
+          PadakeliScreen(
+            repository: _Repository(puzzles),
+            dailyDate: saved.today,
+            onNextPuzzle: (id) => nextId = id,
+          ),
+        );
+        final dailySave = saved.board('daily:${saved.today}');
+        if (lastBoard) {
+          expect(find.byKey(const ValueKey('daily-next-level')), findsNothing);
+          expect(find.byKey(const ValueKey('daily-replay')), findsOneWidget);
+          expect(
+            find.byKey(const ValueKey('daily-completion-home')),
+            findsOneWidget,
+          );
+        } else {
+          await _tap(tester, 'daily-next-level');
+          await tester.pumpAndSettle();
+          expect(
+            nextId,
+            puzzles.firstWhere((item) => item.level == Puzzle.levels[1]).id,
+          );
+        }
+        expect(saved.board('daily:${saved.today}'), dailySave);
+        expect(saved.stars, 1);
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+  }
+
+  testWidgets(
+    'requested Classic boards restore checkpointed answers and repeated requests',
+    (tester) async {
+      final saved = LearningProgress(MemoryLearningStore(), autoSave: false);
+      addTearDown(saved.dispose);
+      final levelPuzzles = puzzles
+          .where((item) => item.level == puzzles.first.level)
+          .toList();
+      final previous = levelPuzzles.first;
+      final next = levelPuzzles[8];
+      saved.saveBoard('classic', {
+        'id': previous.id,
+        'signature': previous.progressSignature,
+        'cells': [
+          for (var row = 0; row < previous.gridSize; row++)
+            for (var column = 0; column < previous.gridSize; column++)
+              previous.isBlocked(row, column)
+                  ? ''
+                  : previous.answerAt(row, column),
+        ],
+        'hints': 2,
+        'complete': true,
+      });
+      await _mount(
+        tester,
+        saved,
+        PadakeliScreen(repository: _Repository(puzzles)),
+      );
+      final previousSave = saved.board('classic');
+      await _mount(
+        tester,
+        saved,
+        PadakeliScreen(
+          repository: _Repository(puzzles),
+          initialPuzzleId: next.id,
+          puzzleRequest: 1,
+        ),
+      );
+      expect(saved.board('classic')['id'], next.id);
+      expect(saved.board('classic:puzzle:${previous.id}'), previousSave);
+      await _mount(
+        tester,
+        saved,
+        PadakeliScreen(
+          repository: _Repository(puzzles),
+          initialPuzzleId: previous.id,
+          puzzleRequest: 2,
+        ),
+      );
+      expect(saved.board('classic'), previousSave);
+      await _tap(tester, 'classic-next-puzzle');
+      await tester.pumpAndSettle();
+      expect(saved.board('classic')['id'], levelPuzzles[1].id);
+      await _mount(
+        tester,
+        saved,
+        PadakeliScreen(
+          repository: _Repository(puzzles),
+          initialPuzzleId: previous.id,
+          puzzleRequest: 3,
+        ),
+      );
+      expect(saved.board('classic')['id'], previous.id);
+      expect(saved.board('classic')['hints'], 2);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
     },

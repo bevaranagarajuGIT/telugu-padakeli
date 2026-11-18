@@ -152,6 +152,41 @@ void main() {
     }
   });
 
+  for (final level in Puzzle.levels) {
+    testWidgets(
+      'every $level crossword can be solved from its authored aksharas',
+      (tester) async {
+        tester.view.physicalSize = const Size(320, 568);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        for (final puzzle in _puzzles.where(
+          (puzzle) => puzzle.level == level,
+        )) {
+          await _open(
+            tester,
+            level: '${level[0].toUpperCase()}${level.substring(1)}',
+            puzzles: [puzzle],
+          );
+          await _fill(tester, puzzle);
+          await tester.pumpAndSettle();
+          expect(
+            find.byType(Dialog),
+            findsOneWidget,
+            reason: 'Puzzle ${puzzle.id}',
+          );
+          expect(
+            find.byKey(const ValueKey('classic-review-answers')),
+            findsOneWidget,
+          );
+          expect(tester.takeException(), isNull, reason: 'Puzzle ${puzzle.id}');
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pumpAndSettle();
+        }
+      },
+    );
+  }
+
   testWidgets('Normal phone shows clues once and actions above navigation', (
     tester,
   ) async {
@@ -1385,7 +1420,7 @@ void main() {
 
   for (final level in ['Beginner', 'Easy']) {
     testWidgets(
-      '$level waits for Next through three puzzles, completes and replays',
+      '$level waits for Next through all puzzles, completes and replays',
       (tester) async {
         await _open(tester, level: level);
         final puzzles = _puzzles
@@ -1421,12 +1456,16 @@ void main() {
                     find.byKey(const ValueKey('classic-puzzle-progress')),
                   )
                   .data,
-              'పదకేళి · ${index + 2} / 3',
+              'పదకేళి · ${index + 2} / ${puzzles.length}',
             );
             expect(
               tester
                   .widget<Text>(
-                    find.byKey(const ValueKey('crossword-cell-value-0')),
+                    find.byKey(
+                      ValueKey(
+                        'crossword-cell-value-${puzzles[index + 1].cellsForClue(puzzles[index + 1].acrossClues.first, PuzzleDirection.across).first}',
+                      ),
+                    ),
                   )
                   .data,
               '',

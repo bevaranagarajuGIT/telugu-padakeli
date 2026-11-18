@@ -580,6 +580,22 @@ class _RiddlesScreenState extends State<RiddlesScreen> {
         dark ? AppColors.darkSuccessForeground : AppColors.successForeground,
       RiddleLevel.mysteries => dark ? scheme.tertiary : AppColors.pink,
       RiddleLevel.champion => dark ? AppColors.gold : AppColors.deepBlue,
+      RiddleLevel.garden =>
+        dark ? AppColors.darkSuccessForeground : AppColors.successForeground,
+      RiddleLevel.workshop => dark ? scheme.tertiary : AppColors.purple,
+      RiddleLevel.sky => dark ? scheme.primary : AppColors.actionBlue,
+      RiddleLevel.home ||
+      RiddleLevel.kitchen ||
+      RiddleLevel.celebrations => dark ? AppColors.gold : AppColors.deepOrange,
+      RiddleLevel.school ||
+      RiddleLevel.digital ||
+      RiddleLevel.language => dark ? scheme.tertiary : AppColors.purple,
+      RiddleLevel.wildlife =>
+        dark ? AppColors.darkSuccessForeground : AppColors.successForeground,
+      RiddleLevel.journeys ||
+      RiddleLevel.science ||
+      RiddleLevel.horizons => dark ? scheme.primary : AppColors.actionBlue,
+      RiddleLevel.reasoning => dark ? AppColors.gold : AppColors.deepBlue,
     };
     final icon = switch (level) {
       RiddleLevel.spark => Icons.bolt_rounded,
@@ -588,6 +604,20 @@ class _RiddlesScreenState extends State<RiddlesScreen> {
       RiddleLevel.nature => Icons.eco_rounded,
       RiddleLevel.mysteries => Icons.search_rounded,
       RiddleLevel.champion => Icons.workspace_premium_rounded,
+      RiddleLevel.garden => Icons.local_florist_rounded,
+      RiddleLevel.workshop => Icons.auto_fix_high_rounded,
+      RiddleLevel.sky => Icons.nights_stay_rounded,
+      RiddleLevel.home => Icons.home_rounded,
+      RiddleLevel.school => Icons.school_rounded,
+      RiddleLevel.kitchen => Icons.restaurant_rounded,
+      RiddleLevel.wildlife => Icons.pets_rounded,
+      RiddleLevel.journeys => Icons.explore_rounded,
+      RiddleLevel.celebrations => Icons.celebration_rounded,
+      RiddleLevel.science => Icons.science_rounded,
+      RiddleLevel.digital => Icons.computer_rounded,
+      RiddleLevel.language => Icons.menu_book_rounded,
+      RiddleLevel.reasoning => Icons.psychology_rounded,
+      RiddleLevel.horizons => Icons.public_rounded,
     };
     final status = !unlocked
         ? 'ముందరి స్థాయి పూర్తి చేయండి / Complete the previous level'

@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import 'package:telugu_padakeli/core/app_settings_controller.dart';
 import 'package:telugu_padakeli/core/app_theme.dart';
 import 'package:telugu_padakeli/core/kids_learning_controller.dart';
+import 'package:telugu_padakeli/models/kids_learning.dart';
+import 'package:telugu_padakeli/services/kids_learning_service.dart';
 import 'package:telugu_padakeli/screens/kids_activity_screen.dart';
 import 'package:telugu_padakeli/screens/kids_learning_screen.dart';
 import 'package:telugu_padakeli/widgets/bal_hanuman_character.dart';
@@ -338,14 +340,20 @@ void main() {
     expect(find.byType(SpecialAchievementCelebration), findsNothing);
     _finish(following.session);
     await tester.pumpAndSettle();
-    for (final (index, id) in ['letters-2', 'letters-3'].indexed) {
+    final remaining = const KidsLearningService()
+        .getActivities()
+        .where(
+          (activity) => activity.categories.contains(LearningCategory.early),
+        )
+        .skip(2);
+    for (final (index, activity) in remaining.indexed) {
       await tester.ensureVisible(next);
       await tester.tap(next);
       await tester.pumpAndSettle();
       final additional = tester.widget<KidsActivityScreen>(
         find.byType(KidsActivityScreen),
       );
-      expect(additional.session.activity.id, id);
+      expect(additional.session.activity.id, activity.id);
       expect(additional.session.complete, isFalse);
       _finish(additional.session);
       await tester.pumpAndSettle();
@@ -353,7 +361,7 @@ void main() {
     }
     expect(find.byKey(const ValueKey('learning-next-activity')), findsNothing);
     expect(find.byKey(const ValueKey('learning-return')), findsOneWidget);
-    expect(following.learning!.stars, 4);
+    expect(following.learning!.stars, remaining.length + 2);
   });
 
   for (final size in [const Size(320, 568), const Size(430, 932)]) {

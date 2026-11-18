@@ -78,7 +78,8 @@ class DiagnosticEvent {
         .firstOrNull;
     if (time is! String ||
         screen == null ||
-        (level != null && (level is! int || level < 1 || level > 7)) ||
+        (level != null &&
+            (level is! int || level < 1 || level > Diagnostics.maxLevel)) ||
         (value['issue'] != null && issue == null)) {
       return null;
     }
@@ -96,6 +97,8 @@ class DiagnosticEvent {
 
 /// Only enum categories and bounded level numbers enter diagnostic storage.
 class Diagnostics extends ChangeNotifier {
+  static const maxLevel = 20;
+
   Diagnostics(this.store, {DateTime Function()? clock})
     : clock = clock ?? DateTime.now;
 
@@ -175,9 +178,9 @@ class Diagnostics extends ChangeNotifier {
   }
 
   void location(DiagnosticScreen value, {int? level}) {
-    assert(level == null || (level >= 1 && level <= 7));
-    if (level != null && (level < 1 || level > 7)) {
-      throw ArgumentError.value(level, 'level', 'Expected 1 to 7');
+    assert(level == null || (level >= 1 && level <= maxLevel));
+    if (level != null && (level < 1 || level > maxLevel)) {
+      throw ArgumentError.value(level, 'level', 'Expected 1 to $maxLevel');
     }
     final changed = screen != value || this.level != level || _events.isEmpty;
     screen = value;

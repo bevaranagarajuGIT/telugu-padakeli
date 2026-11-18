@@ -8,6 +8,7 @@ import 'package:telugu_padakeli/core/learning_progress.dart';
 import 'package:telugu_padakeli/models/riddle.dart';
 import 'package:telugu_padakeli/screens/riddles_screen.dart';
 import 'package:telugu_padakeli/services/learning_store.dart';
+import 'package:telugu_padakeli/services/diagnostics.dart';
 import 'package:telugu_padakeli/services/riddle_repository.dart';
 import 'package:telugu_padakeli/widgets/premium_telugu_text.dart';
 
@@ -31,10 +32,15 @@ Future<void> _mount(
   bool dark = false,
   double scale = 1,
   bool journey = false,
+  Diagnostics? diagnostics,
 }) async {
   await tester.pumpWidget(
-    ChangeNotifierProvider.value(
-      value: progress,
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: progress),
+        if (diagnostics != null)
+          ChangeNotifierProvider<Diagnostics>(create: (_) => diagnostics),
+      ],
       child: MaterialApp(
         theme: dark ? AppTheme.dark(1) : AppTheme.light(1),
         builder: (context, child) => MediaQuery(
@@ -275,6 +281,89 @@ void main() {
     },
   );
 
+  test(
+    'expanded pack has twenty nonempty sequential levels and unique questions',
+    () {
+      expect(riddles, hasLength(100));
+      expect(RiddleLevel.values, hasLength(20));
+      expect(riddles.map((riddle) => riddle.id).toSet(), hasLength(100));
+      expect(riddles.map((riddle) => riddle.question).toSet(), hasLength(100));
+      expect(riddles.map((riddle) => riddle.answer).toSet(), hasLength(100));
+      final order = riddles.map((riddle) => riddle.level.index).toList();
+      expect(order, orderedEquals([...order]..sort()));
+      for (final level in RiddleLevel.values.skip(9)) {
+        expect(
+          riddles.where((riddle) => riddle.level == level),
+          hasLength(level.index < 18 ? 6 : 7),
+        );
+      }
+    },
+  );
+
+  for (final (oldCount, completedLevels, nextLevel) in [
+    (20, 6, RiddleLevel.garden),
+    (32, 9, RiddleLevel.home),
+  ]) {
+    testWidgets(
+      'completed $oldCount-riddle pack keeps answers and unlocks ${nextLevel.name} next',
+      (tester) async {
+        final store = MemoryLearningStore();
+        final saved = LearningProgress(store, autoSave: false);
+        addTearDown(saved.dispose);
+        final original = riddles.take(oldCount).toList();
+        saved.saveRiddles({
+          'current': original.last.id,
+          'answers': {
+            for (final riddle in original)
+              riddle.id: {
+                'signature': riddle.signature,
+                'solved': true,
+                'hint': true,
+                'tried': [riddle.answer],
+              },
+          },
+        });
+        final originalAnswers = contentSignature(saved.riddles['answers']);
+        await saved.flush();
+        final restored = LearningProgress(store, autoSave: false);
+        addTearDown(restored.dispose);
+        await restored.load();
+        final diagnostics = Diagnostics(MemoryDiagnosticStore());
+        await _mount(tester, restored, journey: true, diagnostics: diagnostics);
+        final progress = RiddleProgress(
+          riddles,
+          savedMap(restored.riddles['answers']),
+        );
+        for (final level in RiddleLevel.values.take(completedLevels)) {
+          expect(progress.isLevelComplete(level), isTrue);
+        }
+        expect(progress.nextLevel, nextLevel);
+        expect(progress.isUnlocked(nextLevel), isTrue);
+        for (final level in RiddleLevel.values.skip(completedLevels + 1)) {
+          expect(progress.isUnlocked(level), isFalse);
+        }
+        await _tap(tester, 'riddle-level-${nextLevel.name}');
+        final firstNew = riddles.firstWhere(
+          (riddle) => riddle.level == nextLevel,
+        );
+        expect(
+          find.byKey(ValueKey('riddle-question-${firstNew.id}')),
+          findsOneWidget,
+        );
+        expect(diagnostics.level, completedLevels + 1);
+        await _tap(tester, 'riddle-choice-${firstNew.answer}');
+        expect(
+          contentSignature({
+            for (final riddle in original)
+              riddle.id: savedMap(restored.riddles['answers'])[riddle.id],
+          }),
+          originalAnswers,
+        );
+        expect(restored.stars, 0);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
   testWidgets(
     'replay retries, hints, review and exits preserve completed progress',
     (tester) async {
@@ -503,9 +592,11 @@ void main() {
     (tester) async {
       final saved = LearningProgress(MemoryLearningStore(), autoSave: false);
       addTearDown(saved.dispose);
-      await _mount(tester, saved);
+      final diagnostics = Diagnostics(MemoryDiagnosticStore());
+      await _mount(tester, saved, diagnostics: diagnostics);
       final positions = <int, int>{};
       for (final riddle in riddles) {
+        expect(diagnostics.level, riddle.level.index + 1);
         final options = tester
             .widgetList<OutlinedButton>(
               find.byWidgetPredicate(

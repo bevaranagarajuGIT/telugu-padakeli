@@ -82,7 +82,20 @@ class KidsLearningQuestion {
         !{'pending-human-review', 'reviewed'}.contains(reviewStatus)) {
       throw FormatException('Incomplete Kids content: $id');
     }
-    TeluguAkshara.split(answer);
+    void validateAnswerText(String value) {
+      final words =
+          type == KidsActivityType.picture || type == KidsActivityType.meaning
+          ? value.split(' ')
+          : [value];
+      if (words.any((word) => word.isEmpty)) {
+        throw FormatException('Empty word in Kids answer: $id');
+      }
+      for (final word in words) {
+        TeluguAkshara.split(word);
+      }
+    }
+
+    validateAnswerText(answer);
     if (type == KidsActivityType.builder) {
       final expected = TeluguAkshara.split(
         answer,
@@ -110,7 +123,7 @@ class KidsLearningQuestion {
         if (choice.telugu.trim().isEmpty) {
           throw FormatException('Empty Telugu choice: $id');
         }
-        TeluguAkshara.split(choice.telugu);
+        validateAnswerText(choice.telugu);
         if (choice.english != null && choice.english!.trim().isEmpty) {
           throw FormatException('Empty English choice: $id');
         }

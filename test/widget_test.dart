@@ -179,7 +179,7 @@ void main() {
     expect(next.hitTestable(), findsOneWidget);
     await tester.tap(next);
     await tester.pumpAndSettle();
-    expect(find.text('స్థాయి 2 · సులభ స్థాయి'), findsOneWidget);
+    expect(find.text('స్థాయి 2 / 7'), findsOneWidget);
     expect(find.text('సులభ స్థాయి'), findsOneWidget);
     expect(find.text('ఆ_'), findsOneWidget);
   });
@@ -281,7 +281,8 @@ void main() {
       );
       final classic = tester.getRect(find.text('Classic Padakeli'));
       expect(daily.top, greaterThan(classic.bottom));
-      expect(progress.top, greaterThanOrEqualTo(daily.bottom));
+      expect(progress.top, daily.top);
+      expect(progress.left, greaterThan(daily.right));
       expect(daily.height, lessThan(172));
     },
   );
@@ -436,8 +437,10 @@ void main() {
     await pumpReturningUserApp(tester);
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Classic Padakeli'));
-    await tester.tap(find.text('Classic Padakeli'));
-    await tester.pumpAndSettle();
+    await tester.runAsync(() async {
+      await tester.tap(find.text('Classic Padakeli'));
+      await tester.pumpAndSettle();
+    });
     expect(find.text('స్థాయిని ఎంచుకోండి'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('difficulty-Beginner')));
     await tester.pumpAndSettle();

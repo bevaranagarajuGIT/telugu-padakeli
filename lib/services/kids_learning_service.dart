@@ -1,4 +1,5 @@
 import '../models/kids_learning.dart';
+import '../data/expanded_learning_activities.dart';
 import '../models/telugu_akshara.dart';
 import 'kids_question_service.dart';
 
@@ -611,7 +612,138 @@ class KidsLearningService {
           ], difficulty: 4),
         ],
       ),
+      KidsLearningActivity(
+        id: 'letters-4',
+        type: KidsActivityType.letter,
+        categories: const {LearningCategory.early},
+        title: 'అక్షరాల కొత్త మిత్రులు',
+        englishTitle: 'New letter friends',
+        questions: [
+          letter('letter-ma', 'మ', 'మల్లె', 'Jasmine.', const [
+            KidsChoice('మల్లె', 'Jasmine'),
+            KidsChoice('తల', 'Head'),
+            KidsChoice('పలక', 'Slate'),
+          ]),
+          letter('letter-na', 'న', 'నక్క', 'Jackal.', const [
+            KidsChoice('మేక', 'Goat'),
+            KidsChoice('నక్క', 'Jackal'),
+            KidsChoice('కుక్క', 'Dog'),
+          ]),
+          letter('letter-pa', 'ప', 'పడవ', 'Boat.', const [
+            KidsChoice('చక్రం', 'Wheel'),
+            KidsChoice('బంతి', 'Ball'),
+            KidsChoice('పడవ', 'Boat'),
+          ]),
+          letter('letter-va', 'వ', 'వల', 'Net.', const [
+            KidsChoice('వల', 'Net'),
+            KidsChoice('గొడుగు', 'Umbrella'),
+            KidsChoice('దువ్వెన', 'Comb'),
+          ]),
+          letter('letter-sa', 'స', 'సబ్బు', 'Soap.', const [
+            KidsChoice('బుట్ట', 'Basket'),
+            KidsChoice('సబ్బు', 'Soap'),
+            KidsChoice('గిన్నె', 'Bowl'),
+          ]),
+        ],
+      ),
+      KidsLearningActivity(
+        id: 'builder-3',
+        type: KidsActivityType.builder,
+        categories: const {LearningCategory.explorers},
+        title: 'చుట్టూ ఉన్న పదాలు నిర్మించు',
+        englishTitle: 'Build words around us',
+        questions: [
+          for (final (id, word, prompt, english) in const [
+            (
+              'fish',
+              'చేప',
+              'నీటిలో ఈదే జీవి పేరు నిర్మించండి',
+              'Build the word for fish.',
+            ),
+            (
+              'jackal',
+              'నక్క',
+              'అడవిలో ఉండే నక్క పేరు నిర్మించండి',
+              'Build the word for jackal.',
+            ),
+            (
+              'ball',
+              'బంతి',
+              'ఆటల్లో వాడే గుండ్రని వస్తువు పేరు నిర్మించండి',
+              'Build the word for ball.',
+            ),
+            (
+              'cloud',
+              'మేఘం',
+              'ఆకాశంలో తేలుతూ వానను కురిపించేది నిర్మించండి',
+              'Build the word for cloud.',
+            ),
+            (
+              'tortoise',
+              'తాబేలు',
+              'గట్టి కవచం ఉన్న జంతువు పేరు నిర్మించండి',
+              'Build the word for tortoise.',
+            ),
+          ])
+            KidsLearningQuestion(
+              id: 'build-3-$id',
+              prompt: prompt,
+              englishPrompt: english,
+              answer: word,
+              tiles: [
+                ...TeluguAkshara.split(word).skip(1),
+                TeluguAkshara.split(word).first,
+              ],
+              explanation: '${TeluguAkshara.split(word).join(' + ')} = $word',
+              englishExplanation: english,
+              difficulty: 2,
+            ),
+        ],
+      ),
+      KidsLearningActivity(
+        id: 'meanings-3',
+        type: KidsActivityType.meaning,
+        categories: const {LearningCategory.champions},
+        title: 'ఎదురెదురు పదాల ఆట',
+        englishTitle: 'Opposite word adventure',
+        questions: [
+          meaning('meaning-below', 'పైన', 'కింద', 'above', 'below', const [
+            KidsChoice('కింద', 'Below'),
+            KidsChoice('దగ్గర', 'Near'),
+            KidsChoice('లోపల', 'Inside'),
+          ], opposite: true),
+          meaning('meaning-outside', 'లోపల', 'బయట', 'inside', 'outside', const [
+            KidsChoice('పైన', 'Above'),
+            KidsChoice('బయట', 'Outside'),
+            KidsChoice('కింద', 'Below'),
+          ], opposite: true),
+          meaning(
+            'meaning-defeat',
+            'గెలుపు',
+            'ఓటమి',
+            'victory',
+            'defeat',
+            const [
+              KidsChoice('సంతోషం', 'Happiness'),
+              KidsChoice('ఆట', 'Game'),
+              KidsChoice('ఓటమి', 'Defeat'),
+            ],
+            opposite: true,
+          ),
+          meaning('meaning-less', 'ఎక్కువ', 'తక్కువ', 'more', 'less', const [
+            KidsChoice('తక్కువ', 'Less'),
+            KidsChoice('సమానం', 'Equal'),
+            KidsChoice('మొత్తం', 'Total'),
+          ], opposite: true),
+          meaning('meaning-end', 'మొదలు', 'ముగింపు', 'beginning', 'end', const [
+            KidsChoice('మధ్య', 'Middle'),
+            KidsChoice('ముగింపు', 'End'),
+            KidsChoice('కొనసాగింపు', 'Continuation'),
+          ], opposite: true),
+        ],
+      ),
     ];
+    activities.addAll(expandedLearningActivities);
     validate(activities);
     return List.unmodifiable(activities);
   }

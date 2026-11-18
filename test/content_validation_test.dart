@@ -12,6 +12,7 @@ import 'package:telugu_padakeli/screens/padakeli_screen.dart';
 import 'package:telugu_padakeli/services/kids_question_service.dart';
 import 'package:telugu_padakeli/services/kids_learning_service.dart';
 import 'package:telugu_padakeli/services/local_puzzle_repository.dart';
+import 'package:telugu_padakeli/services/riddle_repository.dart';
 import 'package:telugu_padakeli/models/telugu_akshara.dart';
 import 'package:telugu_padakeli/models/kids_question.dart';
 
@@ -84,6 +85,19 @@ void main() {
           }
         }
       }
+      for (final riddle in await const LocalRiddleRepository().load()) {
+        final row = indexed['riddle:${riddle.id}']!;
+        expect(row['category'], riddle.level.name);
+        expect(row['prompt'], riddle.question);
+        expect(row['answer'], riddle.answer);
+        expect(row['hint'], riddle.hint);
+        expect(row['explanation'], riddle.explanation);
+        expect(
+          row['distractors'],
+          riddle.choices.where((choice) => choice != riddle.answer).toList(),
+        );
+        expected++;
+      }
       expect(rows.length, expected);
       expect(indexed.length, expected);
       expect(
@@ -136,16 +150,17 @@ void main() {
     'all bundled puzzles validate and every answer matches its cells',
     () async {
       final puzzles = await const LocalPuzzleRepository().getPuzzles();
-      expect(puzzles.map((p) => p.id), List.generate(12, (i) => i + 1));
-      expect(puzzles.where((p) => p.level == 'beginner'), hasLength(3));
-      expect(puzzles.where((p) => p.level == 'easy'), hasLength(3));
+      expect(puzzles.map((p) => p.id), List.generate(50, (i) => i + 1));
+      for (final level in ['beginner', 'easy', 'medium', 'hard', 'expert']) {
+        expect(puzzles.where((p) => p.level == level), hasLength(10));
+      }
       for (final (level, count) in [
         ('medium', 5),
         ('hard', 7),
         ('expert', 10),
       ]) {
         final boards = puzzles.where((p) => p.level == level);
-        expect(boards, hasLength(2));
+        expect(boards, hasLength(10));
         for (final board in boards) {
           expect(board.acrossClues.length + board.downClues.length, count);
         }
@@ -197,11 +212,14 @@ void main() {
         expect(width, lessThanOrEqualTo(6), reason: reason);
         expect(height, lessThanOrEqualTo(6), reason: reason);
         expect(playable / area, greaterThanOrEqualTo(0.55), reason: reason);
-        expect(
-          area - playable,
-          lessThanOrEqualTo((previousBlockedCells[puzzle.id]! * 0.6).floor()),
-          reason: 'Board ${puzzle.id} needs at least 40% fewer blocked cells',
-        );
+        final previous = previousBlockedCells[puzzle.id];
+        if (previous != null) {
+          expect(
+            area - playable,
+            lessThanOrEqualTo((previous * 0.6).floor()),
+            reason: 'Board ${puzzle.id} needs at least 40% fewer blocked cells',
+          );
+        }
         var largestGap = 0;
         for (var top = occupiedRows.first; top <= occupiedRows.last; top++) {
           final counts = List.filled(width, 0);
@@ -243,7 +261,7 @@ void main() {
           .expand((p) => [...p.acrossClues, ...p.downClues])
           .map((clue) => TeluguAkshara.normalize(clue.answer))
           .toList();
-      expect(answers, hasLength(57));
+      expect(answers, hasLength(275));
       expect(answers.toSet(), hasLength(answers.length));
     },
   );

@@ -20,7 +20,7 @@ Local diagnostics are separate from learning progress. Settings provides an
 on/off switch (off also clears history), Clear diagnostic history, and visible
 storage-failure/retry handling. History is capped at 100 events and seven days,
 pruned on startup, changes, export and expiry while the app runs. It records
-only UTC timestamps, allowlisted screen names, bounded level numbers when
+only UTC timestamps, allowlisted screen names, bounded level numbers (1-20) when
 available, and fixed Flutter/platform/storage error categories. Repeated
 answers do not create an event unless the screen/level changes. Raw errors,
 stacks, saved answers, user identifiers, screenshots and device identifiers are
@@ -35,8 +35,10 @@ Diagnostic failures never block gameplay or change learning/recovery data.
   resume preserves the current screen. Existing illustration credits remain.
 - Home prioritizes Classic, Kids and a real saved Resume action. Daily Puzzle
   and My Progress are compact secondary destinations, not placeholders.
-- Classic has a validated local pack across all five difficulties. Complete
-  Telugu aksharas occupy cells; crossings, numbering, coverage and connectivity
+- Classic has 50 local puzzles with 275 clues across all five difficulties:
+  ten each of Beginner, Easy, Medium, Hard and Expert. New boards are appended;
+  all previously available boards and saved identities are unchanged.
+  Complete Telugu aksharas occupy cells; crossings, numbering, coverage and connectivity
   are checked before play. Across/Down clue selection, a letter palette, selected
   word editing, authored hints, one-cell reveals and confirmed reset remain.
   Selecting a clue or switching Across/Down prefers an unfilled/incorrect cell;
@@ -60,6 +62,14 @@ Diagnostic failures never block gameplay or change learning/recovery data.
   level buttons, with a filled teal Home action and gold success badge.
   The dialog scrolls at enlarged text sizes. Restart confirmation keeps its
   warning visible with full-width Cancel and violet Restart controls.
+  Daily completion uses the same padded success layout, with separate Telugu
+  and English headings, a saved-date label, and a primary Next level action
+  above Practice again and Home. Next level opens the board immediately after
+  the completed puzzle (8/10 goes to 9/10), advancing difficulty after 10/10.
+  It continues in Classic rather than resuming an unrelated board; previous
+  Classic saves are checkpointed before switching. The final board has no
+  Next level action. Daily stays one puzzle per date, and continuing or replaying
+  never awards another daily star for that date.
   The filled muted-blue Review answers button opens a read-only list of all
   numbered Across/Down clues and their answers after Classic completion, including restored completed
   puzzles. Done or Back returns to completion choices without changing saved
@@ -77,9 +87,18 @@ Diagnostic failures never block gameplay or change learning/recovery data.
   board/clue/input sections; wide windows place the board beside the controls.
   Enlarged text returns to the stacked layout. The letter palette has a separate
   direction label and spaced, rounded-square targets; all clues remain available.
-- Home's Riddles, Daily Puzzle and My Progress shortcuts use distinct teal,
-  gold and blue surfaces with bilingual labels and full-row tap targets.
-- Home also opens పొడుపు కథలు / Telugu Riddles, an offline collection with twenty
+- Home follows the approved Refined layout with separate, transparent artwork
+  extracted from the approved concept: a perched welcome parrot, crossword and
+  picture-card tiles, and a parrot with a question bubble for Riddles. Labels
+  remain real, wrapping Flutter text. The rounded blue Resume action is shown
+  only for saved play; violet Classic and orange Learn tiles have equal heights.
+  White labels use darker gradient backing where needed for readable contrast.
+  Daily Puzzle and My Progress sit side by side on pale, theme-aware surfaces;
+  narrow screens and enlarged text stack the actions without clipping.
+  Bilingual labels, native bottom navigation and saved progress are preserved.
+  Native navigation uses blue selection and an underline without changing tab
+  behavior. Artwork provenance is in assets/artwork/home/ATTRIBUTION.txt.
+- Home also opens పొడుపు కథలు / Telugu Riddles, an offline collection with 100
   **original draft riddles awaiting Telugu review**, not a verified traditional
   collection. Each screen has four shuffled choices with balanced answer
   positions, an optional hint, retry feedback, and an explanation after success.
@@ -90,12 +109,19 @@ Diagnostic failures never block gameplay or change learning/recovery data.
   Completion highlights answer review above the final riddle. Review uses
   numbered question/answer/explanation panels and keeps Done visible while
   scrolling; enlarged text wraps without hiding that exit action.
-  The drafts form a sequential six-level adventure: మొదటి మెరుపు / First
+  The drafts form a sequential twenty-level adventure. The original nine levels
+  remain: మొదటి మెరుపు / First
   spark (3), ఆలోచనల ఆట / Brainwave trail (3), పొడుపుల వీరుడు / Riddle hero
   (2), ప్రకృతి పలుకులు / Nature whispers (4), చిట్టి రహస్యాలు / Little mysteries
-  (4), and పొడుపుల విజేత / Riddle champion (4). The twelve new riddles are appended;
-  the original eight retain their IDs, content signatures, order and level groups.
-  Completed original levels stay complete, with Nature whispers unlocked next.
+  (4), పొడుపుల విజేత / Riddle champion (4), తోటలో వింతలు / Garden discoveries
+  (4), రోజుకో అద్భుతం / Everyday wonders (4), and ఆకాశ యాత్ర / Sky explorer (4).
+  Eleven appended levels explore home, learning, cooking, wildlife, travel,
+  celebrations, science, technology, language, reasoning and new horizons.
+  The first nine new levels have six riddles each; the last two have seven each.
+  All previous 32 riddles retain their IDs, signatures, order and level groups.
+  Completed original levels stay complete, with Around the home unlocked after
+  the previously complete nine-level journey. Older six-level saves still open
+  Garden discoveries next.
   Completing a level unlocks the next, brings its encouraging milestone
   into view, and offers explicit Next level. Home opens the journey; Resume returns to the saved
   riddle, and Back returns to the journey. Unlocks derive from valid saved answers,
@@ -115,8 +141,25 @@ Diagnostic failures never block gameplay or change learning/recovery data.
   and temporary replays never increase these totals.
 - Kids offers three freely selectable Telugu-first learning paths: చిన్నారులు,
   బాల మిత్రులు and పద వీరులు. Picture, letter, missing-akshara, word-builder and
-  meaning games retain retries and explicit continuation. Original practice is
-  also available, with its original questions and automatic question progression.
+  meaning games retain retries and explicit continuation. There are 179 question
+  entries across 30 distinct activities. Fifteen appended rounds add picture
+  discovery, letter recognition, practical word building, missing aksharas,
+  school situations, science observations, contextual meanings, nature care,
+  Telugu arts, digital choices and everyday reasoning. Suggested Early rounds
+  stay at five questions; new Explorer rounds have six and Champion rounds seven.
+  Longer Telugu phrases are supported in picture/context choices without
+  weakening akshara validation for word builders or missing-letter games.
+  Existing activities, signatures and completed rounds are unchanged.
+  These counts include vocabulary reused across modes, not 179 unique words.
+  Original practice retains its existing seven levels and 54 questions, with
+  automatic question progression. The current level has a distinct numbered
+  badge and difficulty heading, separate from question progress and score.
+  Spacing and artwork expand when the viewport has room, keeping the question,
+  hint, choices and Check answer together on standard portrait phones without
+  shrinking Telugu text. Small windows and enlarged text can still scroll;
+  answer targets remain at least 48 logical pixels.
+  Checking an answer automatically reveals the full feedback panel, including
+  retry and missing-answer prompts, and respects reduced-motion settings.
   Its completed level stays visible until Next level is tapped; this checkpoint
   survives reopening. Question/level changes return the scroll position to the top.
   Choice-based Kids games and original practice use balanced, shuffled answer
@@ -129,8 +172,13 @@ Diagnostic failures never block gameplay or change learning/recovery data.
   stacks for enlarged text. The redundant Skip animation control is removed;
   Next, Replay and Return remain usable without waiting for the celebration.
   These suggested paths are not verified age assessments.
+  All paths remain freely selectable: age suggestions are not ability restrictions
+  and adult learners can choose any starting point.
 - A correct answer exposes Next/Finish in a separate adaptive SafeArea footer.
-  Scrolling answers/explanations never sits underneath it. Completion resets
+  Correct/retry feedback automatically scrolls into view above that footer,
+  respecting reduced motion. Oversized feedback starts at its heading and remains
+  scrollable without shrinking text. Scrolling answers/explanations never sits
+  underneath the footer. Completion resets
   scroll position, focuses and announces its heading, keeps Hanuman visible,
   pins the main continuation, and leaves Replay/Return in the scrollable result.
 - English Helper adds translations beneath Telugu. Navigation/action controls
@@ -141,6 +189,10 @@ Diagnostic failures never block gameplay or change learning/recovery data.
   Hanuman celebration are presentation only. Inputs are immediately usable;
   animation stops when covered, hidden or backgrounded. Restored results are
   static, with no stale reward flight or sound.
+  New correct answers in Learn and Practice also pop a short, one-shot spray of
+  stars above the feedback card. Stars do not cover the explanation or intercept
+  touches, finish within 900 ms, and are disabled by reduced motion. Incorrect
+  answers and restored results do not trigger them; scoring and rewards are unchanged.
 
 ## Saved data and recovery
 
@@ -247,8 +299,8 @@ qualifies the actual day of learning, not an unplayed date.
 ## Content, artwork and pronunciation pilot
 
 `assets/data/content_review.json` is the editable review inventory for every
-Kids, original-practice and Classic clue. It includes stable ID, category/
-difficulty, prompt, answer, distractors, explanation, English, picture/audio
+Kids, original-practice, Classic and Riddle question. It includes stable ID,
+category/difficulty, prompt, answer, distractors, explanation, English, picture/audio
 references, exact recording script, status and reviewer notes. Repeated vocabulary
 is grouped explicitly; shared practice is not new unique-word growth.
 
@@ -262,7 +314,8 @@ Reviewer notes survive by ID. Approval status survives only if the exact content
 is unchanged. Automated structural/akshara/answer checks are **not** Telugu
 educator approval. All current entries remain `pending-human-review`; a fluent
 Telugu educator must review natural wording, translations, plausible distractors,
-regional inclusivity and difficulty. No filler questions were added.
+regional inclusivity and difficulty. The inventory contains 608 question/clue
+entries across all four modes, including intentionally shared vocabulary.
 
 The user-approved original nine-object illustration sheet supplies consistently
 padded PNG vocabulary assets; the standalone parrot replaces the mixed-scene
@@ -275,6 +328,12 @@ is baked into images. See `assets/artwork/kids/ATTRIBUTION.txt` and
 The existing Hanuman remains original Flutter vector art, not finished 3D art;
 its style is not identical to the new storybook vocabulary set. Final human
 art/cultural/rights review remains necessary.
+The expanded picture rounds reuse existing cat, fish, elephant, pencil, book,
+banana and lotus illustrations for naming, observing and use-based questions;
+these are not newly supplied illustrations. No new themed illustrations for the
+school, travel, science, technology or festival rounds have been supplied.
+Those rounds use text or existing word/akshara controls rather than placeholder
+art; dedicated illustrations remain optional follow-up work.
 
 **No approved recordings have been supplied yet.** The pronunciation pilot now
 uses the owner-approved `audioplayers` dependency for bundled WAV playback.

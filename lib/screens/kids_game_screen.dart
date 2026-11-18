@@ -32,6 +32,7 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
   final _levels = const KidsQuestionService().getLevels();
   final _scrollController = ScrollController();
   final _headingFocus = FocusNode();
+  final _feedbackAnchor = GlobalKey();
   Timer? _advanceTimer;
   int _answerOrderSeed = newAnswerOrderSeed();
   int _levelIndex = 0;
@@ -196,6 +197,7 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
         _message = 'ఒక అక్షరం ఎంచుకోండి.';
         _wasCorrect = null;
       });
+      _revealFeedback();
       return;
     }
 
@@ -225,10 +227,31 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
     });
     _play(isCorrect ? EngagementCue.correct : EngagementCue.retry);
     _save();
+    _revealFeedback();
 
     if (isCorrect) {
       _advanceTimer = Timer(const Duration(milliseconds: 1100), _advance);
     }
+  }
+
+  void _revealFeedback() {
+    final revision = _feedbackRevision;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || revision != _feedbackRevision) return;
+      final feedbackContext = _feedbackAnchor.currentContext;
+      if (feedbackContext == null) return;
+      unawaited(
+        Scrollable.ensureVisible(
+          feedbackContext,
+          alignment: 1,
+          alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+          duration: MediaQuery.disableAnimationsOf(context)
+              ? Duration.zero
+              : const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+        ),
+      );
+    });
   }
 
   void _advance() {
@@ -367,98 +390,111 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
           ),
         ),
       ),
-      body: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color.lerp(AppColors.purple, scheme.surface, 0.82)!,
-              scheme.surface,
-            ],
-          ),
-        ),
-        child: SafeArea(
-          top: false,
-          child: SingleChildScrollView(
-            controller: _scrollController,
-            key: ValueKey(
-              _isComplete ? 'kids-completion-scroll' : 'kids-scroll',
-            ),
-            padding: const EdgeInsets.all(16),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 720),
-                child: _isLevelComplete
-                    ? _levelCompletion()
-                    : _isComplete
-                    ? Focus(
-                        focusNode: _headingFocus,
-                        includeSemantics: false,
-                        child: _completion(),
-                      )
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Focus(
-                            focusNode: _headingFocus,
-                            includeSemantics: false,
-                            child: _status(),
-                          ),
-                          const SizedBox(height: 16),
-                          LayoutBuilder(
-                            builder: (context, constraints) {
-                              final enlarged =
-                                  MediaQuery.textScalerOf(context).scale(
-                                    theme.textTheme.bodyLarge?.fontSize ?? 16,
-                                  ) >
-                                  22;
-                              if (constraints.maxWidth >= 640 && !enlarged) {
-                                return Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        children: [
-                                          _question(),
-                                          const SizedBox(height: 12),
-                                          _hint(),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(width: 20),
-                                    Expanded(child: _answers()),
-                                  ],
-                                );
-                              }
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  _question(),
-                                  const SizedBox(height: 12),
-                                  _hint(),
-                                  const SizedBox(height: 16),
-                                  _answers(),
-                                ],
-                              );
-                            },
-                          ),
-                        ],
-                      ),
+      body: LayoutBuilder(
+        builder: (context, viewport) {
+          final relaxed = viewport.maxHeight >= 700;
+          return DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color.lerp(AppColors.purple, scheme.surface, 0.82)!,
+                  scheme.surface,
+                ],
               ),
             ),
-          ),
-        ),
+            child: SafeArea(
+              top: false,
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                key: ValueKey(
+                  _isComplete ? 'kids-completion-scroll' : 'kids-scroll',
+                ),
+                padding: const EdgeInsets.all(16),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 720),
+                    child: _isLevelComplete
+                        ? _levelCompletion()
+                        : _isComplete
+                        ? Focus(
+                            focusNode: _headingFocus,
+                            includeSemantics: false,
+                            child: _completion(),
+                          )
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Focus(
+                                focusNode: _headingFocus,
+                                includeSemantics: false,
+                                child: _status(relaxed: relaxed),
+                              ),
+                              SizedBox(height: relaxed ? 20 : 12),
+                              LayoutBuilder(
+                                builder: (context, constraints) {
+                                  final enlarged =
+                                      MediaQuery.textScalerOf(context).scale(
+                                        theme.textTheme.bodyLarge?.fontSize ??
+                                            16,
+                                      ) >
+                                      22;
+                                  if (constraints.maxWidth >= 640 &&
+                                      !enlarged) {
+                                    return Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Expanded(
+                                          child: Column(
+                                            children: [
+                                              _question(relaxed: relaxed),
+                                              SizedBox(
+                                                height: relaxed ? 16 : 8,
+                                              ),
+                                              _hint(relaxed: relaxed),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(width: 20),
+                                        Expanded(
+                                          child: _answers(relaxed: relaxed),
+                                        ),
+                                      ],
+                                    );
+                                  }
+                                  return Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      _question(relaxed: relaxed),
+                                      SizedBox(height: relaxed ? 16 : 8),
+                                      _hint(relaxed: relaxed),
+                                      SizedBox(height: relaxed ? 20 : 12),
+                                      _answers(relaxed: relaxed),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
 
-  Widget _status() {
+  Widget _status({required bool relaxed}) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     return Container(
       key: ValueKey('kids-level-status-$_levelIndex'),
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(relaxed ? 16 : 12),
       decoration: BoxDecoration(
         color: scheme.surface,
         borderRadius: BorderRadius.circular(24),
@@ -467,30 +503,55 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Semantics(
+            header: true,
+            child: Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                Container(
+                  key: const ValueKey('kids-level-number'),
+                  constraints: const BoxConstraints(minHeight: 56),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: scheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: PremiumTeluguText(
+                    'స్థాయి ${_levelIndex + 1} / ${_levels.length}',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: scheme.onPrimaryContainer,
+                    ),
+                  ),
+                ),
+                KidsLearningText(
+                  _currentLevel.title,
+                  english: _currentLevel.name,
+                  key: const ValueKey('kids-level'),
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
           Wrap(
             alignment: WrapAlignment.spaceBetween,
             crossAxisAlignment: WrapCrossAlignment.center,
             spacing: 12,
             runSpacing: 8,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  KidsLearningText(
-                    'స్థాయి ${_levelIndex + 1} · ${_currentLevel.title}',
-                    english: _currentLevel.name,
-                    key: const ValueKey('kids-level'),
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  PremiumTeluguText(
-                    _currentLevel.title,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
+              PremiumTeluguText(
+                'ప్రశ్న ${_index + 1} / ${_currentLevel.questions.length}',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
               ),
               Semantics(
                 label: 'స్కోరు: $_score',
@@ -498,8 +559,8 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
                   child: Container(
                     key: const ValueKey('kids-score'),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
+                      horizontal: 8,
+                      vertical: 4,
                     ),
                     decoration: BoxDecoration(
                       color: Color.lerp(AppColors.gold, scheme.surface, 0.78),
@@ -528,13 +589,6 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          PremiumTeluguText(
-            'ప్రశ్న ${_index + 1} / ${_currentLevel.questions.length}',
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: scheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 6),
           Semantics(
             label: 'ప్రశ్న పురోగతి',
             value: '${_index + 1} of ${_currentLevel.questions.length}',
@@ -548,7 +602,7 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
                   Expanded(
                     child: Container(
                       key: ValueKey('kids-question-progress-$index'),
-                      height: 6,
+                      height: 8,
                       margin: EdgeInsets.only(
                         right: index == _currentLevel.questions.length - 1
                             ? 0
@@ -570,12 +624,17 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
     );
   }
 
-  Widget _question() {
+  Widget _question({required bool relaxed}) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final enlarged =
+        MediaQuery.textScalerOf(
+          context,
+        ).scale(theme.textTheme.bodyLarge?.fontSize ?? 16) >
+        22;
     return Container(
       key: const ValueKey('kids-question-panel'),
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(relaxed ? 20 : 12),
       decoration: BoxDecoration(
         color: scheme.surface,
         borderRadius: BorderRadius.circular(28),
@@ -588,24 +647,28 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
           ),
         ],
       ),
-      child: Column(
+      child: Row(
         children: [
-          Image.asset(
-            HomeArtwork.learn,
-            width: 104,
-            height: 104,
-            excludeFromSemantics: true,
-            cacheWidth: 312,
-          ),
-          const SizedBox(height: 8),
-          Semantics(
-            header: true,
-            child: PremiumTeluguText(
-              _currentQuestion.prompt,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.displaySmall?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: scheme.onSurface,
+          if (!enlarged) ...[
+            Image.asset(
+              HomeArtwork.learn,
+              width: relaxed ? 64 : 56,
+              height: relaxed ? 64 : 56,
+              excludeFromSemantics: true,
+              cacheWidth: 312,
+            ),
+            const SizedBox(width: 12),
+          ],
+          Expanded(
+            child: Semantics(
+              header: true,
+              child: PremiumTeluguText(
+                _currentQuestion.prompt,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.displaySmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: scheme.onSurface,
+                ),
               ),
             ),
           ),
@@ -614,7 +677,7 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
     );
   }
 
-  Widget _answers() {
+  Widget _answers({required bool relaxed}) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final reduced = MediaQuery.disableAnimationsOf(context);
@@ -629,14 +692,14 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
             fontWeight: FontWeight.w700,
           ),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: relaxed ? 12 : 8),
         LayoutBuilder(
           builder: (context, constraints) {
-            const gap = 10.0;
+            final gap = relaxed ? 10.0 : 8.0;
             final fontSize = MediaQuery.textScalerOf(
               context,
             ).scale(theme.textTheme.headlineSmall?.fontSize ?? 24);
-            final minimum = fontSize * 2 + 24;
+            final minimum = fontSize * 2 + 16;
             final columns = constraints.maxWidth >= minimum * 4 + gap * 3
                 ? 4
                 : constraints.maxWidth >= minimum * 2 + gap
@@ -663,7 +726,7 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
                               },
                         style:
                             OutlinedButton.styleFrom(
-                              minimumSize: const Size(0, 64),
+                              minimumSize: Size(48, relaxed ? 64 : 56),
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 8,
                                 vertical: 10,
@@ -722,14 +785,18 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
             );
           },
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: relaxed ? 20 : 12),
         TapFeedback(
           enabled: !_isAdvancing,
           child: FilledButton.icon(
+            key: const ValueKey('kids-check-answer'),
             onPressed: _isAdvancing ? null : _check,
             style: FilledButton.styleFrom(
               minimumSize: const Size(0, 56),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              padding: EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: relaxed ? 12 : 8,
+              ),
               backgroundColor: AppColors.purple,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
@@ -744,7 +811,17 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
             ),
           ),
         ),
-        if (_message != null) ...[const SizedBox(height: 12), _feedback()],
+        if (_message != null) ...[
+          const SizedBox(height: 12),
+          KeyedSubtree(
+            key: _feedbackAnchor,
+            child: AnswerStarBurst(
+              key: ValueKey('practice-stars-$_feedbackRevision'),
+              animate: _wasCorrect == true,
+              child: _feedback(),
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -812,7 +889,7 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
     );
   }
 
-  Widget _hint() {
+  Widget _hint({required bool relaxed}) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final enlarged =
@@ -821,6 +898,7 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
         ).scale(theme.textTheme.bodyLarge?.fontSize ?? 16) >
         22;
     return ClipRRect(
+      key: const ValueKey('kids-question-hint'),
       borderRadius: BorderRadius.circular(24),
       child: Stack(
         children: [
@@ -837,12 +915,12 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
             child: ColoredBox(color: scheme.surface.withValues(alpha: 0.88)),
           ),
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(relaxed ? 12 : 8),
             child: Row(
               children: [
                 Expanded(
                   child: Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: EdgeInsets.all(relaxed ? 12 : 8),
                     decoration: BoxDecoration(
                       color: Color.lerp(AppColors.gold, scheme.surface, 0.78),
                       borderRadius: BorderRadius.circular(18),
@@ -868,13 +946,13 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
                   ),
                 ),
                 if (!enlarged) ...[
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
                   Image.asset(
                     _wasCorrect == true
                         ? HomeArtwork.celebration
                         : HomeArtwork.welcome,
-                    width: 80,
-                    height: 96,
+                    width: relaxed ? 56 : 48,
+                    height: relaxed ? 64 : 56,
                     excludeFromSemantics: true,
                     cacheWidth: 240,
                   ),

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -38,6 +40,7 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
   bool _freshCompletion = false;
   bool _leavingCompletion = false;
   final _scroll = ScrollController(keepScrollOffset: false);
+  final _feedbackAnchor = GlobalKey();
   final _completionFocus = FocusNode(debugLabel: 'Activity completion heading');
   late int _previousIndex;
 
@@ -53,6 +56,9 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
     _previousAnswer = session.answerState;
     _previousComplete = session.complete;
     session.addListener(_sessionChanged);
+    if (!session.complete && session.answerState != KidsAnswerState.ready) {
+      _revealFeedback();
+    }
   }
 
   @override
@@ -76,6 +82,9 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
     _leavingCompletion = false;
     _feedbackRevision++;
     session.addListener(_sessionChanged);
+    if (!session.complete && session.answerState != KidsAnswerState.ready) {
+      _revealFeedback();
+    }
   }
 
   void _play(EngagementCue cue) => _audio?.play(
@@ -125,6 +134,7 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
               ? EngagementCue.correct
               : EngagementCue.retry,
         );
+        _revealFeedback();
       }
     }
     _previousAnswer = session.answerState;
@@ -139,6 +149,29 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
     _scroll.dispose();
     _completionFocus.dispose();
     super.dispose();
+  }
+
+  void _revealFeedback() {
+    final revision = _feedbackRevision;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || revision != _feedbackRevision || session.complete) return;
+      final feedbackContext = _feedbackAnchor.currentContext;
+      if (feedbackContext == null || !_scroll.hasClients) return;
+      final fits =
+          feedbackContext.size!.height <= _scroll.position.viewportDimension;
+      unawaited(
+        Scrollable.ensureVisible(
+          feedbackContext,
+          alignment: fits ? 1 : 0,
+          alignmentPolicy: fits
+              ? ScrollPositionAlignmentPolicy.keepVisibleAtEnd
+              : ScrollPositionAlignmentPolicy.keepVisibleAtStart,
+          duration: MediaQuery.disableAnimationsOf(context)
+              ? Duration.zero
+              : const Duration(milliseconds: 200),
+        ),
+      );
+    });
   }
 
   @override
@@ -246,7 +279,16 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
                               const SizedBox(height: 12),
                             ],
                           if (session.answerState != KidsAnswerState.ready) ...[
-                            _feedback(context),
+                            AnswerStarBurst(
+                              key: ValueKey(
+                                'learning-stars-$_feedbackRevision',
+                              ),
+                              animate:
+                                  _freshFeedback &&
+                                  session.answerState ==
+                                      KidsAnswerState.correct,
+                              child: _feedback(context),
+                            ),
                             const SizedBox(height: 16),
                           ],
                           const SizedBox(height: 16),
@@ -742,6 +784,7 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
               : AppColors.successBackground
         : scheme.errorContainer;
     return Semantics(
+      key: _feedbackAnchor,
       liveRegion: true,
       child: Container(
         key: ValueKey(correct ? 'learning-correct' : 'learning-retry'),
