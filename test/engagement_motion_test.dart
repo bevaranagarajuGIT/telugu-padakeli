@@ -147,6 +147,7 @@ void main() {
       await tester.pumpWidget(
         _host(
           const AnswerCharacterCelebration(
+            answerIndex: 1,
             child: SizedBox(width: 300, height: 100),
           ),
           reduced: true,
@@ -160,6 +161,7 @@ void main() {
       await tester.pumpWidget(
         _host(
           const AnswerCharacterCelebration(
+            answerIndex: 1,
             child: SizedBox(width: 300, height: 100),
           ),
         ),
@@ -173,6 +175,7 @@ void main() {
         _host(
           const AnswerCharacterCelebration(
             animate: false,
+            answerIndex: 1,
             child: SizedBox(width: 300, height: 100),
           ),
         ),
@@ -217,25 +220,38 @@ void main() {
     expect(tester.binding.transientCallbackCount, 0);
   });
 
-  testWidgets('a newly keyed answer starts a new wave, not an old frame', (
+  testWidgets('new answers alternate artwork without replaying on rebuild', (
     tester,
   ) async {
-    Widget answer(int revision) => _host(
+    Widget answer(int index) => _host(
       AnswerCharacterCelebration(
-        key: ValueKey(revision),
+        key: ValueKey(index),
+        answerIndex: index,
         child: const Text('Correct'),
       ),
     );
-    await tester.pumpWidget(answer(1));
-    await tester.pump(const Duration(milliseconds: 950));
-    expect(
-      find.byKey(const ValueKey('answer-celebration-popup')),
-      findsNothing,
-    );
-    await tester.pumpWidget(answer(2));
-    expect(_characterFrame(tester), 0);
-    await tester.pump(const Duration(milliseconds: 250));
-    expect(_characterFrame(tester), 5);
+    for (var index = 0; index < 3; index++) {
+      await tester.pumpWidget(answer(index));
+      final expected = AssetImage(
+        'assets/artwork/kids/hanuman-answer-${index.isEven ? 'wave' : 'clap'}.png',
+      );
+      expect(
+        tester
+            .widget<Image>(find.byKey(const ValueKey('answer-hanuman-artwork')))
+            .image,
+        expected,
+      );
+      expect(_characterFrame(tester), 0);
+      await tester.pump(const Duration(milliseconds: 250));
+      expect(_characterFrame(tester), 5);
+      await tester.pumpWidget(answer(index));
+      expect(_characterFrame(tester), 5);
+      await tester.pump(const Duration(milliseconds: 700));
+      expect(
+        find.byKey(const ValueKey('answer-celebration-popup')),
+        findsNothing,
+      );
+    }
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   });

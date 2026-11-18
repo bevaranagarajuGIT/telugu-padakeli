@@ -40,9 +40,27 @@ then disappears. Reduced motion skips the decorative popup; restored and
 incorrect answers have no character. The regular feedback stays available.
 No video player, remote requests, sound, new rewards or timing changes are added.
 
-This reference-derived asset is not asserted to be original or commercially
+hanuman-answer-clap.png was approved for app integration on 2026-11-18 after
+the user reviewed its isolated Android popup preview. A separate Dreamina
+Seedance 1.0 Mini generation animated the same supplied reference at 960x960
+for five seconds. The source clip is retained as a session artifact.
+The local enhancement uses denoising, contrast 1.045, brightness 0.003,
+saturation 1.25, gamma 1.015, a 1440x1440 Lanczos upscale and gentle sharpening;
+this is an enhanced upscale, not newly generated high-resolution detail.
+The 0.95-1.85 second excerpt keeps one quick clap and excludes the long held
+namaste ending. It is sampled at 20 fps into 18 full 384x384 square frames,
+tiled 6 by 3 (2304x1152 RGBA PNG, 1,329,721 bytes). The same border-connected
+neutral-white transparency treatment preserves colored artwork, enclosed white
+details and the corner logo. Nothing is tightly cropped or rebranded.
+Learn and Practice alternate the wave and clap by question position, with
+Practice continuing across levels. Retries and rebuilds do not change the
+selected reaction. Both atlases are preloaded when motion is enabled.
+The existing 900 ms popup, accessibility gates, gameplay timing and rewards
+remain unchanged. No additional Dreamina generation was needed for integration.
+
+These reference-derived assets are not asserted to be original or commercially
 cleared. Reference ownership, logo/trademark rights and applicable Dreamina
-generation/distribution terms remain unverified. It is included for the user's
+generation/distribution terms remain unverified. They are included for the user's
 local app evaluation; obtain rights clearance or an approved licensed
 replacement before public/commercial distribution.
 

@@ -65,7 +65,9 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!MediaQuery.disableAnimationsOf(context)) {
-      unawaited(precacheImage(AnswerCharacterCelebration.artwork, context));
+      for (final artwork in AnswerCharacterCelebration.artworks) {
+        unawaited(precacheImage(artwork, context));
+      }
     }
     _audio = context.read<EngagementAudioManager?>();
     _pronunciation = context.read<PronunciationAudioManager?>();
@@ -286,6 +288,7 @@ class _KidsActivityScreenState extends State<KidsActivityScreen> {
                               key: ValueKey(
                                 'learning-celebration-$_feedbackRevision',
                               ),
+                              answerIndex: session.index,
                               animate:
                                   _freshFeedback &&
                                   session.answerState ==

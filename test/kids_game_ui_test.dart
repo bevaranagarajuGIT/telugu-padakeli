@@ -33,6 +33,73 @@ void main() {
     }
   });
 
+  testWidgets('Practice alternates wave and clap across the level boundary', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(411, 914);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final settings = AppSettingsController();
+    addTearDown(settings.dispose);
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: settings,
+        child: MaterialApp(
+          theme: AppTheme.light(1),
+          home: const KidsGameScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final levels = const KidsQuestionService().getLevels();
+    var answerIndex = 0;
+    for (var levelIndex = 0; levelIndex < 2; levelIndex++) {
+      final questions = levelIndex == 0
+          ? levels[levelIndex].questions
+          : levels[levelIndex].questions.take(1);
+      for (final question in questions) {
+        final correct = find.byKey(ValueKey('kids-answer-${question.answer}'));
+        await tester.ensureVisible(correct);
+        await tester.pumpAndSettle();
+        await tester.tap(correct);
+        await tester.pump();
+        final check = find.byKey(const ValueKey('kids-check-answer'));
+        await tester.ensureVisible(check);
+        await tester.pumpAndSettle();
+        await tester.tap(check);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
+        expect(
+          tester
+              .widget<Image>(
+                find.byKey(const ValueKey('answer-hanuman-artwork')),
+              )
+              .image,
+          AssetImage(
+            'assets/artwork/kids/hanuman-answer-${answerIndex.isEven ? 'wave' : 'clap'}.png',
+          ),
+        );
+        expect(tester.widget<FilledButton>(check).onPressed, isNull);
+        await tester.pump(const Duration(milliseconds: 650));
+        expect(
+          find.byKey(const ValueKey('answer-hanuman-artwork')),
+          findsNothing,
+        );
+        expect(find.text(question.prompt), findsOneWidget);
+        await tester.pump(const Duration(milliseconds: 200));
+        await tester.pumpAndSettle();
+        answerIndex++;
+      }
+      if (levelIndex == 0) {
+        await tester.tap(find.byKey(const ValueKey('legacy-next-level')));
+        await tester.pumpAndSettle();
+      }
+    }
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   for (final (size, appScale, systemScale) in [
     (const Size(320, 568), 1.0, 1.0),
     (const Size(390, 844), 1.0, 1.0),

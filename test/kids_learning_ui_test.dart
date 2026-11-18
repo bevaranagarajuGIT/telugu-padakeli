@@ -470,7 +470,7 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  testWidgets('Next works during the correct-answer character wave', (
+  testWidgets('Learn alternates wave and clap after retries with Next usable', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(411, 914);
@@ -492,25 +492,108 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    session.selectChoice(session.question.answer);
-    session.check();
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 250));
-    expect(
-      find.byKey(const ValueKey('answer-hanuman-artwork')),
-      findsOneWidget,
-    );
-    expect(session.score, 1);
-    final next = find.byKey(const ValueKey('learning-next'));
-    expect(next.hitTestable(), findsOneWidget);
-    await tester.tap(next);
-    await tester.pumpAndSettle();
-    expect(session.index, 1);
-    expect(session.score, 1);
-    expect(find.byKey(const ValueKey('answer-hanuman-artwork')), findsNothing);
+    for (var index = 0; index < 3; index++) {
+      if (index == 1) {
+        session.selectChoice(
+          session.choices
+              .firstWhere(
+                (choice) => !TeluguAkshara.equivalent(
+                  choice.telugu,
+                  session.question.answer,
+                ),
+              )
+              .telugu,
+        );
+        session.check();
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(const ValueKey('answer-hanuman-artwork')),
+          findsNothing,
+        );
+      }
+      session.selectChoice(session.question.answer);
+      session.check();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+      expect(
+        tester
+            .widget<Image>(find.byKey(const ValueKey('answer-hanuman-artwork')))
+            .image,
+        AssetImage(
+          'assets/artwork/kids/hanuman-answer-${index.isEven ? 'wave' : 'clap'}.png',
+        ),
+      );
+      expect(session.score, index + 1);
+      final next = find.byKey(const ValueKey('learning-next'));
+      expect(next.hitTestable(), findsOneWidget);
+      await tester.tap(next);
+      await tester.pumpAndSettle();
+      expect(session.index, index + 1);
+      expect(session.score, index + 1);
+      expect(
+        find.byKey(const ValueKey('answer-hanuman-artwork')),
+        findsNothing,
+      );
+    }
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  for (final finishDelay in [0, 250, 1200]) {
+    testWidgets('Finish activity works after ${finishDelay}ms and on replay', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(411, 914);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final settings = AppSettingsController()..setEnglishHelper(true);
+      final learning = KidsLearningController();
+      final session = learning.sessionFor(
+        activities.firstWhere((activity) => activity.id == 'letters-food'),
+      );
+      addTearDown(settings.dispose);
+      addTearDown(learning.dispose);
+      await tester.pumpWidget(
+        _host(
+          KidsActivityScreen(session: session, learning: learning),
+          settings,
+          reducedMotion: false,
+        ),
+      );
+      await tester.pumpAndSettle();
+      for (var round = 0; round < 2; round++) {
+        while (session.index < session.activity.questions.length - 1) {
+          session.selectChoice(session.question.answer);
+          session.check();
+          session.next();
+        }
+        await tester.pumpAndSettle();
+        final answer = find.byKey(
+          ValueKey('learning-choice-${session.question.answer}'),
+        );
+        await tester.ensureVisible(answer);
+        await tester.pumpAndSettle();
+        await tester.tap(answer);
+        await tester.pump();
+        await tester.pump(Duration(milliseconds: finishDelay));
+        expect(find.text('Finish activity'), findsOneWidget);
+        await tester.tap(find.byKey(const ValueKey('learning-next')));
+        await tester.pumpAndSettle();
+        expect(session.complete, isTrue);
+        expect(
+          find.byKey(const ValueKey('learning-completion-heading')),
+          findsOneWidget,
+        );
+        expect(learning.stars, 1);
+        expect(tester.takeException(), isNull);
+        if (round == 0) {
+          await _tap(tester, find.byKey(const ValueKey('learning-restart')));
+        }
+      }
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  }
 
   testWidgets('kids welcome leaves room for the activities', (tester) async {
     tester.view.physicalSize = const Size(390, 844);

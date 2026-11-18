@@ -71,7 +71,9 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!MediaQuery.disableAnimationsOf(context)) {
-      unawaited(precacheImage(AnswerCharacterCelebration.artwork, context));
+      for (final artwork in AnswerCharacterCelebration.artworks) {
+        unawaited(precacheImage(artwork, context));
+      }
     }
     _audio = context.read<EngagementAudioManager?>();
     _storage = context.read<LearningProgress?>();
@@ -158,16 +160,17 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
 
   KidsQuestionLevel get _currentLevel => _levels[_levelIndex];
   KidsQuestion get _currentQuestion => _currentLevel.questions[_index];
+  int get _questionIndex =>
+      _index +
+      _levels
+          .take(_levelIndex)
+          .fold<int>(0, (total, level) => total + level.questions.length);
   List<String> get _options => orderedKidsChoices(
     _currentQuestion.options,
     isAnswer: (option) =>
         TeluguAkshara.equivalent(option, _currentQuestion.answer),
     seed: _answerOrderSeed,
-    questionIndex:
-        _index +
-        _levels
-            .take(_levelIndex)
-            .fold<int>(0, (total, level) => total + level.questions.length),
+    questionIndex: _questionIndex,
   );
   static const _levelColors = [
     AppColors.teal,
@@ -820,6 +823,7 @@ class _KidsGameScreenState extends State<KidsGameScreen> {
             key: _feedbackAnchor,
             child: AnswerCharacterCelebration(
               key: ValueKey('practice-celebration-$_feedbackRevision'),
+              answerIndex: _questionIndex,
               animate: _wasCorrect == true,
               child: _feedback(),
             ),

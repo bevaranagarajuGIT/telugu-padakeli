@@ -11,14 +11,17 @@ class AnswerCharacterCelebration extends StatefulWidget {
   const AnswerCharacterCelebration({
     required this.child,
     this.animate = true,
+    this.answerIndex = 0,
     super.key,
-  });
+  }) : assert(answerIndex >= 0);
 
   final Widget child;
   final bool animate;
-  static const artwork = AssetImage(
-    'assets/artwork/kids/hanuman-answer-wave.png',
-  );
+  final int answerIndex;
+  static const artworks = [
+    AssetImage('assets/artwork/kids/hanuman-answer-wave.png'),
+    AssetImage('assets/artwork/kids/hanuman-answer-clap.png'),
+  ];
 
   @override
   State<AnswerCharacterCelebration> createState() =>
@@ -32,6 +35,9 @@ class _AnswerCharacterCelebrationState
   @override
   Widget build(BuildContext context) {
     if (!widget.animate) return widget.child;
+    final artwork =
+        AnswerCharacterCelebration.artworks[widget.answerIndex %
+            AnswerCharacterCelebration.artworks.length];
     return EngagementTimeline(
       duration: const Duration(milliseconds: 900),
       builder: (context, motion) => OverlayPortal(
@@ -106,9 +112,7 @@ class _AnswerCharacterCelebrationState
                                                     width: 2040,
                                                     height: 1020,
                                                     child: Image(
-                                                      image:
-                                                          AnswerCharacterCelebration
-                                                              .artwork,
+                                                      image: artwork,
                                                       key: const ValueKey(
                                                         'answer-hanuman-artwork',
                                                       ),
