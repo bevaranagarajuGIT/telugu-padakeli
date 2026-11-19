@@ -30,9 +30,11 @@ Practice continues the sequence across levels; Learn starts it per activity.
 These are the user's approved, color-enhanced Dreamina baby-Hanuman clips.
 The wave samples 2.2-3.1 seconds; the clap samples 0.95-1.85 seconds, excluding
 the long held namaste ending. Each is an 18-frame, 6x3 atlas of 384px square frames.
-Only border-connected neutral white backdrop pixels become transparent; the
-complete frame, colored artwork, enclosed white details and branding remain.
-Only static atlases are bundled (1,404,933-byte wave and 1,329,721-byte clap),
+Border-connected neutral white backdrop pixels become transparent. Following
+the user's confirmation of permission on 2026-11-18, the isolated corner logo
+is also made transparent in every frame of both atlases. Character pixels,
+enclosed white details, frame dimensions and animation timing are unchanged.
+Only static atlases are bundled,
 not the five-second videos or a video-player dependency.
 A screen-level popup shows the centered character with
 gold rays and praise over dimmed gameplay, then disappears after 900ms. It scales
@@ -46,7 +48,8 @@ Both screens precache both atlases while the question is visible so the first
 wave or clap does not start with an empty character frame.
 The artwork's source rights and Dreamina terms remain unverified. It is for local
 evaluation, not cleared for public/commercial distribution; see the bundled
-`kids/ATTRIBUTION.txt`. No branding has been removed.
+`kids/ATTRIBUTION.txt`. Permission to remove the corner logo does not establish
+blanket distribution clearance.
 
 ## App icon
 

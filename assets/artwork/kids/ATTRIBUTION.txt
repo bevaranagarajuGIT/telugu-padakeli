@@ -26,14 +26,15 @@ Level completion still uses the existing articulated Flutter Hanuman.
 hanuman-answer-wave.png is a separate correct-answer celebration, approved by
 the user on 2026-11-18. It derives from a user-supplied baby-Hanuman reference
 animated with Dreamina Seedance 1.0 Mini (5 seconds, 960x960). The reference's
-corner logo and the generated branding are retained, not removed or covered.
+corner logo and generated branding were initially retained; see the authorized
+corner-logo cleanup below.
 The user approved a richer local color/contrast/sharpness pass, then selected a
 short wave excerpt so Practice retains its existing automatic advance.
 The atlas contains 18 full, square frames sampled at 20 fps from 2.2-3.1 seconds
 of that approved clip, resized proportionally to 384x384 and tiled 6 by 3
 (2304x1152 RGBA PNG). Border-connected neutral white backdrop pixels become
-transparent for compositing; colored artwork, enclosed white details and corner
-branding remain unchanged. No frame or identifying detail is cropped.
+transparent for compositing; colored artwork and enclosed white details remain
+unchanged. No frame is cropped.
 Flutter shows each complete cell in a responsive screen-level celebration over
 dimmed gameplay, with code-drawn gold rays and praise. It plays once over 900 ms,
 then disappears. Reduced motion skips the decorative popup; restored and
@@ -49,14 +50,22 @@ saturation 1.25, gamma 1.015, a 1440x1440 Lanczos upscale and gentle sharpening;
 this is an enhanced upscale, not newly generated high-resolution detail.
 The 0.95-1.85 second excerpt keeps one quick clap and excludes the long held
 namaste ending. It is sampled at 20 fps into 18 full 384x384 square frames,
-tiled 6 by 3 (2304x1152 RGBA PNG, 1,329,721 bytes). The same border-connected
+tiled 6 by 3 (2304x1152 RGBA PNG). The same border-connected
 neutral-white transparency treatment preserves colored artwork, enclosed white
-details and the corner logo. Nothing is tightly cropped or rebranded.
+details. The corner logo was initially preserved, then cleaned up as noted below.
+Nothing is tightly cropped or rebranded.
 Learn and Practice alternate the wave and clap by question position, with
 Practice continuing across levels. Retries and rebuilds do not change the
 selected reaction. Both atlases are preloaded when motion is enabled.
 The existing 900 ms popup, accessibility gates, gameplay timing and rewards
 remain unchanged. No additional Dreamina generation was needed for integration.
+
+On 2026-11-18, the user confirmed "Yes, I have permission to remove it" for the
+isolated corner logo. Both atlases now make the top-left 96x64-pixel region of
+each 384x384 frame transparent. The region does not intersect the character.
+All RGB values and all alpha values outside that region remain unchanged.
+The source clips are retained unmodified; no new generation was performed.
+This permission statement is not independent verification of distribution rights.
 
 These reference-derived assets are not asserted to be original or commercially
 cleared. Reference ownership, logo/trademark rights and applicable Dreamina
