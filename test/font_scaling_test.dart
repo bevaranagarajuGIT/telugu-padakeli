@@ -149,10 +149,10 @@ void main() {
           await tester.pumpAndSettle();
 
           final text = tester.widget<Text>(title);
-          expect(text.style!.fontSize, closeTo(32 * preset.scale, 0.001));
+          expect(text.style!.fontSize, closeTo(24 * preset.scale, 0.001));
           expect(
             tester.widget<Text>(find.text('పదకేళి ఆడండి')).style!.fontSize,
-            closeTo(22 * preset.scale, 0.001),
+            closeTo(18 * preset.scale, 0.001),
           );
           expect(
             Theme.of(tester.element(find.byType(HomeScreen))).brightness,
@@ -167,7 +167,7 @@ void main() {
           } else {
             expect(tester.getSize(title).height, greaterThan(normalHeight));
             expect(learn.top, greaterThanOrEqualTo(classic.bottom));
-            expect(classic.width, 358);
+            expect(classic.width, 366);
           }
           expect(
             find.byType(HomeScenery),
@@ -229,8 +229,8 @@ void main() {
           final text = tester.widget<Text>(find.text(english));
           final foreground = text.style!.color!.computeLuminance();
           final background = tester
-              .widget<ListTile>(target)
-              .tileColor!
+              .widget<Material>(target)
+              .color!
               .computeLuminance();
           final contrast = foreground > background
               ? (foreground + 0.05) / (background + 0.05)
@@ -266,18 +266,18 @@ void main() {
     );
     await tester.pumpAndSettle();
     final title = tester.widget<Text>(find.text('తెలుగు పదకేళి'));
-    expect(title.style!.fontSize, closeTo(44.8, 0.001));
+    expect(title.style!.fontSize, closeTo(33.6, 0.001));
     expect(title.textScaler, same(scaler));
     expect(
       title.textScaler!.scale(title.style!.fontSize!),
-      closeTo(58.24, 0.001),
+      closeTo(43.68, 0.001),
     );
     final subtitle = tester.widget<Text>(find.text('Classic Padakeli'));
-    expect(subtitle.style!.fontSize, closeTo(19.6, 0.001));
+    expect(subtitle.style!.fontSize, closeTo(22.4, 0.001));
     expect(subtitle.textScaler, same(scaler));
     expect(
       subtitle.textScaler!.scale(subtitle.style!.fontSize!),
-      closeTo(29.4, 0.001),
+      closeTo(29.12, 0.001),
     );
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
